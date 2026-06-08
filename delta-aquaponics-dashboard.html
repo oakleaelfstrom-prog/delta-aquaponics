@@ -163,6 +163,66 @@ tr:hover td{background:#F6FAF6}
 /* STAT CHIPS */
 .stat-chips{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--border)}
 .chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg);color:var(--text)}
+/* DRILL-DOWN BOTTOM SHEET */
+#drill-modal{position:fixed;inset:0;z-index:500;display:none;flex-direction:column;justify-content:flex-end}
+#drill-modal.open{display:flex}
+#drill-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+#drill-sheet{position:relative;background:var(--card);border-radius:16px 16px 0 0;max-height:82vh;display:flex;flex-direction:column;z-index:1;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+#drill-header{padding:16px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#drill-title{font-size:15px;font-weight:800;color:var(--text)}
+#drill-close{background:var(--bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+#drill-body{overflow-y:auto;flex:1}
+
+/* ALERTS */
+.alert{position:relative;padding-right:36px}
+.alert-x{position:absolute;top:8px;right:10px;background:transparent;border:none;cursor:pointer;font-size:16px;line-height:1;color:inherit;opacity:.45;padding:2px 4px}
+.alert-x:hover{opacity:1}
+.alert-group{margin-bottom:4px}
+.alert-group-label{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:12px;padding-left:2px}
+.alert-group-label:first-child{margin-top:0}
+.alert.stale{opacity:.55}
+
+/* PERIOD SELECTOR */
+.period-row{display:flex;gap:8px;margin-bottom:16px}
+.period-btn{flex:1;padding:9px 6px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center;box-shadow:var(--shadow)}
+.period-btn.active{background:var(--green-mid);border-color:var(--green-mid);color:#fff}
+
+/* CROP GRID */
+.crop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:600px){.crop-grid{grid-template-columns:repeat(3,1fr)}}
+.crop-item{background:var(--bg);border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:background .15s}
+.crop-item:hover{background:var(--green-pale)}
+.crop-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.crop-variety{font-size:11px;color:var(--muted);margin-bottom:8px}
+.harvest-track{background:rgba(0,0,0,.08);border-radius:3px;height:5px;margin-bottom:6px;overflow:hidden}
+.harvest-fill{height:100%;border-radius:3px;background:var(--green-light);transition:width .4s}
+.harvest-fill.near{background:#FFA726}
+.harvest-fill.ready{background:var(--red)}
+.crop-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+
+/* HEALTH PILLS */
+.health-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+.health-row::-webkit-scrollbar{display:none}
+.health-pill{flex-shrink:0;display:flex;align-items:center;gap:7px;padding:10px 14px;background:var(--bg);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text);transition:background .15s;white-space:nowrap}
+.health-pill:hover{background:var(--green-pale)}
+.h-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.h-dot.good{background:var(--green-light)}
+.h-dot.warn{background:#FFA726}
+.h-dot.bad{background:var(--red)}
+.h-dot.info{background:#42A5F5}
+
+/* SUMMARY STATS */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.sum-card{background:var(--card);border-radius:var(--radius-sm);padding:13px;box-shadow:var(--shadow)}
+.sum-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.sum-value{font-size:22px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.sum-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.3}
+
+/* VIEW-ALL BUTTON */
+.view-all-btn{display:block;width:100%;padding:11px;text-align:center;background:#F5FAF5;border:none;border-top:1px solid var(--border);cursor:pointer;color:var(--green-mid);font-size:12px;font-weight:700;transition:background .15s}
+.view-all-btn:hover{background:var(--green-pale)}
+
 /* LOADING */
 #loading{position:fixed;inset:0;background:rgba(234,242,234,.97);display:flex;align-items:center;justify-content:center;z-index:999;font-size:15px;font-weight:700;color:var(--green-mid);letter-spacing:.01em}
 /* SCROLLBAR */
@@ -213,6 +273,18 @@ tr:hover td{background:#F6FAF6}
   </div>
 </div>
 
+<!-- DRILL-DOWN MODAL -->
+<div id="drill-modal">
+  <div id="drill-backdrop" onclick="closeDrillDown()"></div>
+  <div id="drill-sheet">
+    <div id="drill-header">
+      <span id="drill-title">Readings</span>
+      <button id="drill-close" onclick="closeDrillDown()">✕</button>
+    </div>
+    <div id="drill-body"></div>
+  </div>
+</div>
+
 <!-- TOP NAV -->
 <div id="topnav">
   <button id="hamburger" onclick="toggleDrawer()"><span></span><span></span><span></span></button>
@@ -231,25 +303,30 @@ tr:hover td{background:#F6FAF6}
   <div class="section active" id="sec-overview">
     <div class="section-header">
       <h2>System Overview</h2>
-      <p>Current status across all monitored parameters — click any card to drill down.</p>
+      <p id="ov-subtitle">Delta Aquaponics · Shorobe, Botswana</p>
     </div>
     <div id="alerts-area"></div>
-    <div class="kpi-row" id="kpi-row"></div>
+    <div class="period-row">
+      <button class="period-btn active" id="pd-day" onclick="setPeriod('day')">Today</button>
+      <button class="period-btn" id="pd-week" onclick="setPeriod('week')">This Week</button>
+      <button class="period-btn" id="pd-month" onclick="setPeriod('month')">This Month</button>
+    </div>
+    <div class="summary-grid" id="period-summary"></div>
+    <div class="card">
+      <div class="card-header"><h3>🌱 Growing Beds</h3><span id="crop-count" style="font-size:11px;color:var(--muted)"></span></div>
+      <div style="padding:12px 12px 14px"><div class="crop-grid" id="crop-grid"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>System Health</h3><span style="font-size:11px;color:var(--muted)">Tap to drill down</span></div>
+      <div class="card-body" style="padding-top:8px"><div class="health-row" id="health-row"></div></div>
+    </div>
     <div class="card">
       <div class="card-header"><h3>Water pH — Last 30 Days</h3><span style="font-size:11px;color:var(--muted)">Target 6.8–7.2</span></div>
       <div class="card-body"><div class="chart-wrap"><canvas id="ov-ph-chart"></canvas></div></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3>Fish Stock Over Time</h3></div>
+      <div class="card-header"><h3>Fish Stock</h3></div>
       <div class="card-body"><div class="chart-wrap"><canvas id="ov-fish-chart"></canvas></div></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>Water Temperature — Last 30 Days</h3><span style="font-size:11px;color:var(--muted)">Target 24–30°C</span></div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="ov-temp-chart"></canvas></div></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>Cumulative Spend (P)</h3></div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="ov-fin-chart"></canvas></div></div>
     </div>
   </div>
 
@@ -266,9 +343,10 @@ tr:hover td{background:#F6FAF6}
       <div class="card-header">
         <h3>pH Over Time</h3>
         <div class="card-actions range-btns" id="ph-range-btns">
-          <button class="range-btn" data-days="30" onclick="setWQRange(30)">30d</button>
-          <button class="range-btn active" data-days="90" onclick="setWQRange(90)">90d</button>
-          <button class="range-btn" data-days="0" onclick="setWQRange(0)">All</button>
+          <button class="range-btn active" data-days="7" onclick="setWQRange(7)">7d</button>
+          <button class="range-btn" data-days="30" onclick="setWQRange(30)">1m</button>
+          <button class="range-btn" data-days="90" onclick="setWQRange(90)">3m</button>
+          <button class="range-btn" data-days="365" onclick="setWQRange(365)">1yr</button>
         </div>
       </div>
       <div class="card-body"><div class="chart-wrap"><canvas id="ph-chart"></canvas></div></div>
@@ -276,21 +354,22 @@ tr:hover td{background:#F6FAF6}
     <div class="card">
       <div class="card-header">
         <h3>Water Temperature Over Time</h3>
-        <div class="card-actions range-btns">
-          <button class="range-btn" data-days="30" onclick="setWTRange(30)">30d</button>
-          <button class="range-btn active" data-days="90" onclick="setWTRange(90)">90d</button>
-          <button class="range-btn" data-days="0" onclick="setWTRange(0)">All</button>
+        <div class="card-actions range-btns" id="wt-range-btns">
+          <button class="range-btn active" data-days="7" onclick="setWTRange(7)">7d</button>
+          <button class="range-btn" data-days="30" onclick="setWTRange(30)">1m</button>
+          <button class="range-btn" data-days="90" onclick="setWTRange(90)">3m</button>
+          <button class="range-btn" data-days="365" onclick="setWTRange(365)">1yr</button>
         </div>
       </div>
       <div class="card-body"><div class="chart-wrap"><canvas id="wtemp-chart"></canvas></div></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3>All Readings</h3><span id="wq-count" style="font-size:12px;color:var(--muted)"></span></div>
-      <div class="tbl-wrap"><table id="wq-table">
-        <thead><tr><th>Date</th><th>Time</th><th>Water Temp (°C)</th><th>pH</th><th>Status</th><th>Notes</th></tr></thead>
+      <div class="card-header"><h3>All Water Readings</h3><span id="wq-count" style="font-size:12px;color:var(--muted)"></span></div>
+      <div class="tbl-wrap" style="max-height:260px"><table>
+        <thead><tr><th>Date</th><th>Time</th><th>Temp °C</th><th>pH</th><th>Status</th><th>Notes</th></tr></thead>
         <tbody id="wq-tbody"></tbody>
       </table></div>
-      <button class="show-more-btn" id="wq-show-more" onclick="showMoreWQ()">Show all readings</button>
+      <button class="view-all-btn" onclick="openDrillDown('wq')">View all readings ↓</button>
     </div>
   </div>
 
@@ -305,21 +384,22 @@ tr:hover td{background:#F6FAF6}
     <div class="card">
       <div class="card-header">
         <h3>Greenhouse Temperature (Morning / Midday / Evening)</h3>
-        <div class="card-actions range-btns">
-          <button class="range-btn" onclick="setEnvRange(30)">30d</button>
-          <button class="range-btn active" onclick="setEnvRange(60)">60d</button>
-          <button class="range-btn" onclick="setEnvRange(0)">All</button>
+        <div class="card-actions range-btns" id="env-range-btns">
+          <button class="range-btn active" data-days="7" onclick="setEnvRange(7)">7d</button>
+          <button class="range-btn" data-days="30" onclick="setEnvRange(30)">1m</button>
+          <button class="range-btn" data-days="90" onclick="setEnvRange(90)">3m</button>
+          <button class="range-btn" data-days="365" onclick="setEnvRange(365)">1yr</button>
         </div>
       </div>
       <div class="card-body"><div class="chart-wrap"><canvas id="env-chart"></canvas></div></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3>All Environmental Readings</h3></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Date</th><th>Time</th><th>Indoor Temp (°C)</th><th>Weather</th></tr></thead>
+      <div class="card-header"><h3>All Temperature Readings</h3><span id="env-count" style="font-size:12px;color:var(--muted)"></span></div>
+      <div class="tbl-wrap" style="max-height:260px"><table>
+        <thead><tr><th>Date</th><th>Time</th><th>Indoor °C</th><th>Weather</th></tr></thead>
         <tbody id="env-tbody"></tbody>
       </table></div>
-      <button class="show-more-btn" id="env-show-more" onclick="showMoreEnv()">Show all readings</button>
+      <button class="view-all-btn" onclick="openDrillDown('env')">View all readings ↓</button>
     </div>
   </div>
 
@@ -386,20 +466,22 @@ tr:hover td{background:#F6FAF6}
     <div class="card">
       <div class="card-header">
         <h3>Siphon Drain Times Over Time</h3>
-        <div class="card-actions range-btns">
-          <button class="range-btn" onclick="setSiphRange(30)">30d</button>
-          <button class="range-btn active" onclick="setSiphRange(0)">All</button>
+        <div class="card-actions range-btns" id="siph-range-btns">
+          <button class="range-btn active" data-days="7" onclick="setSiphRange(7)">7d</button>
+          <button class="range-btn" data-days="30" onclick="setSiphRange(30)">1m</button>
+          <button class="range-btn" data-days="90" onclick="setSiphRange(90)">3m</button>
+          <button class="range-btn" data-days="365" onclick="setSiphRange(365)">1yr</button>
         </div>
       </div>
       <div class="card-body"><div class="chart-wrap"><canvas id="siph-trend-chart"></canvas></div></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3>All Siphon Readings</h3></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Date</th><th>Time</th><th>S1 (min)</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th><th>S6</th></tr></thead>
+      <div class="card-header"><h3>All Siphon Readings</h3><span id="siph-count" style="font-size:12px;color:var(--muted)"></span></div>
+      <div class="tbl-wrap" style="max-height:260px"><table>
+        <thead><tr><th>Date</th><th>Time</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th><th>S6</th></tr></thead>
         <tbody id="siph-tbody"></tbody>
       </table></div>
-      <button class="show-more-btn" id="siph-show-more" onclick="showMoreSiph()">Show all readings</button>
+      <button class="view-all-btn" onclick="openDrillDown('siphons')">View all readings ↓</button>
     </div>
   </div>
 
@@ -430,31 +512,6 @@ tr:hover td{background:#F6FAF6}
     <div class="grid-2" id="phase-cards"></div>
   </div>
 
-  <!-- FINANCIALS -->
-  <div class="section" id="sec-financials">
-    <div class="section-header">
-      <h2>Financial Records</h2>
-      <p>All recorded income and expenses in Botswana Pula (P).</p>
-    </div>
-    <div class="kpi-row" id="fin-kpis"></div>
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-header"><h3>Spend by Category</h3></div>
-        <div class="card-body"><div class="chart-wrap"><canvas id="fin-cat-chart"></canvas></div></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><h3>Cumulative Spend Over Time</h3></div>
-        <div class="card-body"><div class="chart-wrap"><canvas id="fin-cumul-chart"></canvas></div></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>All Transactions</h3></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Qty</th><th>Unit Cost (P)</th><th>Total (P)</th></tr></thead>
-        <tbody id="fin-tbody"></tbody>
-      </table></div>
-    </div>
-  </div>
 
 </div><!-- /main -->
 
@@ -755,14 +812,14 @@ let D = DEFAULT_DATA;
 
 // Chart registry
 const charts = {};
-let wqShowAll = false, envShowAll = false, siphShowAll = false;
-let wqDays = 90, wtDays = 90, envDays = 60, siphDays = 0;
+let wqDays = 7, wtDays = 7, envDays = 7, siphDays = 7;
+let currentPeriod = 'day';
 
 // ─── NAV ────────────────────────────────────────────────────────────────────
 const sectionTitles = {
   overview:'Overview', water:'Water Quality', environment:'Environment',
   fish:'Fish', plants:'Plants', siphons:'Siphons', maintenance:'Maintenance',
-  phases:'Phase Plan', financials:'Financials'
+  phases:'Phase Plan'
 };
 function toggleDrawer(){
   document.getElementById('drawer').classList.toggle('open');
@@ -794,6 +851,193 @@ document.querySelectorAll('.nav-link').forEach(btn => {
   });
 });
 
+// ─── DRILL-DOWN MODAL ───────────────────────────────────────────────────────
+function openDrillDown(type) {
+  const configs = {
+    wq: {
+      title: () => `Water Quality — ${D.wq.length} readings`,
+      html: () => `<div class="tbl-wrap" style="max-height:none"><table style="width:100%">
+        <thead><tr><th>Date</th><th>Time</th><th>Temp °C</th><th>pH</th><th>Status</th><th>Notes</th></tr></thead>
+        <tbody>${[...D.wq].reverse().map(r=>{const[l,c]=pHStatus(r[3]);return`<tr><td>${r[0]||'—'}</td><td>${r[1]||'—'}</td><td>${fmt(r[2],1)}</td><td>${fmt(r[3],2)}</td><td><span class="status-dot dot-${c==='good'?'good':c==='warn'?'warn':'bad'}"></span>${l}</td><td style="color:var(--muted)">${r[4]||'—'}</td></tr>`;}).join('')}</tbody>
+      </table></div>`
+    },
+    env: {
+      title: () => `Temperature — ${D.env.length} readings`,
+      html: () => `<div class="tbl-wrap" style="max-height:none"><table style="width:100%">
+        <thead><tr><th>Date</th><th>Time</th><th>Indoor °C</th><th>Outside °C</th><th>Weather</th></tr></thead>
+        <tbody>${[...D.env].reverse().map(r=>`<tr><td>${r[0]||'—'}</td><td>${r[1]||'—'}</td><td>${r[2]!=null?r[2]+'°':'—'}</td><td>—</td><td>${r[3]||'—'}</td></tr>`).join('')}</tbody>
+      </table></div>`
+    },
+    siphons: {
+      title: () => `Siphon Cycles — ${D.siphons.length} readings`,
+      html: () => `<div class="tbl-wrap" style="max-height:none"><table style="width:100%">
+        <thead><tr><th>Date</th><th>Time</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th><th>S6</th></tr></thead>
+        <tbody>${[...D.siphons].reverse().map(r=>`<tr><td>${r[0]||'—'}</td><td>${r[1]||'—'}</td>${[2,3,4,5,6,7].map(i=>`<td>${r[i]!=null?r[i]+'m':'—'}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>`
+    },
+    fish: {
+      title: () => `Fish Records — ${D.fish.length} entries`,
+      html: () => `<div class="tbl-wrap" style="max-height:none"><table style="width:100%">
+        <thead><tr><th>Date</th><th>Deaths</th><th>Cause</th><th>Remaining</th><th>Health Notes</th></tr></thead>
+        <tbody>${[...D.fish].reverse().map(r=>{const big=r[3]>=10;return`<tr${big?' style="background:#FFF8E1"':''}><td>${r[0]||'—'}</td><td style="font-weight:${big?700:400};color:${big?'var(--red)':'inherit'}">${r[3]||0}</td><td>${r[4]||'—'}</td><td>${r[6]?.toLocaleString()||'—'}</td><td>${r[5]||'—'}</td></tr>`;}).join('')}</tbody>
+      </table></div>`
+    },
+    plants: {
+      title: () => `Plant Records — ${D.plants.length} entries`,
+      html: () => `<div class="tbl-wrap" style="max-height:none"><table style="width:100%">
+        <thead><tr><th>Date</th><th>Crop</th><th>Stage</th><th>Growth Notes</th><th>Harvest Date</th></tr></thead>
+        <tbody>${[...D.plants].reverse().map(r=>`<tr><td>${r[0]||'—'}</td><td><strong>${r[1]||'—'}</strong></td><td>${r[2]||'—'}</td><td style="color:var(--muted)">${r[3]||'—'}</td><td>${r[5]||'—'}</td></tr>`).join('')}</tbody>
+      </table></div>`
+    }
+  };
+  const cfg = configs[type]; if(!cfg) return;
+  document.getElementById('drill-title').textContent = cfg.title();
+  document.getElementById('drill-body').innerHTML = cfg.html();
+  document.getElementById('drill-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeDrillDown(){
+  document.getElementById('drill-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─── ALERT SYSTEM ────────────────────────────────────────────────────────────
+const dismissedAlerts = new Set(JSON.parse(sessionStorage.getItem('dimAlerts')||'[]'));
+function dismissAlert(id){
+  dismissedAlerts.add(id);
+  sessionStorage.setItem('dimAlerts', JSON.stringify([...dismissedAlerts]));
+  const el = document.getElementById('al-'+id); if(el) el.remove();
+  document.querySelectorAll('.alert-group').forEach(g=>{ if(!g.querySelector('.alert')) g.remove(); });
+}
+function computeAlerts(){
+  const s = D.stats; const alerts = [];
+  const ph = s.latest_ph, wt = s.latest_wtemp;
+  if(ph!=null && ph>7.5) alerts.push({id:'ph-crit',cls:'bad',icon:'⚠️',title:'pH Critically High',msg:`Current pH ${ph} is above 7.5. Plants cannot absorb nutrients and bacteria are under stress. Add pH-down solution immediately.`,active:true});
+  else if(ph!=null && ph>7.2) alerts.push({id:'ph-high',cls:'warn',icon:'⚠️',title:'pH Elevated',msg:`Current pH ${ph} is above the 7.2 target. This reduces nutrient availability to plants. Consider pH-down treatment.`,active:true});
+  if(wt!=null && wt<17) alerts.push({id:'wt-emergency',cls:'bad',icon:'🚨',title:'EMERGENCY — Water Too Cold',msg:`Water temp ${wt}°C is below 17°C. Fish have stopped feeding. Close everything and contact management immediately.`,active:true});
+  else if(wt!=null && wt<20) alerts.push({id:'wt-cold',cls:'warn',icon:'🌡️',title:'Water Temperature Low',msg:`Water temp ${wt}°C below 20°C — fish feeding slows. Close all greenhouse sides and monitor closely.`,active:true});
+  else if(wt!=null && wt>32) alerts.push({id:'wt-emergency-hot',cls:'bad',icon:'🚨',title:'EMERGENCY — Water Overheating',msg:`Water temp ${wt}°C exceeds 32°C. Risk of mass mortality. Open all sides, run fan at maximum, contact management.`,active:true});
+  else if(wt!=null && wt>30) alerts.push({id:'wt-warm',cls:'warn',icon:'🌡️',title:'Water Temperature High',msg:`Water temp ${wt}°C above 30°C — heat stress, oxygen dropping. Increase aeration and check evaporative cooler.`,active:true});
+  const slowSiph = D.siph_avgs.map((v,i)=>({s:i+1,v})).filter(x=>x.v!=null&&x.v>20);
+  if(slowSiph.length) alerts.push({id:'siph-slow',cls:'warn',icon:'⚙️',title:'Siphon Cycle Slow',msg:`Row${slowSiph.length>1?'s':''} ${slowSiph.map(x=>`S${x.s} (${x.v}min)`).join(', ')} above 20min target. Roots may be oxygen-deprived. Adjust inflow valves.`,active:true});
+  alerts.push({id:'jan-event',cls:'info',icon:'📋',title:'Past Incident — Jan 15–16, 2026',msg:`247 fish died from a ventilation failure (~145 days ago). Ventilation corrected. Current stock stable.`,active:false});
+  return alerts;
+}
+function renderAlerts(){
+  const alerts = computeAlerts();
+  const active = alerts.filter(a=>a.active&&!dismissedAlerts.has(a.id));
+  const old = alerts.filter(a=>!a.active&&!dismissedAlerts.has(a.id));
+  const mkAlert = a => `<div class="alert ${a.cls}${a.active?'':' stale'}" id="al-${a.id}">
+    <span class="alert-icon">${a.icon}</span>
+    <div><strong>${a.title}</strong> — ${a.msg}</div>
+    <button class="alert-x" onclick="dismissAlert('${a.id}')" title="Dismiss">✕</button>
+  </div>`;
+  let html = '';
+  if(active.length) html += `<div class="alert-group"><div class="alert-group-label">Active Alerts</div>${active.map(mkAlert).join('')}</div>`;
+  if(old.length) html += `<div class="alert-group"><div class="alert-group-label">Alert History</div>${old.map(mkAlert).join('')}</div>`;
+  document.getElementById('alerts-area').innerHTML = html;
+}
+
+// ─── PERIOD SUMMARY ──────────────────────────────────────────────────────────
+function setPeriod(p){
+  currentPeriod = p;
+  ['day','week','month'].forEach(x=>document.getElementById('pd-'+x).classList.toggle('active',x===p));
+  renderPeriodSummary();
+}
+function renderPeriodSummary(){
+  const s = D.stats;
+  const now = new Date();
+  const fmt2 = d => d.toISOString().slice(0,10);
+  const cutoff = currentPeriod==='day' ? fmt2(now) : currentPeriod==='week' ? fmt2(new Date(now-7*864e5)) : fmt2(new Date(now-30*864e5));
+  const label = currentPeriod==='day' ? 'Today' : currentPeriod==='week' ? 'Last 7 Days' : 'Last 30 Days';
+  document.getElementById('ov-subtitle').textContent = `${label} · ${fmt2(now)}`;
+  const wqP = D.wq.filter(r=>r[0]>=cutoff);
+  const phVals = wqP.map(r=>r[3]).filter(v=>v!=null);
+  const tmpVals = wqP.map(r=>r[2]).filter(v=>v!=null);
+  const avgPH = phVals.length ? +(phVals.reduce((a,b)=>a+b,0)/phVals.length).toFixed(2) : null;
+  const avgTmp = tmpVals.length ? +(tmpVals.reduce((a,b)=>a+b,0)/tmpVals.length).toFixed(1) : null;
+  const deaths = D.fish.filter(r=>r[0]>=cutoff).reduce((s,r)=>s+(r[3]||0),0);
+  const checks = wqP.length;
+  const [phL,phC] = pHStatus(avgPH); const [tL,tC] = tempStatus(avgTmp);
+  document.getElementById('period-summary').innerHTML = `
+    <div class="sum-card" onclick="navTo('water')" style="cursor:pointer">
+      <div class="sum-label">Avg pH</div>
+      <div class="sum-value" style="color:var(--${phC==='good'?'green-mid':phC==='warn'?'amber':'red'})">${avgPH||'—'}</div>
+      <div class="sum-sub"><span class="badge ${phC}" style="margin-top:2px">${phL}</span></div>
+    </div>
+    <div class="sum-card" onclick="navTo('water')" style="cursor:pointer">
+      <div class="sum-label">Avg Water Temp</div>
+      <div class="sum-value" style="color:var(--${tC==='good'?'green-mid':tC==='warn'?'amber':'red'})">${avgTmp!=null?avgTmp+'°':'—'}</div>
+      <div class="sum-sub"><span class="badge ${tC}" style="margin-top:2px">${tL}</span></div>
+    </div>
+    <div class="sum-card" onclick="navTo('fish')" style="cursor:pointer">
+      <div class="sum-label">Fish Deaths</div>
+      <div class="sum-value" style="color:${deaths>0?'var(--red)':'var(--green-mid)'}">${deaths}</div>
+      <div class="sum-sub">${s.current_stock.toLocaleString()} alive now</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-label">Checks Logged</div>
+      <div class="sum-value" style="color:var(--green-mid)">${checks}</div>
+      <div class="sum-sub">${label.toLowerCase()}</div>
+    </div>`;
+}
+
+// ─── CROP GRID ───────────────────────────────────────────────────────────────
+const HARVEST_WINDOWS = {smile:[30,40],multigreen:[35,50],'elise prime':[30,40],commander:[50,55],tomato:[75,100],lettuce:[40,55],pepper:[70,90],cucumber:[55,65],spinach:[25,35],kale:[55,65]};
+function renderCropGrid(){
+  const today = new Date();
+  // Latest active entry per crop type (no harvest date)
+  const byType = {};
+  [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r=>{
+    if(!r[1]) return;
+    const k = r[1].toLowerCase().split(' ').slice(0,2).join(' ');
+    byType[k] = r;
+  });
+  const items = Object.values(byType).filter(r=>!r[5]).slice(0,8);
+  if(!items.length){
+    document.getElementById('crop-grid').innerHTML = '<p style="color:var(--muted);font-size:12px;padding:4px 0;grid-column:1/-1">No active crops recorded yet. Data updates as forms are submitted.</p>';
+    document.getElementById('crop-count').textContent = '';
+    return;
+  }
+  document.getElementById('crop-count').textContent = items.length+' active';
+  document.getElementById('crop-grid').innerHTML = items.map(r=>{
+    const name = r[1]||'Unknown';
+    const wKey = Object.keys(HARVEST_WINDOWS).find(k=>name.toLowerCase().includes(k))||'lettuce';
+    const [mn,mx] = HARVEST_WINDOWS[wKey];
+    const plantDate = r[0] ? new Date(r[0]) : null;
+    const daysIn = plantDate ? Math.round((today-plantDate)/864e5) : null;
+    const pct = daysIn!=null ? Math.min(100,Math.round(daysIn/mx*100)) : 0;
+    const daysLeft = daysIn!=null ? Math.max(0,mn-daysIn) : null;
+    const cls = pct>=100?'ready':pct>=75?'near':'';
+    return `<div class="crop-item" onclick="navTo('plants')">
+      <div class="crop-name">${name}</div>
+      <div class="crop-variety">${r[0]||'Planted: unknown'}</div>
+      <div class="harvest-track"><div class="harvest-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="crop-meta">
+        <span>${daysIn!=null?daysIn+'d in ground':'—'}</span>
+        <span style="color:${cls==='ready'?'var(--red)':cls==='near'?'var(--amber)':'var(--green-mid)'}">${cls==='ready'?'Harvest now!':daysLeft>0?daysLeft+'d to harvest':pct>0?'In window':''}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── HEALTH ROW ──────────────────────────────────────────────────────────────
+function renderHealthRow(){
+  const s = D.stats;
+  const [,phC] = pHStatus(s.latest_ph); const [,tC] = tempStatus(s.latest_wtemp);
+  const stockCls = s.survival_pct>80?'good':s.survival_pct>65?'warn':'bad';
+  const badSiph = D.siph_avgs.filter(v=>v!=null&&v>20).length;
+  const siphCls = badSiph===0?'good':badSiph<=2?'warn':'bad';
+  const activePlants = D.plants.filter(r=>!r[5]).length;
+  document.getElementById('health-row').innerHTML = `
+    <div class="health-pill" onclick="navTo('water')"><div class="h-dot ${phC}"></div>pH ${fmt(s.latest_ph,2)}</div>
+    <div class="health-pill" onclick="navTo('water')"><div class="h-dot ${tC}"></div>Water ${fmt(s.latest_wtemp,1)}°C</div>
+    <div class="health-pill" onclick="navTo('environment')"><div class="h-dot info"></div>Air ${s.latest_env_morn!=null?s.latest_env_morn+'°C':'—'}</div>
+    <div class="health-pill" onclick="navTo('fish')"><div class="h-dot ${stockCls}"></div>Fish ${s.current_stock.toLocaleString()}</div>
+    <div class="health-pill" onclick="navTo('siphons')"><div class="h-dot ${siphCls}"></div>Siphons ${badSiph===0?'All OK':badSiph+' slow'}</div>
+    <div class="health-pill" onclick="navTo('plants')"><div class="h-dot info"></div>Crops ${activePlants} active</div>`;
+}
+
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 function fmt(n, dec=1){ return n==null?'—':typeof n==='number'?n.toFixed(dec):n; }
 function fmtP(n){ return n==null?'—':'P ' + Math.round(n).toLocaleString(); }
@@ -820,73 +1064,18 @@ function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[i
 // ─── OVERVIEW ───────────────────────────────────────────────────────────────
 function renderOverview(){
   const s = D.stats;
-  const [phLbl, phCls] = pHStatus(s.latest_ph);
-  const [wtLbl, wtCls] = tempStatus(s.latest_wtemp);
-  const stockCls = s.survival_pct > 80 ? 'good' : s.survival_pct > 65 ? 'warn' : 'bad';
-
   document.getElementById('lastUpdated').textContent = 'Data as of ' + (s.last_wq_date||'N/A');
 
-  document.getElementById('kpi-row').innerHTML = `
-    <div class="kpi-card" onclick="navTo('fish')">
-      <div class="label">Fish Stock</div>
-      <div class="value" style="color:var(--${stockCls==='good'?'green-mid':stockCls==='warn'?'amber':'red'})">${s.current_stock.toLocaleString()}</div>
-      <div class="sub">of ${s.stocked.toLocaleString()} stocked · ${s.total_mortality} lost</div>
-      <span class="badge ${stockCls}">${s.survival_pct}% survival</span>
-    </div>
-    <div class="kpi-card" onclick="navTo('water')">
-      <div class="label">Latest pH</div>
-      <div class="value" style="color:var(--${phCls==='good'?'green-mid':phCls==='warn'?'amber':'red'})">${fmt(s.latest_ph,2)}</div>
-      <div class="sub">Target 6.8 – 7.2</div>
-      <span class="badge ${phCls}">${phLbl}</span>
-    </div>
-    <div class="kpi-card" onclick="navTo('water')">
-      <div class="label">Water Temp</div>
-      <div class="value" style="color:var(--${wtCls==='good'?'green-mid':wtCls==='warn'?'amber':'red'})">${fmt(s.latest_wtemp,1)}°C</div>
-      <div class="sub">Target 24 – 30°C</div>
-      <span class="badge ${wtCls}">${wtLbl}</span>
-    </div>
-    <div class="kpi-card" onclick="navTo('financials')">
-      <div class="label">Total Spend</div>
-      <div class="value" style="color:var(--blue)">P ${Math.round(s.total_spend).toLocaleString()}</div>
-      <div class="sub">All recorded expenses</div>
-      <span class="badge warn">Pre-revenue phase</span>
-    </div>`;
+  renderAlerts();
+  renderPeriodSummary();
+  renderCropGrid();
+  renderHealthRow();
 
-  // Alerts
-  let alertHtml = '';
-  if(s.latest_ph && s.latest_ph > 7.2)
-    alertHtml += `<div class="alert warn"><span class="alert-icon">⚠️</span><div><strong>pH Elevated</strong> — Latest reading ${s.latest_ph} is above the 7.2 target. This has been a persistent trend since November 2025. High pH reduces plant nutrient absorption. Consider adding pH-down solution.</div></div>`;
-  if(s.latest_wtemp && s.latest_wtemp < 20)
-    alertHtml += `<div class="alert bad"><span class="alert-icon">🌡️</span><div><strong>Water Temperature Low</strong> — Current ${s.latest_wtemp}°C is below the 20°C minimum for tilapia. Cold mornings in June may be stressing fish. Monitor closely.</div></div>`;
-  if(s.survival_pct < 80)
-    alertHtml += `<div class="alert warn"><span class="alert-icon">🐟</span><div><strong>Elevated Mortality</strong> — ${s.total_mortality} fish lost (${(100-s.survival_pct).toFixed(1)}%) since stocking. Major event: Jan 2026 — 247 fish from poor ventilation.</div></div>`;
-  document.getElementById('alerts-area').innerHTML = alertHtml;
-
-  // Overview charts — last 30 days pH
   const wqRecent = filterByDays(D.wq_chart, 30);
   renderLineChart('ov-ph-chart', wqRecent.map(r=>r[0]), [{label:'pH',data:wqRecent.map(r=>r[2]),color:'#1565C0',fill:false}],
     {min:6.5,max:8.2,bands:[{from:6.8,to:7.2,color:'rgba(76,175,80,.12)',label:'Ideal'}]});
 
-  // Fish stock
   renderStepChart('ov-fish-chart', D.stock_chart);
-
-  // Temp last 30
-  renderLineChart('ov-temp-chart', wqRecent.map(r=>r[0]), [{label:'Water Temp',data:wqRecent.map(r=>r[1]),color:'#E65100',fill:false}],
-    {min:14,max:36,bands:[{from:24,to:30,color:'rgba(76,175,80,.12)',label:'Ideal'}]});
-
-  // Fin cumulative
-  const fc = D.fin_cumul;
-  destroyChart('ov-fin-chart');
-  charts['ov-fin-chart'] = new Chart(document.getElementById('ov-fin-chart').getContext('2d'), {
-    type:'line',
-    data:{labels:fc.map(r=>r[0]),datasets:[{label:'Cumulative Spend (P)',data:fc.map(r=>r[1]),borderColor:'#1565C0',backgroundColor:'#1565C018',fill:true,tension:.35,pointRadius:0,borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{ticks:{maxTicksLimit:5,font:{size:10},color:'#8AA08A'},grid:{display:false},border:{display:false}},
-        y:{ticks:{callback:v=>'P '+v.toLocaleString(),font:{size:10},color:'#8AA08A'},grid:{color:'#EEF6EE'},border:{display:false}}
-      }}
-  });
 }
 
 const OPS_SECTIONS = ['water','environment','fish','plants','siphons','maintenance'];
@@ -991,7 +1180,7 @@ function renderWTChart(){
     {min:14,max:38,bands:[{from:24,to:30,color:'rgba(76,175,80,.15)',label:'Ideal'}]});
 }
 function setWQRange(d){ wqDays=d; document.querySelectorAll('#ph-range-btns .range-btn').forEach(b=>b.classList.toggle('active',+b.dataset.days===d)); renderWQChart(); }
-function setWTRange(d){ wtDays=d; renderWTChart(); }
+function setWTRange(d){ wtDays=d; document.querySelectorAll('#wt-range-btns .range-btn').forEach(b=>b.classList.toggle('active',+b.dataset.days===d)); renderWTChart(); }
 
 function renderWQTable(limit){
   const rows = limit ? D.wq.slice(-limit*3) : D.wq;
@@ -1033,7 +1222,7 @@ function renderEnvChart(){
     {label:'Evening',data:labels.map(d=>evm[d]??null),color:'#26A69A',fill:false}
   ],{min:10,max:45,bands:[{from:20,to:30,color:'rgba(76,175,80,.1)'}]});
 }
-function setEnvRange(d){ envDays=d; renderEnvChart(); }
+function setEnvRange(d){ envDays=d; document.querySelectorAll('#env-range-btns .range-btn').forEach(b=>b.classList.toggle('active',+b.dataset.days===d)); renderEnvChart(); }
 function renderEnvTable(limit){
   const rows = limit ? D.env.slice(-limit*3) : D.env;
   document.getElementById('env-tbody').innerHTML = [...rows].reverse().map(r=>
@@ -1055,7 +1244,7 @@ function renderFish(){
     <div class="kpi-card"><div class="label">Days Since Last Death</div><div class="value">${daysSince}</div><div class="sub">${lastDeath?lastDeath[0]:''}</div></div>
     <div class="kpi-card"><div class="label">Target Harvest</div><div class="value" style="font-size:16px">P 41,580</div><div class="sub">at 400g · P60/kg · ${s.current_stock} fish</div><span class="badge warn">Est. harvest</span></div>`;
 
-  document.getElementById('fish-alerts').innerHTML = `<div class="alert warn"><span class="alert-icon">📌</span><div><strong>Major Incident — Jan 15–16, 2026:</strong> 247 fish died from poor ventilation in a single event. This was the largest single loss (60% of total mortality). Ventilation has since been improved. Current stock stable.</div></div>`;
+  document.getElementById('fish-alerts').innerHTML = '';
 
   renderStepChart('fish-stock-chart', D.stock_chart);
 
@@ -1129,7 +1318,7 @@ function renderSiphTrendChart(){
   });
   renderLineChart('siph-trend-chart', dates, datasets, {min:5,max:50,bands:[{from:18,to:22,color:'rgba(76,175,80,.08)'}]});
 }
-function setSiphRange(d){ siphDays=d; renderSiphTrendChart(); }
+function setSiphRange(d){ siphDays=d; document.querySelectorAll('#siph-range-btns .range-btn').forEach(b=>b.classList.toggle('active',+b.dataset.days===d)); renderSiphTrendChart(); }
 function renderSiphTable(limit){
   const rows = limit ? D.siphons.slice(-limit) : D.siphons;
   document.getElementById('siph-tbody').innerHTML = [...rows].reverse().map(r=>
@@ -1354,7 +1543,6 @@ function renderAll(){
   renderSiphons();
   renderMaintenance();
   renderPhases();
-  renderFinancials();
 }
 
 window.addEventListener('load', ()=>{
