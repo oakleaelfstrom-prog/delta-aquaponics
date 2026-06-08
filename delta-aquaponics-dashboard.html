@@ -243,18 +243,34 @@ tr:hover td{background:#F6FAF6}
 .period-btn{flex:1;padding:9px 6px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center;box-shadow:var(--shadow)}
 .period-btn.active{background:var(--green-mid);border-color:var(--green-mid);color:#fff}
 
-/* CROP GRID */
-.crop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(min-width:600px){.crop-grid{grid-template-columns:repeat(3,1fr)}}
-.crop-item{background:var(--bg);border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:background .15s}
-.crop-item:hover{background:var(--green-pale)}
-.crop-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
-.crop-variety{font-size:11px;color:var(--muted);margin-bottom:8px}
-.harvest-track{background:rgba(0,0,0,.08);border-radius:3px;height:5px;margin-bottom:6px;overflow:hidden}
-.harvest-fill{height:100%;border-radius:3px;background:var(--green-light);transition:width .4s}
-.harvest-fill.near{background:#FFA726}
-.harvest-fill.ready{background:var(--red)}
-.crop-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+/* BED CARDS */
+.bed-list{display:flex;flex-direction:column;gap:12px;padding:0 12px 16px}
+.bed-card{background:var(--bg);border-radius:var(--radius-sm);border:1.5px solid var(--border);overflow:hidden}
+.bed-card-head{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 12px 0}
+.bed-card-name{font-size:14px;font-weight:800;color:var(--text)}
+.bed-card-date{font-size:10px;color:var(--muted);margin-top:2px}
+.bed-tag{display:inline-block;font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap}
+.bed-tag.growing{background:rgba(76,175,80,.12);color:#2E7D32}
+.bed-tag.near{background:rgba(255,152,0,.12);color:#E65100}
+.bed-tag.ready{background:rgba(198,40,40,.1);color:#B71C1C}
+.bed-progress{padding:8px 12px 6px}
+.bed-progress-bar{height:7px;background:rgba(0,0,0,.08);border-radius:4px;overflow:hidden;margin-bottom:5px}
+.bed-progress-fill{height:100%;border-radius:4px;background:var(--green-light);transition:width .4s}
+.bed-progress-fill.near{background:#FFA726}
+.bed-progress-fill.ready{background:var(--red)}
+.bed-progress-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.bed-metrics{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.bed-metric{padding:9px 8px;text-align:center}
+.bed-metric:not(:last-child){border-right:1px solid var(--border)}
+.bed-metric-val{font-size:14px;font-weight:700;color:var(--text)}
+.bed-metric-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:1px}
+.bed-notes{padding:8px 12px 12px;display:flex;flex-direction:column;gap:6px}
+.bed-note-row{display:flex;gap:7px;align-items:flex-start;font-size:11px;line-height:1.45}
+.bed-note-icon{flex-shrink:0;font-size:12px;margin-top:1px}
+.bed-note-label{font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;min-width:48px}
+.bed-note-val{color:var(--grey);flex:1}
+.bed-note-val.warn{color:#E65100;font-weight:600}
+.bed-note-val.bad{color:var(--red);font-weight:600}
 
 /* HEALTH PILLS */
 .health-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px}
@@ -376,19 +392,11 @@ tr:hover td{background:#F6FAF6}
     <div class="summary-grid" id="period-summary"></div>
     <div class="card">
       <div class="card-header"><h3>🌱 Growing Beds</h3><span id="crop-count" style="font-size:11px;color:var(--muted)"></span></div>
-      <div style="padding:12px 12px 14px"><div class="crop-grid" id="crop-grid"></div></div>
+      <div id="crop-grid"></div>
     </div>
     <div class="card">
       <div class="card-header"><h3>System Health</h3><span style="font-size:11px;color:var(--muted)">Tap any card to drill down</span></div>
       <div class="health-grid" id="health-row"></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>Water pH — Last 30 Days</h3><span style="font-size:11px;color:var(--muted)">Target 6.8–7.2</span></div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="ov-ph-chart"></canvas></div></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>Fish Stock</h3></div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="ov-fish-chart"></canvas></div></div>
     </div>
   </div>
 
@@ -1130,7 +1138,9 @@ function renderPeriodSummary(){
 const HARVEST_WINDOWS = {smile:[30,40],multigreen:[35,50],'elise prime':[30,40],commander:[50,55],tomato:[75,100],lettuce:[40,55],pepper:[70,90],cucumber:[55,65],spinach:[25,35],kale:[55,65]};
 function renderCropGrid(){
   const today = new Date();
-  // Latest active entry per crop type (no harvest date)
+  const grid = document.getElementById('crop-grid');
+
+  // Latest active entry per crop key (no harvest date yet)
   const byType = {};
   [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r=>{
     if(!r[1]) return;
@@ -1138,31 +1148,119 @@ function renderCropGrid(){
     byType[k] = r;
   });
   const items = Object.values(byType).filter(r=>!r[5]).slice(0,8);
+
   if(!items.length){
-    document.getElementById('crop-grid').innerHTML = '<p style="color:var(--muted);font-size:12px;padding:4px 0;grid-column:1/-1">No active crops recorded yet. Data updates as forms are submitted.</p>';
+    grid.innerHTML = '<p style="color:var(--muted);font-size:12px;padding:16px">No active crops recorded yet.</p>';
     document.getElementById('crop-count').textContent = '';
     return;
   }
-  document.getElementById('crop-count').textContent = items.length+' active';
-  document.getElementById('crop-grid').innerHTML = items.map(r=>{
-    const name = r[1]||'Unknown';
-    const wKey = Object.keys(HARVEST_WINDOWS).find(k=>name.toLowerCase().includes(k))||'lettuce';
-    const [mn,mx] = HARVEST_WINDOWS[wKey];
+  document.getElementById('crop-count').textContent = items.length + ' active beds';
+
+  const s = D.stats;
+  const latestPH = s.latest_ph;
+  const latestTemp = s.latest_wtemp;
+  const [,phC] = pHStatus(latestPH);
+  const [,tC] = tempStatus(latestTemp);
+  const phColor = phC==='good'?'var(--green-mid)':phC==='warn'?'var(--amber)':'var(--red)';
+  const tColor = tC==='good'?'var(--green-mid)':tC==='warn'?'var(--amber)':'var(--red)';
+
+  // Build spray event lookup from plants + maintenance
+  const SPRAY_RE = /spray|neem|foliar|pesticide|treat/i;
+
+  grid.innerHTML = '<div class="bed-list">' + items.map((r, idx) => {
+    const name = r[1] || 'Unknown';
+    const nameLower = name.toLowerCase();
+    const wKey = Object.keys(HARVEST_WINDOWS).find(k=>nameLower.includes(k)) || 'lettuce';
+    const [mn, mx] = HARVEST_WINDOWS[wKey];
     const plantDate = r[0] ? new Date(r[0]) : null;
-    const daysIn = plantDate ? Math.round((today-plantDate)/864e5) : null;
-    const pct = daysIn!=null ? Math.min(100,Math.round(daysIn/mx*100)) : 0;
-    const daysLeft = daysIn!=null ? Math.max(0,mn-daysIn) : null;
-    const cls = pct>=100?'ready':pct>=75?'near':'';
-    return `<div class="crop-item" onclick="navTo('plants')">
-      <div class="crop-name">${name}</div>
-      <div class="crop-variety">${r[0]||'Planted: unknown'}</div>
-      <div class="harvest-track"><div class="harvest-fill ${cls}" style="width:${pct}%"></div></div>
-      <div class="crop-meta">
-        <span>${daysIn!=null?daysIn+'d in ground':'—'}</span>
-        <span style="color:${cls==='ready'?'var(--red)':cls==='near'?'var(--amber)':'var(--green-mid)'}">${cls==='ready'?'Harvest now!':daysLeft>0?daysLeft+'d to harvest':pct>0?'In window':''}</span>
+    const daysIn = plantDate ? Math.round((today - plantDate) / 864e5) : null;
+    const pct = daysIn != null ? Math.min(100, Math.round(daysIn / mx * 100)) : 0;
+    const daysLeft = daysIn != null ? Math.max(0, mn - daysIn) : null;
+    const fillCls = pct >= 100 ? 'ready' : pct >= 75 ? 'near' : '';
+    const tagCls = fillCls || 'growing';
+    const tagLabel = fillCls === 'ready' ? '🚨 Harvest now' : fillCls === 'near' ? '⚡ Near harvest' : '🌱 Growing';
+    const harvestText = fillCls === 'ready' ? 'Harvest now!' : daysLeft > 0 ? daysLeft + 'd to min harvest' : 'In harvest window';
+    const harvestColor = fillCls === 'ready' ? 'var(--red)' : fillCls === 'near' ? 'var(--amber)' : 'var(--muted)';
+
+    // All plant records for this crop, newest first
+    const cropRecords = [...D.plants]
+      .filter(p => p[1] && p[1].toLowerCase() === nameLower)
+      .sort((a,b) => (a[0]||'') > (b[0]||'') ? -1 : 1);
+
+    // Latest growth notes and pests
+    const latestWithNotes = cropRecords.find(p => p[3] || p[4]);
+    const growthNote = latestWithNotes ? latestWithNotes[3] : null;
+    const pestNote = latestWithNotes ? latestWithNotes[4] : null;
+
+    // Most recent spray event — check plant activity/notes first, then maintenance
+    const sprayPlant = cropRecords.find(p =>
+      SPRAY_RE.test(p[2]||'') || SPRAY_RE.test(p[3]||'') || SPRAY_RE.test(p[6]||''));
+    const sprayMaint = [...D.maintenance]
+      .sort((a,b) => (a[0]||'') > (b[0]||'') ? -1 : 1)
+      .find(m => SPRAY_RE.test((m[3]||'') + (m[5]||'')));
+    const sprayEvent = sprayPlant || sprayMaint;
+    const sprayDate = sprayEvent ? sprayEvent[0] : null;
+    const sprayDaysAgo = sprayDate ? Math.round((today - new Date(sprayDate)) / 864e5) : null;
+    const sprayText = sprayDate
+      ? (sprayDaysAgo === 0 ? 'Sprayed today' : `Last sprayed ${sprayDaysAgo}d ago (${sprayDate})`)
+      : '⚠️ No spray recorded';
+    const sprayCls = !sprayDate ? 'warn' : sprayDaysAgo > 14 ? 'warn' : '';
+
+    // Recent planting/harvest events for this crop
+    const events = cropRecords
+      .filter(p => p[2] && /plant|transplant|harvest/i.test(p[2]))
+      .slice(0, 2)
+      .map(p => `${p[0]}: ${p[2]}`)
+      .join(' · ');
+
+    // Siphon: map by bed index → siphon column (idx 0→S1, idx 1→S2, etc.)
+    const siphCol = (idx % 6) + 2;
+    const recentSiphVals = D.siphons.slice(-10).map(s => s[siphCol]).filter(v => v != null && v > 0);
+    const avgSiph = recentSiphVals.length
+      ? (recentSiphVals.reduce((a,b) => a+b, 0) / recentSiphVals.length).toFixed(1)
+      : null;
+    const siphOk = avgSiph != null && avgSiph >= 15 && avgSiph <= 18;
+    const siphWarn = avgSiph != null && (avgSiph < 12 || (avgSiph > 18 && avgSiph <= 22));
+    const siphBad = avgSiph != null && avgSiph > 22;
+    const siphColor = siphBad ? 'var(--red)' : siphWarn ? 'var(--amber)' : avgSiph ? 'var(--green-mid)' : 'var(--muted)';
+
+    return `<div class="bed-card">
+      <div class="bed-card-head">
+        <div>
+          <div class="bed-card-name">${name}</div>
+          <div class="bed-card-date">${r[0] ? 'Planted ' + r[0] : 'Plant date unknown'} · Bed ${idx+1}</div>
+        </div>
+        <span class="bed-tag ${tagCls}">${tagLabel}</span>
+      </div>
+      <div class="bed-progress">
+        <div class="bed-progress-bar"><div class="bed-progress-fill ${fillCls}" style="width:${pct}%"></div></div>
+        <div class="bed-progress-meta">
+          <span>${daysIn != null ? daysIn + 'd in ground' : 'Unknown'}</span>
+          <span style="color:${harvestColor}">${harvestText} · window ${mn}–${mx}d</span>
+        </div>
+      </div>
+      <div class="bed-metrics">
+        <div class="bed-metric">
+          <div class="bed-metric-val" style="color:${phColor}">${latestPH != null ? (+latestPH).toFixed(2) : '—'}</div>
+          <div class="bed-metric-lbl">System pH</div>
+        </div>
+        <div class="bed-metric">
+          <div class="bed-metric-val" style="color:${tColor}">${latestTemp != null ? latestTemp + '°C' : '—'}</div>
+          <div class="bed-metric-lbl">Water Temp</div>
+        </div>
+        <div class="bed-metric">
+          <div class="bed-metric-val" style="color:${siphColor}">${avgSiph != null ? avgSiph + 'min' : '—'}</div>
+          <div class="bed-metric-lbl">Siphon S${(idx%6)+1}</div>
+        </div>
+      </div>
+      <div class="bed-notes">
+        ${growthNote ? `<div class="bed-note-row"><span class="bed-note-icon">🌿</span><span class="bed-note-label">Growth</span><span class="bed-note-val">${growthNote}</span></div>` : ''}
+        <div class="bed-note-row"><span class="bed-note-icon">🚿</span><span class="bed-note-label">Spray</span><span class="bed-note-val ${sprayCls}">${sprayText}</span></div>
+        <div class="bed-note-row"><span class="bed-note-icon">🐛</span><span class="bed-note-label">Pests</span><span class="bed-note-val ${pestNote ? 'bad' : ''}">${pestNote || 'None recorded'}</span></div>
+        ${events ? `<div class="bed-note-row"><span class="bed-note-icon">📅</span><span class="bed-note-label">Events</span><span class="bed-note-val">${events}</span></div>` : ''}
       </div>
     </div>`;
-  }).join('');
+  }).join('') + '</div>';
 }
 
 // ─── HEALTH SCORECARDS ───────────────────────────────────────────────────────
@@ -1314,11 +1412,6 @@ function renderOverview(){
   renderCropGrid();
   renderHealthRow();
 
-  const wqRecent = filterByDays(D.wq_chart, 30);
-  renderLineChart('ov-ph-chart', wqRecent.map(r=>r[0]), [{label:'pH',data:wqRecent.map(r=>r[2]),color:'#1565C0',fill:false}],
-    {min:6.5,max:8.2,bands:[{from:6.8,to:7.2,color:'rgba(76,175,80,.12)',label:'Ideal'}]});
-
-  renderStepChart('ov-fish-chart', D.stock_chart);
 }
 
 const OPS_SECTIONS = ['water','environment','fish','plants','siphons','maintenance'];
