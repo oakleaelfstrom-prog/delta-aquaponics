@@ -652,30 +652,22 @@ async function saveGSAndSync() {
 
 function updateLiveBadge(state, newChecks=0, errMsg='') {
   const badge = document.getElementById('liveBadge');
-  const panel = document.getElementById('gs-status-panel');
-  const connectBtn = document.getElementById('gs-connect-main');
   if (state === 'connected') {
     badge.className = 'live-badge connected';
     badge.textContent = newChecks > 0 ? `● Live — ${newChecks} new checks` : '● Live — synced';
-    badge.title = 'Connected to Google Sheets · Sheet ID: ' + SHEET_ID.slice(0,20) + '…';
-    panel.style.display = 'block';
-    connectBtn.style.display = 'none';
-    document.getElementById('gs-sheet-label').textContent = 'ID: ' + SHEET_ID.slice(0,20) + '…';
+    badge.title = 'Connected to Google Sheets';
   } else if (state === 'syncing') {
     badge.className = 'live-badge syncing';
     badge.textContent = '⏳ Syncing…';
+    badge.title = '';
   } else if (state === 'error') {
-    badge.className = 'live-badge syncing';
-    badge.textContent = '⚠️ Sync error — tap';
+    badge.className = 'live-badge offline';
+    badge.textContent = '⚠️ Sync error';
     badge.title = errMsg;
-    panel.style.display = 'none';
-    connectBtn.style.display = 'block';
   } else {
     badge.className = 'live-badge offline';
-    badge.textContent = '⚡ Connect Live Data';
+    badge.textContent = '⚡ Live Data';
     badge.title = '';
-    panel.style.display = 'none';
-    connectBtn.style.display = 'block';
   }
 }
 
