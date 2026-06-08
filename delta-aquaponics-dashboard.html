@@ -194,16 +194,6 @@ tr:hover td{background:#FAFBFD}
 </style>
 </head>
 <body>
-<div id="pw-gate">
-  <div class="pw-box">
-    <div class="pw-logo">🌿</div>
-    <h2>Delta Aquaponics</h2>
-    <p>Management Dashboard — enter password to continue</p>
-    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()">
-    <button onclick="checkPw()">Enter</button>
-    <div class="pw-error" id="pw-error">Incorrect password. Please try again.</div>
-  </div>
-</div>
 <div id="loading">Loading dashboard&hellip;</div>
 
 <!-- SIDEBAR -->
@@ -515,17 +505,6 @@ function toggleSidebar(){
   document.getElementById('sidebar-overlay').classList.toggle('open');
 }
 
-// ─── PASSWORD GATE ───────────────────────────────────────────────────────────
-function checkPw(){
-  const val = document.getElementById('pw-input').value;
-  if(val==='lyralea2026'){
-    document.getElementById('pw-gate').classList.add('hidden');
-  } else {
-    document.getElementById('pw-error').style.display='block';
-    document.getElementById('pw-input').value='';
-    document.getElementById('pw-input').focus();
-  }
-}
 
 // ─── GOOGLE SHEETS INTEGRATION ──────────────────────────────────────────────
 let SHEET_ID = '1N0Qr-p_qUGaNVEesDqeSB28zGq6rj2A2U9gNOhohihY';
