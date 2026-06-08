@@ -477,15 +477,9 @@ tr:hover td{background:#FAFBFD}
 
 <script>
 // ─── PASSWORD GATE ───────────────────────────────────────────────────────────
-(function(){
-  if(localStorage.getItem('deltaAuth')==='ok'){
-    document.getElementById('pw-gate').classList.add('hidden');
-  }
-})();
 function checkPw(){
   const val = document.getElementById('pw-input').value;
   if(val==='lyralea2026'){
-    localStorage.setItem('deltaAuth','ok');
     document.getElementById('pw-gate').classList.add('hidden');
   } else {
     document.getElementById('pw-error').style.display='block';
