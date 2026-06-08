@@ -175,13 +175,45 @@ tr:hover td{background:#F6FAF6}
 #drill-body{overflow-y:auto;flex:1}
 
 /* ALERTS */
-.alert{position:relative;padding-right:36px}
+.alert{position:relative;padding-right:36px;cursor:pointer}
 .alert-x{position:absolute;top:8px;right:10px;background:transparent;border:none;cursor:pointer;font-size:16px;line-height:1;color:inherit;opacity:.45;padding:2px 4px}
 .alert-x:hover{opacity:1}
 .alert-group{margin-bottom:4px}
 .alert-group-label{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:12px;padding-left:2px}
 .alert-group-label:first-child{margin-top:0}
-.alert.stale{opacity:.55}
+.alert.stale{opacity:.65}
+.alert-unseen-dot{display:inline-block;width:8px;height:8px;background:#FFC107;border-radius:50%;margin-right:6px;flex-shrink:0;margin-top:5px;box-shadow:0 0 0 2px rgba(255,193,7,.25);animation:pulse-dot 1.6s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 2px rgba(255,193,7,.25)}50%{box-shadow:0 0 0 5px rgba(255,193,7,.1)}}
+.alert-history-toggle{display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;width:100%;text-align:left;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;margin-top:4px;margin-bottom:2px}
+.alert-history-toggle:hover{background:var(--bg);color:var(--text)}
+.alert-history-toggle .hist-arrow{margin-left:auto;font-size:10px;transition:transform .2s}
+.alert-history-toggle.open .hist-arrow{transform:rotate(90deg)}
+.alert-history-panel{display:none;padding:6px 0 0}
+.alert-history-panel.open{display:block}
+/* BACK BUTTON */
+#back-btn{background:rgba(255,255,255,.12);border:none;cursor:pointer;padding:6px 10px;border-radius:6px;color:rgba(255,255,255,.85);font-size:13px;display:none;align-items:center;gap:5px;flex-shrink:0;transition:background .15s}
+#back-btn:hover{background:rgba(255,255,255,.2)}
+#back-btn.visible{display:flex}
+/* PHASE TIMELINE */
+.phase-tl{padding:8px 0}
+.phase-tl-item{display:flex;gap:14px;padding:10px 16px;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s;position:relative}
+.phase-tl-item:hover{background:var(--bg)}
+.phase-tl-item.active{background:var(--green-pale)}
+.phase-tl-spine{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:28px}
+.phase-tl-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:#fff;z-index:1;flex-shrink:0;margin-top:4px}
+.phase-tl-dot.current{border-color:var(--green-mid);background:var(--green-mid);box-shadow:0 0 0 3px rgba(46,125,50,.2)}
+.phase-tl-dot.done{border-color:var(--muted);background:var(--muted)}
+.phase-tl-dot.future{border-color:var(--border);background:#fff}
+.phase-tl-line{flex:1;width:2px;background:var(--border);margin-top:2px;min-height:24px}
+.phase-tl-info{flex:1}
+.phase-tl-name{font-size:13px;font-weight:700;color:var(--text)}
+.phase-tl-dates{font-size:11px;color:var(--muted);margin-top:2px}
+.phase-tl-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-block;margin-top:4px}
+.phase-tl-detail{background:var(--card);border-left:3px solid var(--border);border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin:0 16px 10px 42px;padding:12px 14px;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.phase-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.phase-detail-col h4{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.phase-detail-col ul{margin:0;padding:0 0 0 14px;font-size:12px;color:var(--text);line-height:1.7}
 
 /* PERIOD SELECTOR */
 .period-row{display:flex;gap:8px;margin-bottom:16px}
@@ -265,12 +297,7 @@ tr:hover td{background:#F6FAF6}
     <button class="nav-link" data-section="siphons"><span class="icon">⚙️</span>Siphons</button>
     <button class="nav-link" data-section="maintenance"><span class="icon">🔧</span>Maintenance</button>
   </div>
-  <div class="drawer-cat" onclick="toggleCat(this)">
-    <span>📋 Phase Plan</span><span class="cat-arrow">▶</span>
-  </div>
-  <div class="drawer-items">
-    <button class="nav-link" data-section="phases"><span class="icon">📅</span>Timeline</button>
-  </div>
+  <button class="nav-link" data-section="phases" style="padding-left:16px;border-top:1px solid rgba(255,255,255,.06)"><span class="icon">📅</span>Timeline</button>
 </div>
 
 <!-- DRILL-DOWN MODAL -->
@@ -288,6 +315,7 @@ tr:hover td{background:#F6FAF6}
 <!-- TOP NAV -->
 <div id="topnav">
   <button id="hamburger" onclick="toggleDrawer()"><span></span><span></span><span></span></button>
+  <button id="back-btn" onclick="navBack()">‹ Back</button>
   <div class="brand">Delta Aquaponics<small>Delta Eco Concerns · Botswana</small></div>
   <span id="current-section">Overview</span>
   <div class="topnav-right">
@@ -501,15 +529,14 @@ tr:hover td{background:#F6FAF6}
   <!-- PHASES -->
   <div class="section" id="sec-phases">
     <div class="section-header">
-      <h2>Phase Plan</h2>
-      <p>Six-phase operational roadmap — June 2026 through September 2026+.</p>
+      <h2>Timeline</h2>
+      <p>Six-phase operational roadmap — June 2026 through Sept 2026+</p>
     </div>
     <div id="current-phase-banner"></div>
     <div class="card">
-      <div class="card-header"><h3>Phase Timeline</h3></div>
-      <div class="gantt" id="gantt"></div>
+      <div class="card-header"><h3>Phases — tap to expand</h3></div>
+      <div class="phase-tl" id="phase-tl"></div>
     </div>
-    <div class="grid-2" id="phase-cards"></div>
   </div>
 
 
@@ -819,8 +846,20 @@ let currentPeriod = 'day';
 const sectionTitles = {
   overview:'Overview', water:'Water Quality', environment:'Environment',
   fish:'Fish', plants:'Plants', siphons:'Siphons', maintenance:'Maintenance',
-  phases:'Phase Plan'
+  phases:'Timeline'
 };
+let navStack = [];
+function navBack(){
+  if(navStack.length < 2) return;
+  navStack.pop();
+  const prev = navStack.pop();
+  navTo(prev);
+}
+function updateBackBtn(){
+  const btn = document.getElementById('back-btn');
+  if(navStack.length >= 2) btn.classList.add('visible');
+  else btn.classList.remove('visible');
+}
 function toggleDrawer(){
   document.getElementById('drawer').classList.toggle('open');
   document.getElementById('drawer-overlay').classList.toggle('open');
@@ -847,6 +886,9 @@ document.querySelectorAll('.nav-link').forEach(btn => {
     document.getElementById('drawer').classList.remove('open');
     document.getElementById('drawer-overlay').classList.remove('open');
     if(OPS_SECTIONS && OPS_SECTIONS.includes(sec)) renderOpsNav(sec);
+    navStack.push(sec);
+    if(navStack.length > 20) navStack.shift();
+    updateBackBtn();
     window.scrollTo(0,0);
   });
 });
@@ -902,12 +944,21 @@ function closeDrillDown(){
 }
 
 // ─── ALERT SYSTEM ────────────────────────────────────────────────────────────
-const dismissedAlerts = new Set(JSON.parse(sessionStorage.getItem('dimAlerts')||'[]'));
-function dismissAlert(id){
-  dismissedAlerts.add(id);
-  sessionStorage.setItem('dimAlerts', JSON.stringify([...dismissedAlerts]));
-  const el = document.getElementById('al-'+id); if(el) el.remove();
-  document.querySelectorAll('.alert-group').forEach(g=>{ if(!g.querySelector('.alert')) g.remove(); });
+const archivedAlerts = new Set(JSON.parse(sessionStorage.getItem('archAlerts')||'[]'));
+const seenAlerts = new Set(JSON.parse(sessionStorage.getItem('seenAlerts')||'[]'));
+function archiveAlert(id,e){
+  if(e){e.stopPropagation();}
+  archivedAlerts.add(id); seenAlerts.add(id);
+  sessionStorage.setItem('archAlerts', JSON.stringify([...archivedAlerts]));
+  sessionStorage.setItem('seenAlerts', JSON.stringify([...seenAlerts]));
+  renderAlerts();
+}
+function markAlertSeen(id){
+  if(seenAlerts.has(id)) return;
+  seenAlerts.add(id);
+  sessionStorage.setItem('seenAlerts', JSON.stringify([...seenAlerts]));
+  const dot = document.querySelector(`#al-${id} .alert-unseen-dot`);
+  if(dot) dot.remove();
 }
 function computeAlerts(){
   const s = D.stats; const alerts = [];
@@ -925,17 +976,41 @@ function computeAlerts(){
 }
 function renderAlerts(){
   const alerts = computeAlerts();
-  const active = alerts.filter(a=>a.active&&!dismissedAlerts.has(a.id));
-  const old = alerts.filter(a=>!a.active&&!dismissedAlerts.has(a.id));
-  const mkAlert = a => `<div class="alert ${a.cls}${a.active?'':' stale'}" id="al-${a.id}">
+  const active = alerts.filter(a=>a.active && !archivedAlerts.has(a.id));
+  const history = [
+    ...alerts.filter(a=>!a.active && !archivedAlerts.has(a.id)),
+    ...alerts.filter(a=>a.active && archivedAlerts.has(a.id))
+  ];
+  const mkActive = a => {
+    const unseen = !seenAlerts.has(a.id);
+    return `<div class="alert ${a.cls}" id="al-${a.id}" onclick="markAlertSeen('${a.id}')">
+      ${unseen?`<div class="alert-unseen-dot"></div>`:''}
+      <span class="alert-icon">${a.icon}</span>
+      <div><strong>${a.title}</strong> — ${a.msg}</div>
+      <button class="alert-x" onclick="archiveAlert('${a.id}',event)" title="Move to history">✕</button>
+    </div>`;
+  };
+  const mkHistory = a => `<div class="alert ${a.cls} stale" id="alh-${a.id}">
     <span class="alert-icon">${a.icon}</span>
     <div><strong>${a.title}</strong> — ${a.msg}</div>
-    <button class="alert-x" onclick="dismissAlert('${a.id}')" title="Dismiss">✕</button>
   </div>`;
   let html = '';
-  if(active.length) html += `<div class="alert-group"><div class="alert-group-label">Active Alerts</div>${active.map(mkAlert).join('')}</div>`;
-  if(old.length) html += `<div class="alert-group"><div class="alert-group-label">Alert History</div>${old.map(mkAlert).join('')}</div>`;
+  if(active.length) html += `<div class="alert-group">${active.map(mkActive).join('')}</div>`;
+  if(history.length){
+    const histOpen = sessionStorage.getItem('histOpen')==='1';
+    html += `<button class="alert-history-toggle${histOpen?' open':''}" onclick="toggleAlertHistory(this)" id="hist-toggle">
+      📂 Alert History (${history.length})<span class="hist-arrow">▶</span>
+    </button>
+    <div class="alert-history-panel${histOpen?' open':''}" id="hist-panel">${history.map(mkHistory).join('')}</div>`;
+  }
+  if(!active.length && !history.length) html = '';
   document.getElementById('alerts-area').innerHTML = html;
+}
+function toggleAlertHistory(btn){
+  const panel = document.getElementById('hist-panel');
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  sessionStorage.setItem('histOpen', open?'1':'0');
 }
 
 // ─── PERIOD SUMMARY ──────────────────────────────────────────────────────────
@@ -1099,6 +1174,9 @@ function navTo(sec){
   showSection(sec);
   document.getElementById('current-section').textContent = sectionTitles[sec] || sec;
   if(OPS_SECTIONS.includes(sec)) renderOpsNav(sec);
+  navStack.push(sec);
+  if(navStack.length > 20) navStack.shift();
+  updateBackBtn();
   window.scrollTo(0,0);
 }
 
@@ -1343,54 +1421,79 @@ function renderMaintenance(){
 }
 
 // ─── PHASES ──────────────────────────────────────────────────────────────────
-function renderPhases(){
-  const phases = [
-    {name:'1A — Guide Absorption',start:'2026-06-07',end:'2026-06-17',color:'#2E7D32',desc:'Team reads and understands all farm guides. Daily check routines established.',current:true},
-    {name:'1B — Fix the Foundation',start:'2026-06-10',end:'2026-06-24',color:'#1565C0',desc:'System calibration, fish counting, pH stabilisation target 6.8–7.2.'},
-    {name:'2 — System Stabilising',start:'2026-06-24',end:'2026-07-22',color:'#6A1B9A',desc:'Operational verification, consistent Monday reports, Row 6 decision.'},
-    {name:'3 — Pilot Study',start:'2026-07-22',end:'2026-08-12',color:'#00838F',desc:'First harvests, lodge deliveries begin, community engagement.'},
-    {name:'4 — Business Development',start:'2026-07-15',end:'2026-08-26',color:'#F57F17',desc:'Marketing, pricing, website launch, revenue targets.'},
-    {name:'5 — Training Programme',start:'2026-09-01',end:'2026-11-30',color:'#E65100',desc:'Revenue-generating courses, regional knowledge transfer.'},
-  ];
-
-  document.getElementById('current-phase-banner').innerHTML = `
-    <div class="alert good"><span class="alert-icon">✅</span><div><strong>Currently Active: Phase 1A — Guide Absorption</strong> (Jun 7–17, 2026) — Team is working through the farm guides. Next phase begins Jun 10 when foundation work overlaps.</div></div>`;
-
-  // Build Gantt
-  const startDate = new Date('2026-06-07');
-  const endDate   = new Date('2026-12-01');
-  const totalDays = (endDate-startDate)/864e5;
+const PHASES = [
+  {id:'p1a',name:'Phase 1A — Guide Absorption',start:'2026-06-07',end:'2026-06-17',color:'#2E7D32',status:'current',
+   desc:'Team reads and understands all farm guides. Daily check routines established.',
+   goals:['Every team member has read the full Team Guide','Daily morning/midday/evening checks logged consistently','pH, water temp and siphon data entered each check'],
+   todos:['Read Delta Aquaponics Team Guide (all sections)','Set up daily check reminder schedule','Practice filling in the Google Form for each check type','Verify all 6 siphons are functioning and timed']},
+  {id:'p1b',name:'Phase 1B — Fix the Foundation',start:'2026-06-10',end:'2026-06-24',color:'#1565C0',status:'current',
+   desc:'System calibration, fish counting, pH stabilisation.',
+   goals:['pH stabilised in 6.8–7.2 range for 7 consecutive days','Accurate fish count confirmed','All siphons cycling within 15–18 min target','Row 6 decision made (fish or remove)'],
+   todos:['Count fish in each tank section','Calibrate pH meter (3-point calibration)','Adjust pH using pH-down if consistently above 7.2','Time each siphon cycle and adjust inflow valves as needed','Inspect and repair any broken grow pipes']},
+  {id:'p2',name:'Phase 2 — System Stabilising',start:'2026-06-24',end:'2026-07-22',color:'#6A1B9A',status:'upcoming',
+   desc:'Operational verification, consistent Monday reports, Row 6 decision.',
+   goals:['First Monday Report submitted','System running stably for 4+ weeks','Plant germination and transplant schedule confirmed','Water quality within all target ranges'],
+   todos:['Submit weekly Monday reports every week','Transplant seedlings into grow beds on schedule','Monitor plant health and document growth stages','Establish fish feeding log with quantities']},
+  {id:'p3',name:'Phase 3 — Pilot Study',start:'2026-07-22',end:'2026-08-12',color:'#00838F',status:'future',
+   desc:'First harvests, lodge deliveries begin, community engagement.',
+   goals:['First lettuce harvest completed and delivered','Lodge supply relationship established','Harvest yield data documented','Community demonstration visit conducted'],
+   todos:['Harvest first batch of lettuce (check variety harvest windows)','Deliver to Cresta Riley\'s Lodge — confirm order quantity','Document harvest weight, quality and variety','Invite community members for farm tour']},
+  {id:'p4',name:'Phase 4 — Business Development',start:'2026-07-15',end:'2026-08-26',color:'#F57F17',status:'future',
+   desc:'Marketing, pricing, website launch, revenue targets.',
+   goals:['Price list finalised for all produce','Website or social media presence launched','At least 2 regular customers confirmed','Monthly revenue target set and tracked'],
+   todos:['Create product price list (lettuce, fish, seedlings)','Set up Facebook/Instagram for Delta Aquaponics','Approach lodges, restaurants and retailers in Maun','Track monthly income vs. target in the ledger']},
+  {id:'p5',name:'Phase 5 — Training Programme',start:'2026-09-01',end:'2026-11-30',color:'#E65100',status:'future',
+   desc:'Revenue-generating courses, regional knowledge transfer.',
+   goals:['First paid training course delivered','Training curriculum documented','At least 5 students complete the programme','Course materials translated if needed'],
+   todos:['Develop 2-day aquaponics training curriculum','Price and advertise the training course','Book first intake of 5–10 students','Document all farm systems as teaching materials']},
+];
+let activePhaseId = null;
+function togglePhaseDetail(id){
+  activePhaseId = activePhaseId===id ? null : id;
+  renderPhaseTimeline();
+}
+function renderPhaseTimeline(){
   const today = new Date('2026-06-08');
-  const todayPct = Math.min(100, Math.max(0,(today-startDate)/864e5/totalDays*100));
-
-  const ganttHtml = phases.map(p=>{
-    const ps = new Date(p.start), pe = new Date(p.end);
-    const left = Math.max(0,(ps-startDate)/864e5/totalDays*100);
-    const width = Math.min(100-left,(pe-ps)/864e5/totalDays*100);
-    return `<div class="gantt-row">
-      <div class="gantt-label">${p.name}</div>
-      <div class="gantt-track">
-        <div class="gantt-today" style="left:${todayPct}%"><div class="gantt-today-label">Today</div></div>
-        <div class="gantt-bar ${p.current?'phase-current':''}" style="left:${left}%;width:${width}%;background:${p.color}">${p.name.split('—')[0].trim()}</div>
+  const tl = document.getElementById('phase-tl');
+  tl.innerHTML = PHASES.map((p,i)=>{
+    const isLast = i===PHASES.length-1;
+    const isActive = activePhaseId===p.id;
+    const dotCls = p.status==='current'?'current':p.status==='upcoming'?'future':'future';
+    const badge = p.status==='current'?`<span class="badge good" style="font-size:9px">Active now</span>`:p.status==='upcoming'?`<span class="badge warn" style="font-size:9px">Starting soon</span>`:'';
+    const itemHtml = `<div class="phase-tl-item${isActive?' active':''}" onclick="togglePhaseDetail('${p.id}')">
+      <div class="phase-tl-spine">
+        <div class="phase-tl-dot ${dotCls}" style="${p.status==='current'?`border-color:${p.color};background:${p.color}`:''}"></div>
+        ${!isLast?'<div class="phase-tl-line"></div>':''}
       </div>
+      <div class="phase-tl-info">
+        <div class="phase-tl-name" style="color:${p.status==='future'?'var(--muted)':p.color}">${p.name}</div>
+        <div class="phase-tl-dates">${p.start} → ${p.end}</div>
+        <div style="margin-top:4px">${badge}</div>
+      </div>
+      <div style="color:var(--muted);font-size:16px;align-self:center;flex-shrink:0">${isActive?'▾':'▸'}</div>
     </div>`;
+    const detailHtml = isActive ? `<div class="phase-tl-detail" style="border-color:${p.color}">
+      <p style="font-size:13px;color:var(--text);margin-bottom:10px">${p.desc}</p>
+      <div class="phase-detail-grid">
+        <div class="phase-detail-col">
+          <h4>Goals</h4>
+          <ul>${p.goals.map(g=>`<li>${g}</li>`).join('')}</ul>
+        </div>
+        <div class="phase-detail-col">
+          <h4>To-Dos</h4>
+          <ul>${p.todos.map(t=>`<li>${t}</li>`).join('')}</ul>
+        </div>
+      </div>
+    </div>` : '';
+    return itemHtml + detailHtml;
   }).join('');
-  document.getElementById('gantt').innerHTML = `
-    <div style="margin-bottom:10px;font-size:11px;color:var(--muted)">Jun 2026 &nbsp;→&nbsp; Dec 2026 (6 months)</div>
-    ${ganttHtml}
-    <div style="margin-top:12px;font-size:11px;color:var(--muted)">Today: June 8, 2026 · Red line = today</div>`;
-
-  document.getElementById('phase-cards').innerHTML = phases.map(p=>`
-    <div class="card">
-      <div class="card-header" style="border-left:4px solid ${p.color}">
-        <h3 style="color:${p.color}">Phase ${p.name}</h3>
-        ${p.current?'<span class="badge good">Active</span>':''}
-      </div>
-      <div class="card-body">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${p.start} → ${p.end}</div>
-        <p style="font-size:13px;color:var(--text)">${p.desc}</p>
-      </div>
-    </div>`).join('');
+}
+function renderPhases(){
+  const currentPhases = PHASES.filter(p=>p.status==='current');
+  document.getElementById('current-phase-banner').innerHTML = currentPhases.length
+    ? `<div class="alert good"><span class="alert-icon">✅</span><div><strong>Active: ${currentPhases.map(p=>p.name).join(' & ')}</strong> — Tap any phase below to see goals and to-dos.</div></div>`
+    : '';
+  renderPhaseTimeline();
 }
 
 // ─── FINANCIALS ─────────────────────────────────────────────────────────────
