@@ -245,7 +245,9 @@ tr:hover td{background:#F6FAF6}
 
 /* BED CARDS */
 .bed-list{display:flex;flex-direction:column;gap:12px;padding:0 12px 16px}
-.bed-card{background:var(--bg);border-radius:var(--radius-sm);border:1.5px solid var(--border);overflow:hidden}
+.bed-card{background:var(--bg);border-radius:var(--radius-sm);border:1.5px solid var(--border);overflow:hidden;cursor:pointer;transition:transform .13s,box-shadow .13s}
+.bed-card:hover{transform:translateY(-2px);box-shadow:0 4px 18px rgba(0,0,0,.1)}
+.bed-card:active{transform:scale(.98)}
 .bed-card-head{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 12px 0}
 .bed-card-name{font-size:14px;font-weight:800;color:var(--text)}
 .bed-card-date{font-size:10px;color:var(--muted);margin-top:2px}
@@ -391,12 +393,12 @@ tr:hover td{background:#F6FAF6}
     </div>
     <div class="summary-grid" id="period-summary"></div>
     <div class="card">
-      <div class="card-header"><h3>🌱 Growing Beds</h3><span id="crop-count" style="font-size:11px;color:var(--muted)"></span></div>
-      <div id="crop-grid"></div>
-    </div>
-    <div class="card">
       <div class="card-header"><h3>System Health</h3><span style="font-size:11px;color:var(--muted)">Tap any card to drill down</span></div>
       <div class="health-grid" id="health-row"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>🌱 Growing Beds</h3><span id="crop-count" style="font-size:11px;color:var(--muted)"></span></div>
+      <div id="crop-grid"></div>
     </div>
   </div>
 
@@ -1020,6 +1022,85 @@ function closeDrillDown(){
   document.body.style.overflow = '';
 }
 
+function openBedDrillDown(cropName, bedIdx){
+  const today = new Date();
+  const nameLower = cropName.toLowerCase();
+  const siphRow = (bedIdx % 6) + 1; // S1–S6
+
+  // All plant records for this crop, newest first
+  const cropRecords = [...D.plants]
+    .filter(p => p[1] && p[1].toLowerCase() === nameLower)
+    .sort((a,b) => (a[0]||'') > (b[0]||'') ? -1 : 1);
+
+  // Latest Monday report — bed observation for this index
+  const latestMonday = D.monday && D.monday.length ? D.monday[D.monday.length-1] : null;
+  const bedObs = latestMonday && latestMonday.beds && latestMonday.beds[bedIdx] || null;
+
+  // Siphon history for this row
+  const siphCol = bedIdx % 6 + 2;
+  const siphHistory = [...D.siphons].reverse().slice(0, 20)
+    .filter(s => s[siphCol] != null);
+
+  const SPRAY_RE = /spray|neem|foliar|pesticide|treat/i;
+
+  // Build HTML
+  const mondaySection = bedObs ? `
+    <div style="background:rgba(76,175,80,.08);border-radius:8px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--green-dark);margin-bottom:4px">📋 Monday Report — This Week</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.5">${bedObs}</div>
+      ${latestMonday.siphons ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">Siphons: ${latestMonday.siphons}</div>` : ''}
+      ${latestMonday.waterReadings ? `<div style="font-size:11px;color:var(--muted)">Water: ${latestMonday.waterReadings}</div>` : ''}
+    </div>` : `
+    <div style="background:rgba(0,0,0,.04);border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:11px;color:var(--muted)">
+      No Monday Report submitted this week yet.
+    </div>`;
+
+  const siphSection = siphHistory.length ? `
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">Siphon S${siphRow} — Last ${siphHistory.length} readings</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${siphHistory.map(s=>{
+          const v = s[siphCol];
+          const ok = v>=15&&v<=18, warn = v>18&&v<=22, bad = v>22||v<12;
+          const c = bad?'var(--red)':warn?'var(--amber)':'var(--green-mid)';
+          return `<div style="background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;text-align:center">
+            <div style="font-weight:700;color:${c}">${v}m</div>
+            <div style="font-size:9px;color:var(--muted)">${(s[0]||'').slice(5)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  const timelineRows = cropRecords.map(r => {
+    const isSpray = SPRAY_RE.test(r[2]||'') || SPRAY_RE.test(r[3]||'') || SPRAY_RE.test(r[6]||'');
+    const icon = r[5] ? '🏁' : isSpray ? '🚿' : /plant|transplant/i.test(r[2]||'') ? '🌱' : /harvest/i.test(r[2]||'') ? '🥬' : '📝';
+    return `<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:16px;flex-shrink:0;margin-top:1px">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${r[2]||'Note'}</div>
+          <div style="font-size:10px;color:var(--muted);flex-shrink:0;margin-left:8px">${r[0]||''}</div>
+        </div>
+        ${r[3] ? `<div style="font-size:11px;color:var(--grey);margin-top:2px">${r[3]}</div>` : ''}
+        ${r[4] ? `<div style="font-size:11px;color:var(--red);margin-top:2px">⚠️ Pests: ${r[4]}</div>` : ''}
+        ${r[5] ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">Harvested: ${r[5]}</div>` : ''}
+        ${r[6] ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${r[6]}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('drill-title').textContent = `${cropName} — Bed ${bedIdx+1} (S${siphRow})`;
+  document.getElementById('drill-body').innerHTML = `
+    <div style="padding:14px">
+      ${mondaySection}
+      ${siphSection}
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px">Plant Record History</div>
+      ${timelineRows || '<div style="font-size:12px;color:var(--muted);padding:8px 0">No records for this crop yet.</div>'}
+    </div>`;
+  document.getElementById('drill-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
 // ─── ALERT SYSTEM ────────────────────────────────────────────────────────────
 const archivedAlerts = new Set(JSON.parse(localStorage.getItem('archAlerts')||'[]'));
 const seenAlerts = new Set(JSON.parse(localStorage.getItem('seenAlerts')||'[]'));
@@ -1224,7 +1305,7 @@ function renderCropGrid(){
     const siphBad = avgSiph != null && avgSiph > 22;
     const siphColor = siphBad ? 'var(--red)' : siphWarn ? 'var(--amber)' : avgSiph ? 'var(--green-mid)' : 'var(--muted)';
 
-    return `<div class="bed-card">
+    return `<div class="bed-card" onclick="openBedDrillDown(${JSON.stringify(name)},${idx})">
       <div class="bed-card-head">
         <div>
           <div class="bed-card-name">${name}</div>
@@ -1374,6 +1455,12 @@ function renderExecutiveSummary(){
           ${latestReport.needs ? row({label:'NEEDS',val:latestReport.needs,cls:'highlight'}) : ''}
           ${latestReport.fishBehaviour ? row({label:'FISH',val:latestReport.fishBehaviour}) : ''}
           ${latestReport.siphons ? row({label:'SIPHONS',val:latestReport.siphons}) : ''}
+          ${latestReport.waterReadings ? row({label:'WATER',val:latestReport.waterReadings}) : ''}
+          ${Array.isArray(latestReport.beds) ? latestReport.beds.map((b,i)=>b?row({label:'BED '+(i+1),val:b}):'').join('') : ''}
+          ${latestReport.taste ? row({label:'TASTE TEST',val:latestReport.taste}) : ''}
+          ${latestReport.harvest ? row({label:'HARVEST WATCH',val:latestReport.harvest}) : ''}
+          ${latestReport.tomatoes ? row({label:'TOMATOES',val:latestReport.tomatoes}) : ''}
+          ${latestReport.otherCrops ? row({label:'OTHER CROPS',val:latestReport.otherCrops}) : ''}
         </div>
       </div>`;
   } else {
