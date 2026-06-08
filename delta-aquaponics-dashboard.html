@@ -1314,7 +1314,7 @@ function renderCropGrid(){
     const siphBad = avgSiph != null && avgSiph > 22;
     const siphColor = siphBad ? 'var(--red)' : siphWarn ? 'var(--amber)' : avgSiph ? 'var(--green-mid)' : 'var(--muted)';
 
-    return `<div class="bed-card" onclick="openBedDrillDown(${JSON.stringify(name)},${idx})">
+    return `<div class="bed-card" onclick="openBedDrillDown(${JSON.stringify(name).replace(/"/g,'&quot;')},${idx})">
       <div class="bed-card-head">
         <div>
           <div class="bed-card-name">${name}</div>
