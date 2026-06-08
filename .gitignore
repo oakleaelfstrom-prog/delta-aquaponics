@@ -1,0 +1,5 @@
+.DS_Store
+*.xlsx
+*.docx
+.claude/
+delta_aquaponics_setup.gs
