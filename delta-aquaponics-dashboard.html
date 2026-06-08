@@ -1228,7 +1228,16 @@ function renderCropGrid(){
     const k = r[1].toLowerCase().split(' ').slice(0,2).join(' ');
     byType[k] = r;
   });
-  const items = Object.values(byType).filter(r=>!r[5]).slice(0,8);
+  const items = Object.values(byType).filter(r=>!r[5]).sort((a,b)=>{
+    const today = new Date();
+    const pct = r => {
+      const wKey = Object.keys(HARVEST_WINDOWS).find(k=>(r[1]||'').toLowerCase().includes(k))||'lettuce';
+      const mx = HARVEST_WINDOWS[wKey][1];
+      const d = r[0] ? Math.round((today-new Date(r[0]))/864e5) : 0;
+      return Math.min(100, Math.round(d/mx*100));
+    };
+    return pct(b) - pct(a);
+  }).slice(0,8);
 
   if(!items.length){
     grid.innerHTML = '<p style="color:var(--muted);font-size:12px;padding:16px">No active crops recorded yet.</p>';
