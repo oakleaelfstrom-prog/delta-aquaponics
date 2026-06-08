@@ -616,22 +616,30 @@ async function saveGSAndSync() {
   }
 }
 
-function updateLiveBadge(state) {
+function updateLiveBadge(state, newChecks=0, errMsg='') {
   const badge = document.getElementById('liveBadge');
   const panel = document.getElementById('gs-status-panel');
   const connectBtn = document.getElementById('gs-connect-main');
   if (state === 'connected') {
     badge.className = 'live-badge connected';
-    badge.textContent = '● Live — Google Sheets';
+    badge.textContent = newChecks > 0 ? `● Live — ${newChecks} new checks` : '● Live — synced';
+    badge.title = 'Connected to Google Sheets · Sheet ID: ' + SHEET_ID.slice(0,20) + '…';
     panel.style.display = 'block';
     connectBtn.style.display = 'none';
     document.getElementById('gs-sheet-label').textContent = 'ID: ' + SHEET_ID.slice(0,20) + '…';
   } else if (state === 'syncing') {
     badge.className = 'live-badge syncing';
     badge.textContent = '⏳ Syncing…';
+  } else if (state === 'error') {
+    badge.className = 'live-badge syncing';
+    badge.textContent = '⚠️ Sync error — tap';
+    badge.title = errMsg;
+    panel.style.display = 'none';
+    connectBtn.style.display = 'block';
   } else {
     badge.className = 'live-badge offline';
     badge.textContent = '⚡ Connect Live Data';
+    badge.title = '';
     panel.style.display = 'none';
     connectBtn.style.display = 'block';
   }
@@ -825,11 +833,11 @@ async function autoLoadGS() {
   try {
     D = await fetchGoogleSheetsData(SHEET_ID);
     renderAll();
-    updateLiveBadge('connected');
+    const newChecks = D.wq.filter(r => r[0] >= new Date().toISOString().slice(0,8)+'01').length;
+    updateLiveBadge('connected', newChecks);
   } catch(e) {
-    console.warn('Google Sheets auto-sync failed:', e.message);
-    updateLiveBadge('offline');
-    SHEET_ID = '';
+    console.warn('Google Sheets sync failed:', e.message);
+    updateLiveBadge('error', 0, e.message);
   }
 }
 
