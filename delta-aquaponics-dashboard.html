@@ -664,19 +664,19 @@ function updateLiveBadge(state, newChecks=0, errMsg='') {
   const badge = document.getElementById('liveBadge');
   if (state === 'connected') {
     badge.className = 'live-badge connected';
-    badge.textContent = newChecks > 0 ? `● Live — ${newChecks} new checks` : '● Live — synced';
-    badge.title = 'Connected to Google Sheets';
+    badge.textContent = 'Live';
+    badge.title = newChecks > 0 ? `${newChecks} new checks` : 'Connected to Google Sheets';
   } else if (state === 'syncing') {
     badge.className = 'live-badge syncing';
-    badge.textContent = '⏳ Syncing…';
+    badge.textContent = 'Syncing…';
     badge.title = '';
   } else if (state === 'error') {
     badge.className = 'live-badge offline';
-    badge.textContent = '⚠️ Sync error';
+    badge.textContent = '⚠️ Error';
     badge.title = errMsg;
   } else {
     badge.className = 'live-badge offline';
-    badge.textContent = '⚡ Live Data';
+    badge.textContent = '⚡ Live';
     badge.title = '';
   }
 }
