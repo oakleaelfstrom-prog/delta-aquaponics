@@ -944,19 +944,19 @@ function closeDrillDown(){
 }
 
 // ─── ALERT SYSTEM ────────────────────────────────────────────────────────────
-const archivedAlerts = new Set(JSON.parse(sessionStorage.getItem('archAlerts')||'[]'));
-const seenAlerts = new Set(JSON.parse(sessionStorage.getItem('seenAlerts')||'[]'));
+const archivedAlerts = new Set(JSON.parse(localStorage.getItem('archAlerts')||'[]'));
+const seenAlerts = new Set(JSON.parse(localStorage.getItem('seenAlerts')||'[]'));
 function archiveAlert(id,e){
   if(e){e.stopPropagation();}
   archivedAlerts.add(id); seenAlerts.add(id);
-  sessionStorage.setItem('archAlerts', JSON.stringify([...archivedAlerts]));
-  sessionStorage.setItem('seenAlerts', JSON.stringify([...seenAlerts]));
+  localStorage.setItem('archAlerts', JSON.stringify([...archivedAlerts]));
+  localStorage.setItem('seenAlerts', JSON.stringify([...seenAlerts]));
   renderAlerts();
 }
 function markAlertSeen(id){
   if(seenAlerts.has(id)) return;
   seenAlerts.add(id);
-  sessionStorage.setItem('seenAlerts', JSON.stringify([...seenAlerts]));
+  localStorage.setItem('seenAlerts', JSON.stringify([...seenAlerts]));
   const dot = document.querySelector(`#al-${id} .alert-unseen-dot`);
   if(dot) dot.remove();
 }
@@ -997,7 +997,7 @@ function renderAlerts(){
   let html = '';
   if(active.length) html += `<div class="alert-group">${active.map(mkActive).join('')}</div>`;
   if(history.length){
-    const histOpen = sessionStorage.getItem('histOpen')==='1';
+    const histOpen = localStorage.getItem('histOpen')==='1';
     html += `<button class="alert-history-toggle${histOpen?' open':''}" onclick="toggleAlertHistory(this)" id="hist-toggle">
       📂 Alert History (${history.length})<span class="hist-arrow">▶</span>
     </button>
@@ -1010,7 +1010,7 @@ function toggleAlertHistory(btn){
   const panel = document.getElementById('hist-panel');
   const open = panel.classList.toggle('open');
   btn.classList.toggle('open', open);
-  sessionStorage.setItem('histOpen', open?'1':'0');
+  localStorage.setItem('histOpen', open?'1':'0');
 }
 
 // ─── PERIOD SUMMARY ──────────────────────────────────────────────────────────
