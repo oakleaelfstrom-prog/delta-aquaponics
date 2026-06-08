@@ -151,9 +151,31 @@ tr:hover td{background:#FAFBFD}
 ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
 /* LOADING */
 #loading{position:fixed;inset:0;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;z-index:999;font-size:16px;font-weight:600;color:var(--green-mid)}
+/* PASSWORD GATE */
+#pw-gate{position:fixed;inset:0;background:#1C3A2A;z-index:9999;display:flex;align-items:center;justify-content:center}
+#pw-gate.hidden{display:none}
+.pw-box{background:#fff;border-radius:16px;padding:40px 36px;width:90%;max-width:380px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.3)}
+.pw-box .pw-logo{font-size:36px;margin-bottom:12px}
+.pw-box h2{font-size:20px;font-weight:800;color:#1C3A2A;margin-bottom:4px}
+.pw-box p{font-size:13px;color:#64748B;margin-bottom:24px}
+.pw-box input{width:100%;padding:12px 16px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:15px;text-align:center;letter-spacing:.1em;outline:none;transition:border .15s}
+.pw-box input:focus{border-color:#2E7D32}
+.pw-box button{width:100%;margin-top:12px;padding:12px;background:#2E7D32;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
+.pw-box button:hover{background:#43A047}
+.pw-box .pw-error{color:#B71C1C;font-size:12px;margin-top:10px;display:none}
 </style>
 </head>
 <body>
+<div id="pw-gate">
+  <div class="pw-box">
+    <div class="pw-logo">🌿</div>
+    <h2>Delta Aquaponics</h2>
+    <p>Management Dashboard — enter password to continue</p>
+    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()">Enter</button>
+    <div class="pw-error" id="pw-error">Incorrect password. Please try again.</div>
+  </div>
+</div>
 <div id="loading">Loading dashboard&hellip;</div>
 
 <!-- SIDEBAR -->
@@ -454,6 +476,24 @@ tr:hover td{background:#FAFBFD}
 </div>
 
 <script>
+// ─── PASSWORD GATE ───────────────────────────────────────────────────────────
+(function(){
+  if(localStorage.getItem('deltaAuth')==='ok'){
+    document.getElementById('pw-gate').classList.add('hidden');
+  }
+})();
+function checkPw(){
+  const val = document.getElementById('pw-input').value;
+  if(val==='lyralea2026'){
+    localStorage.setItem('deltaAuth','ok');
+    document.getElementById('pw-gate').classList.add('hidden');
+  } else {
+    document.getElementById('pw-error').style.display='block';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
+
 // ─── GOOGLE SHEETS INTEGRATION ──────────────────────────────────────────────
 let SHEET_ID = localStorage.getItem('deltaSheetId') || '';
 
