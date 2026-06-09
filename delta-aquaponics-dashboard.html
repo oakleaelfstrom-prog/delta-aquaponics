@@ -274,6 +274,15 @@ tr:hover td{background:#F6FAF6}
 .bed-note-val.warn{color:#E65100;font-weight:600}
 .bed-note-val.bad{color:var(--red);font-weight:600}
 
+/* SCORECARDS */
+.sc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px}
+@media(max-width:540px){.sc-grid{grid-template-columns:1fr 1fr}}
+.sc-card .sc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
+.sc-card .sc-primary{font-size:24px;font-weight:800;line-height:1;margin-bottom:5px}
+.sc-card .sc-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:6px}
+.sc-card .sc-sub{font-size:10px;color:var(--muted);line-height:1.4;margin-top:auto}
+.sc-card .sc-trend{font-size:16px;font-weight:800;margin-left:4px;vertical-align:middle}
+
 /* HEALTH PILLS */
 .health-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px}
 @media(max-width:400px){.health-grid{grid-template-columns:1fr 1fr}}
@@ -392,6 +401,10 @@ tr:hover td{background:#F6FAF6}
       <button class="period-btn" id="pd-month" onclick="setPeriod('month')">This Month</button>
     </div>
     <div class="summary-grid" id="period-summary"></div>
+    <div class="card">
+      <div class="card-header"><h3>Key Metrics</h3><span id="sc-period-label" style="font-size:11px;color:var(--muted)"></span></div>
+      <div class="sc-grid" id="scorecard-row"></div>
+    </div>
     <div class="card">
       <div class="card-header"><h3>System Health</h3><span style="font-size:11px;color:var(--muted)">Tap any card to drill down</span></div>
       <div class="health-grid" id="health-row"></div>
@@ -1176,6 +1189,7 @@ function setPeriod(p){
   currentPeriod = p;
   ['day','week','month'].forEach(x=>document.getElementById('pd-'+x).classList.toggle('active',x===p));
   renderPeriodSummary();
+  renderScorecards();
 }
 function renderPeriodSummary(){
   const s = D.stats;
@@ -1498,6 +1512,147 @@ function renderExecutiveSummary(){
   }
 }
 
+// ─── KEY METRICS SCORECARDS ──────────────────────────────────────────────────
+function renderScorecards(){
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,10);
+
+  // Cutoff — same rolling logic as period summary
+  const cutoff = currentPeriod==='day' ? todayStr
+    : currentPeriod==='week' ? new Date(now-7*864e5).toISOString().slice(0,10)
+    : new Date(now-30*864e5).toISOString().slice(0,10);
+  const periodLabel = currentPeriod==='day' ? 'Today' : currentPeriod==='week' ? 'Last 7 Days' : 'Last 30 Days';
+  const daysElapsed = currentPeriod==='day' ? 1 : currentPeriod==='week' ? 7 : 30;
+  document.getElementById('sc-period-label').textContent = periodLabel;
+
+  const ragColor = r => r==='good'?'var(--green-mid)':r==='warn'?'var(--amber)':r==='bad'?'var(--red)':'var(--muted)';
+  const ragBg    = r => r==='good'?'rgba(76,175,80,.13)':r==='warn'?'rgba(255,152,0,.13)':r==='bad'?'rgba(198,40,40,.11)':'rgba(0,0,0,.06)';
+
+  // ── SC1: WATER HEALTH ──────────────────────────────────────────────────────
+  const wqP = D.wq.filter(r=>r[0]>=cutoff);
+  const phVals  = wqP.map(r=>r[3]).filter(v=>v!=null);
+  const tmpVals = wqP.map(r=>r[2]).filter(v=>v!=null);
+  const avgPH  = phVals.length  ? phVals.reduce((a,b)=>a+b,0)/phVals.length  : null;
+  const avgTmp = tmpVals.length ? tmpVals.reduce((a,b)=>a+b,0)/tmpVals.length : null;
+
+  // Score each metric: 1=pass, 0.5=warn, 0=fail
+  const issues = [];
+  let wTotal=0, wScore=0;
+  if(avgPH!=null){
+    const s = (avgPH>=6.8&&avgPH<=7.2)?1:(avgPH>=6.5&&avgPH<=7.5)?0.5:0;
+    wTotal+=25; wScore+=s*25;
+    if(s<1) issues.push('pH '+avgPH.toFixed(2)+' — '+(s===0?'out of range':'slightly off target'));
+  }
+  if(avgTmp!=null){
+    const s = (avgTmp>=25&&avgTmp<=28)?1:(avgTmp>=20&&avgTmp<=30)?0.5:0;
+    wTotal+=25; wScore+=s*25;
+    if(s<1) issues.push('Water temp '+avgTmp.toFixed(1)+'°C — '+(s===0?'out of range':'above target'));
+  }
+  // NO₂, NO₃, NH₃, Fe not yet in data — noted in sub-line
+  const waterScore = wTotal>0 ? Math.round(wScore/wTotal*100) : null;
+  const waterRAG   = waterScore==null?'muted':waterScore>=80?'good':waterScore>=55?'warn':'bad';
+  const waterLabel = {good:'Good',warn:'Watch',bad:'Alert',muted:'No data'}[waterRAG]||'No data';
+  const waterPrimary = waterScore!=null ? waterScore : '—';
+  const waterSub = wqP.length===0 ? 'No readings in period'
+    : issues.length ? issues[0]
+    : 'pH & temp within target · NO₂/NH₃ not yet tracked';
+
+  // ── SC2: SYSTEM COMPLIANCE ─────────────────────────────────────────────────
+  // Expected: 3 wq rounds per day (Morning/Midday/Evening)
+  const expectedWQ = daysElapsed * 3;
+  const actualWQ   = wqP.length;
+  // Expected: 1 Monday report per week
+  const expectedMonday = currentPeriod==='day' ? 0 : currentPeriod==='week' ? 1 : Math.floor(daysElapsed/7);
+  const actualMonday   = (D.monday||[]).filter(r=>(r[0]||r.date||'')>=cutoff).length;
+  const expectedTotal  = expectedWQ + expectedMonday;
+  const actualTotal    = Math.min(actualWQ + actualMonday, expectedTotal);
+  const compPct  = expectedTotal>0 ? Math.round(actualTotal/expectedTotal*100) : 100;
+  const compRAG  = compPct>=90?'good':compPct>=70?'warn':'bad';
+  const compLabel= {good:'On track',warn:'Slipping',bad:'Behind'}[compRAG];
+  const missedWQ = Math.max(0, expectedWQ-actualWQ);
+  const missedM  = Math.max(0, expectedMonday-actualMonday);
+  const compSub  = expectedTotal===0 ? 'Nothing expected yet'
+    : missedWQ>0 && missedM>0 ? missedWQ+' water check round'+(missedWQ>1?'s':'')+' + '+missedM+' weekly report missing'
+    : missedWQ>0 ? missedWQ+' water check round'+(missedWQ>1?'s':'')+' missing this period'
+    : missedM>0  ? 'Weekly Monday report not submitted yet'
+    : 'All checks submitted on time';
+
+  // ── SC3: NEXT HARVEST ──────────────────────────────────────────────────────
+  // (always forward-looking — period doesn't filter this one)
+  const byType={};
+  [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r=>{
+    if(!r[1]) return;
+    const k=r[1].toLowerCase().split(' ').slice(0,2).join(' ');
+    byType[k]=r;
+  });
+  const activeCrops = Object.values(byType).filter(r=>!r[5]);
+  let soonestDays=null, soonestName='';
+  const upcomingSoon=[];
+  activeCrops.forEach(r=>{
+    const nm=r[1];
+    const wKey=Object.keys(HARVEST_WINDOWS).find(k=>nm.toLowerCase().includes(k))||'lettuce';
+    const [mn]=HARVEST_WINDOWS[wKey];
+    if(!r[0]) return;
+    const daysIn=Math.round((now-new Date(r[0]))/864e5);
+    const daysLeft=Math.max(0,mn-daysIn);
+    if(soonestDays===null||daysLeft<soonestDays){soonestDays=daysLeft;soonestName=nm;}
+    if(daysLeft<=10) upcomingSoon.push(daysLeft===0?nm+' ready now':nm+' in '+daysLeft+'d');
+  });
+  const harvestRAG     = soonestDays===null?'muted':soonestDays===0?'good':soonestDays<=3?'warn':'muted';
+  const harvestPrimary = soonestDays===null?'No data':soonestDays===0?'Ready now':'In '+soonestDays+'d';
+  const harvestBadge   = soonestDays===null?'No crops':soonestDays===0?'Harvest now':soonestDays<=3?'Coming up':'On track';
+  const harvestSub     = upcomingSoon.length ? upcomingSoon.slice(0,3).join(' · ')
+    : soonestName ? 'Next: '+soonestName+(soonestDays?' in '+soonestDays+'d':'')
+    : 'No active crop records';
+
+  // ── SC4: FISH MORTALITY ────────────────────────────────────────────────────
+  const fishP    = D.fish.filter(r=>r[0]>=cutoff);
+  const deaths   = fishP.reduce((s,r)=>s+(r[3]||0),0);
+  const stock    = D.stats.current_stock||0;
+  const morPct   = stock>0 ? (deaths/stock*100).toFixed(2) : null;
+  // Previous equivalent period for trend
+  const prevCutoff = new Date(new Date(cutoff)-daysElapsed*864e5).toISOString().slice(0,10);
+  const prevDeaths = D.fish.filter(r=>r[0]>=prevCutoff&&r[0]<cutoff).reduce((s,r)=>s+(r[3]||0),0);
+  const trend      = deaths>prevDeaths?'up':deaths<prevDeaths?'down':'flat';
+  const trendIcon  = {'up':'↑','down':'↓','flat':'—'}[trend];
+  const trendColor = {'up':'var(--red)','down':'var(--green-mid)','flat':'var(--muted)'}[trend];
+  const fishRAG    = deaths===0?'good':morPct>1?'bad':'warn';
+  const fishBadge  = deaths===0?'No losses':fishRAG==='bad'?'Alert':'Monitor';
+  const fishSub    = deaths===0 ? stock.toLocaleString()+' fish alive · no losses this period'
+    : (morPct!=null?morPct+'% of stock · ':'')+stock.toLocaleString()+' remaining';
+
+  // ── RENDER ─────────────────────────────────────────────────────────────────
+  document.getElementById('scorecard-row').innerHTML =
+  // Water Health
+  `<div class="health-card sc-card ${waterRAG==='muted'?'':waterRAG}" onclick="navTo('water')" style="cursor:pointer">
+    <div class="sc-title">💧 Water Health</div>
+    <div class="sc-primary" style="color:${ragColor(waterRAG)}">${waterPrimary}${waterScore!=null?'<span style="font-size:13px;font-weight:600;color:var(--muted)">/100</span>':''}</div>
+    <span class="sc-badge" style="background:${ragBg(waterRAG)};color:${ragColor(waterRAG)}">${waterLabel}</span>
+    <div class="sc-sub">${waterSub}</div>
+  </div>`+
+  // Compliance
+  `<div class="health-card sc-card ${compRAG}" onclick="navTo('maintenance')" style="cursor:pointer">
+    <div class="sc-title">📋 Compliance</div>
+    <div class="sc-primary" style="color:${ragColor(compRAG)}">${compPct}%</div>
+    <span class="sc-badge" style="background:${ragBg(compRAG)};color:${ragColor(compRAG)}">${compLabel}</span>
+    <div class="sc-sub">${compSub}</div>
+  </div>`+
+  // Next Harvest
+  `<div class="health-card sc-card ${harvestRAG==='muted'?'info':harvestRAG}" onclick="navTo('plants')" style="cursor:pointer">
+    <div class="sc-title">🥬 Next Harvest</div>
+    <div class="sc-primary" style="color:${soonestDays===0?'var(--green-mid)':soonestDays!=null&&soonestDays<=3?'var(--amber)':'var(--text)'}">${harvestPrimary}</div>
+    <span class="sc-badge" style="background:${soonestDays===0?ragBg('good'):soonestDays!=null&&soonestDays<=3?ragBg('warn'):'rgba(66,165,245,.12)'};color:${soonestDays===0?ragColor('good'):soonestDays!=null&&soonestDays<=3?ragColor('warn'):'#1976D2'}">${harvestBadge}</span>
+    <div class="sc-sub">${harvestSub}</div>
+  </div>`+
+  // Fish Mortality
+  `<div class="health-card sc-card ${fishRAG}" onclick="navTo('fish')" style="cursor:pointer">
+    <div class="sc-title">🐟 Fish Mortality</div>
+    <div class="sc-primary" style="color:${ragColor(fishRAG)}">${deaths} death${deaths!==1?'s':''}<span class="sc-trend" style="color:${trendColor}">${trendIcon}</span></div>
+    <span class="sc-badge" style="background:${ragBg(fishRAG)};color:${ragColor(fishRAG)}">${fishBadge}</span>
+    <div class="sc-sub">${fishSub}</div>
+  </div>`;
+}
+
 function renderOverview(){
   const s = D.stats;
   document.getElementById('lastUpdated').textContent = 'Data as of ' + (s.last_wq_date||'N/A');
@@ -1505,6 +1660,7 @@ function renderOverview(){
   renderExecutiveSummary();
   renderAlerts();
   renderPeriodSummary();
+  renderScorecards();
   renderCropGrid();
   renderHealthRow();
 
