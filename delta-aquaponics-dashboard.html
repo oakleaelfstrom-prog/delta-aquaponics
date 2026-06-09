@@ -1378,22 +1378,22 @@ function renderScorecards(){
   if(avgPH!=null){
     const s=(avgPH>=6.8&&avgPH<=7.2)?1:(avgPH>=6.5&&avgPH<=7.5)?0.5:0;
     wTotal+=35; wScore+=s*35;
-    if(s<1) issues.push('pH '+avgPH.toFixed(2)+' — '+(s===0?'out of range':'slightly off target'));
+    if(s<1) issues.push('pH — '+(s===0?'out of range':'slightly off target'));
   }
   if(avgTmp!=null){
     const s=(avgTmp>=24&&avgTmp<=26)?1:(avgTmp>=22&&avgTmp<=28)?0.5:0;
     wTotal+=25; wScore+=s*25;
-    if(s<1) issues.push('Water temp '+avgTmp.toFixed(1)+'°C — '+(s===0?'out of range':'outside ideal'));
+    if(s<1) issues.push('Water temp — '+(s===0?'out of range':'outside ideal'));
   }
   if(avgNO2!=null){
     const s=avgNO2<0.5?1:avgNO2<1.0?0.5:0;
     wTotal+=25; wScore+=s*25;
-    if(s<1) issues.push('NO₂ '+avgNO2.toFixed(2)+' ppm — '+(s===0?'alert level':'elevated'));
+    if(s<1) issues.push('Nitrite — '+(s===0?'alert level':'elevated'));
   }
   if(avgNO3!=null){
     const s=(avgNO3>=10&&avgNO3<=50)?1:(avgNO3>=5&&avgNO3<=80)?0.5:0;
     wTotal+=15; wScore+=s*15;
-    if(s<1) issues.push('NO₃ '+avgNO3.toFixed(1)+' ppm — '+(s===0?'out of range':'outside ideal'));
+    if(s<1) issues.push('Nitrate — '+(s===0?'out of range':'outside ideal'));
   }
   const waterScore = wTotal>0 ? Math.round(wScore/wTotal*100) : null;
   const waterRAG = waterScore==null?'neutral':waterScore>=80?'good':waterScore>=55?'warn':'bad';
