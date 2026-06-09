@@ -751,7 +751,7 @@ async function fetchWebAppData(webAppUrl) {
 // The Web App returns { tabName: { headers:[...], rows:[[...], ...] }, … }
 // We map each tab to the arrays that buildMergedData() expects.
 function parseWebAppData(allData) {
-  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [];
+  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [];
   // compliance_map: date → {f1_morn, f1_mid, f1_eve, f2}
   const comp_map = {};
 
@@ -918,6 +918,10 @@ function parseWebAppData(allData) {
       if (hd) plant_rows.push([dt, name, 'Harvest date update', '', null, hd, null]);
     });
 
+    // Weekly chemistry: cols 3–8 (NH₃, Ca, Mg, K, Mn, Fe)
+    const nh3=fv(r[3]), ca=fv(r[4]), mg=fv(r[5]), kk=fv(r[6]), mn=fv(r[7]), fe=fv(r[8]);
+    if([nh3,ca,mg,kk,mn,fe].some(v=>v!=null)) chem_rows.push([dt,nh3,ca,mg,kk,mn,fe]);
+
     // Weekly fish health note (col 13 = visual health, 10 = avg weight, 9 = sampled) — EC removed, cols shifted
     const fishHealth = sv(r[13]);
     if (fishHealth && fishHealth !== 'Good') {
@@ -930,10 +934,10 @@ function parseWebAppData(allData) {
 
   // Convert comp_map → sorted array [{date, f1_morn, f1_mid, f1_eve, f2}]
   const comp_rows = Object.entries(comp_map).sort().map(([date, v]) => ({date, ...v}));
-  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows);
+  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows);
 }
 
-function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[]) {
+function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[]) {
   function mergeByKey(hist, newRows, keyFn) {
     const map = new Map();
     [...hist, ...newRows].forEach(r => map.set(keyFn(r), r));
@@ -969,13 +973,17 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   const latest_wq = [...wq].reverse().find(r=>r[3]!=null) || {};
   const latest_env = env.filter(r=>r[1]==='Morning').slice(-1)[0] || [];
   const cur_stock = stock_chart.length ? stock_chart[stock_chart.length-1][1] : DEFAULT_DATA.stats.current_stock;
+  const chem = [...chem_new].sort((a,b)=>a[0]>b[0]?1:-1);
+  const lc = chem.length ? chem[chem.length-1] : [];
 
   const monday = monday_new.sort((a,b)=>a.date>b.date?-1:1);
   return { wq, wq_chart, env, env_chart_morning:makeEnvByTime('Morning'), env_chart_midday:makeEnvByTime('Midday'), env_chart_evening:makeEnvByTime('Evening'),
     fish, stock_chart, cause_data, plants, siphons:siph, siph_avgs, siph_chart_data,
-    compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday,
+    compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem,
     stats:{ current_stock:cur_stock, stocked:1295, total_mortality:1295-cur_stock, survival_pct:Math.round(cur_stock/1295*1000)/10,
       latest_ph:latest_wq[3]??null, latest_wtemp:latest_wq[2]??null, latest_env_morn:latest_env[2]??null,
+      latest_nh3:lc[1]??null, latest_ca:lc[2]??null, latest_mg:lc[3]??null,
+      latest_k:lc[4]??null, latest_mn:lc[5]??null, latest_fe:lc[6]??null,
       total_spend:Math.round(total_spend), last_wq_date:wq.slice(-1)[0]?.[0]||'N/A' }};
 }
 
@@ -1535,12 +1543,20 @@ function renderHealthRow(){
   const wtRAG = s.latest_wtemp==null?'neutral':s.latest_wtemp>=24&&s.latest_wtemp<=30?'good':s.latest_wtemp>=20?'warn':'bad';
   const airRAG = s.latest_env_morn==null?'neutral':s.latest_env_morn>=20&&s.latest_env_morn<=30?'good':s.latest_env_morn<=35?'warn':'bad';
 
-  // Latest NO₂ and NO₃ from wq rows (index 6 and 5)
+  // Daily chemistry (Form2)
   const latestWQ = [...D.wq].reverse().find(r => r[6] != null || r[5] != null);
   const latestNO2 = latestWQ ? latestWQ[6] : null;
   const latestNO3 = latestWQ ? latestWQ[5] : null;
   const no2RAG = latestNO2==null?'neutral':latestNO2<0.5?'good':latestNO2<1.0?'warn':'bad';
   const no3RAG = latestNO3==null?'neutral':(latestNO3>=10&&latestNO3<=50)?'good':(latestNO3>=5&&latestNO3<=80)?'warn':'bad';
+  // Weekly chemistry (Form3)
+  const nh3=s.latest_nh3, ca=s.latest_ca, mg=s.latest_mg, kk=s.latest_k, mn=s.latest_mn, fe=s.latest_fe;
+  const nh3RAG = nh3==null?'neutral':nh3<0.5?'good':nh3<1.0?'warn':'bad';
+  const caRAG  = ca==null?'neutral':(ca>=40&&ca<=100)?'good':(ca>=20&&ca<=150)?'warn':'bad';
+  const mgRAG  = mg==null?'neutral':(mg>=10&&mg<=30)?'good':(mg>=5&&mg<=50)?'warn':'bad';
+  const kRAG   = kk==null?'neutral':(kk>=100&&kk<=200)?'good':(kk>=50&&kk<=300)?'warn':'bad';
+  const mnRAG  = mn==null?'neutral':(mn>=0.1&&mn<=0.5)?'good':(mn>=0.05&&mn<=1.0)?'warn':'bad';
+  const feRAG  = fe==null?'neutral':(fe>=2&&fe<=5)?'good':(fe>=1&&fe<=8)?'warn':'bad';
 
   // Deaths today
   const deathsToday = D.fish.filter(r=>r[0]===today).reduce((s,r)=>s+(r[3]||0),0);
@@ -1584,10 +1600,16 @@ function renderHealthRow(){
 
   // Card 2: Water vitals
   const waterRows =
-    mr(phRAG, 'pH', s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
-    mr(wtRAG, 'Water temp', s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
+    mr(phRAG,  'pH',          s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
+    mr(wtRAG,  'Water temp',  s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
     mr(no2RAG, 'Nitrite NO₂', latestNO2!=null?latestNO2+' ppm':'—') +
-    mr(no3RAG, 'Nitrate NO₃', latestNO3!=null?latestNO3+' ppm':'—');
+    mr(no3RAG, 'Nitrate NO₃', latestNO3!=null?latestNO3+' ppm':'—') +
+    mr(nh3RAG, 'Ammonia NH₃', nh3!=null?nh3+' ppm':'—') +
+    mr(caRAG,  'Calcium Ca',  ca!=null?ca+' ppm':'—') +
+    mr(mgRAG,  'Magnesium Mg',mg!=null?mg+' ppm':'—') +
+    mr(kRAG,   'Potassium K', kk!=null?kk+' ppm':'—') +
+    mr(mnRAG,  'Manganese Mn',mn!=null?mn+' ppm':'—') +
+    mr(feRAG,  'Iron Fe',     fe!=null?fe+' ppm':'—');
 
   // Card 3: Fish tank
   const latestFishDate = D.fish.length ? D.fish[D.fish.length-1][0] : '—';
