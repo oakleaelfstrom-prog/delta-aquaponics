@@ -1192,41 +1192,11 @@ function setPeriod(p){
   renderScorecards();
 }
 function renderPeriodSummary(){
-  const s = D.stats;
   const now = new Date();
   const fmt2 = d => d.toISOString().slice(0,10);
-  const cutoff = currentPeriod==='day' ? fmt2(now) : currentPeriod==='week' ? fmt2(new Date(now-7*864e5)) : fmt2(new Date(now-30*864e5));
   const label = currentPeriod==='day' ? 'Today' : currentPeriod==='week' ? 'Last 7 Days' : 'Last 30 Days';
   document.getElementById('ov-subtitle').textContent = `${label} · ${fmt2(now)}`;
-  const wqP = D.wq.filter(r=>r[0]>=cutoff);
-  const phVals = wqP.map(r=>r[3]).filter(v=>v!=null);
-  const tmpVals = wqP.map(r=>r[2]).filter(v=>v!=null);
-  const avgPH = phVals.length ? +(phVals.reduce((a,b)=>a+b,0)/phVals.length).toFixed(2) : null;
-  const avgTmp = tmpVals.length ? +(tmpVals.reduce((a,b)=>a+b,0)/tmpVals.length).toFixed(1) : null;
-  const deaths = D.fish.filter(r=>r[0]>=cutoff).reduce((s,r)=>s+(r[3]||0),0);
-  const checks = wqP.length;
-  const [phL,phC] = pHStatus(avgPH); const [tL,tC] = tempStatus(avgTmp);
-  document.getElementById('period-summary').innerHTML = `
-    <div class="sum-card" onclick="navTo('water')" style="cursor:pointer">
-      <div class="sum-label">Avg pH</div>
-      <div class="sum-value" style="color:var(--${phC==='good'?'green-mid':phC==='warn'?'amber':'red'})">${avgPH||'—'}</div>
-      <div class="sum-sub"><span class="badge ${phC}" style="margin-top:2px">${phL}</span></div>
-    </div>
-    <div class="sum-card" onclick="navTo('water')" style="cursor:pointer">
-      <div class="sum-label">Avg Water Temp</div>
-      <div class="sum-value" style="color:var(--${tC==='good'?'green-mid':tC==='warn'?'amber':'red'})">${avgTmp!=null?avgTmp+'°':'—'}</div>
-      <div class="sum-sub"><span class="badge ${tC}" style="margin-top:2px">${tL}</span></div>
-    </div>
-    <div class="sum-card" onclick="navTo('fish')" style="cursor:pointer">
-      <div class="sum-label">Fish Deaths</div>
-      <div class="sum-value" style="color:${deaths>0?'var(--red)':'var(--green-mid)'}">${deaths}</div>
-      <div class="sum-sub">${s.current_stock.toLocaleString()} alive now</div>
-    </div>
-    <div class="sum-card">
-      <div class="sum-label">Checks Logged</div>
-      <div class="sum-value" style="color:var(--green-mid)">${checks}</div>
-      <div class="sum-sub">${label.toLowerCase()}</div>
-    </div>`;
+  document.getElementById('period-summary').innerHTML = '';
 }
 
 // ─── CROP GRID ───────────────────────────────────────────────────────────────
@@ -1626,7 +1596,7 @@ function renderScorecards(){
   // Water Health
   `<div class="health-card sc-card ${waterRAG==='muted'?'':waterRAG}" onclick="navTo('water')" style="cursor:pointer">
     <div class="sc-title">💧 Water Health</div>
-    <div class="sc-primary" style="color:${ragColor(waterRAG)}">${waterPrimary}${waterScore!=null?'<span style="font-size:13px;font-weight:600;color:var(--muted)">/100</span>':''}</div>
+    <div class="sc-primary" style="color:${ragColor(waterRAG)}">${waterScore!=null?waterScore+'%':'—'}</div>
     <span class="sc-badge" style="background:${ragBg(waterRAG)};color:${ragColor(waterRAG)}">${waterLabel}</span>
     <div class="sc-sub">${waterSub}</div>
   </div>`+
