@@ -991,6 +991,7 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   // Latest equipment check
   const equip_sorted = [...equip_new].sort((a,b)=>a[0]>b[0]?1:-1);
   const latest_equip = equip_sorted.length ? equip_sorted[equip_sorted.length-1][1] : null;
+  const latest_equip_date = equip_sorted.length ? equip_sorted[equip_sorted.length-1][0] : null;
 
   const monday = monday_new.sort((a,b)=>a.date>b.date?-1:1);
   return { wq, wq_chart, env, env_chart_morning:makeEnvByTime('Morning'), env_chart_midday:makeEnvByTime('Midday'), env_chart_evening:makeEnvByTime('Evening'),
@@ -998,7 +999,7 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
     compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem,
     stats:{ current_stock:cur_stock, stocked:1295, total_mortality:1295-cur_stock, survival_pct:Math.round(cur_stock/1295*1000)/10,
       latest_ph:latest_wq[3]??null, latest_wtemp:latest_wq[2]??null, latest_env_morn:latest_env[2]??null,
-      latest_env_morn_out, latest_equip,
+      latest_env_morn_out, latest_equip, latest_equip_date,
       latest_nh3:lc[1]??null, latest_ca:lc[2]??null, latest_mg:lc[3]??null,
       latest_k:lc[4]??null, latest_mn:lc[5]??null, latest_fe:lc[6]??null,
       total_spend:Math.round(total_spend), last_wq_date:wq.slice(-1)[0]?.[0]||'N/A' }};
@@ -1554,6 +1555,8 @@ function renderHealthRow(){
   // metric-row helper
   const mr = (dotCls, label, value) =>
     `<div class="metric-row"><span class="dot dot-${dotCls}"></span><span class="metric-label">${label}</span><span class="metric-value">${value}</span></div>`;
+  const fmtDate = dt => { try { const d=new Date(dt+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch{return dt;} };
+  const noData = dt => dt ? `—<span style="font-size:10px;color:var(--muted);margin-left:4px">last ${fmtDate(dt)}</span>` : '—';
 
   // RAG helpers
   const phRAG  = s.latest_ph==null?'neutral':s.latest_ph>=6.8&&s.latest_ph<=7.2?'good':s.latest_ph<=7.5?'warn':'bad';
@@ -1605,11 +1608,18 @@ function renderHealthRow(){
   const midVal  = todayComp.f1_mid ?(typeof todayComp.f1_mid==='string' ?todayComp.f1_mid :'Submitted'):'Not submitted';
   const eveVal  = todayComp.f1_eve ?(typeof todayComp.f1_eve==='string' ?todayComp.f1_eve :'Submitted'):'Not submitted';
 
+  // Last-entry dates (for noData() hints on metrics with no current reading)
+  const lastInsideDate  = D.env.filter(r=>r[1]==='Morning'&&r[2]!=null).slice(-1)[0]?.[0]||null;
+  const lastOutsideDate = D.env.filter(r=>r[1]==='Morning'&&r[3]!=null).slice(-1)[0]?.[0]||null;
+  const lastNo2Date     = D.wq.filter(r=>r[6]!=null).slice(-1)[0]?.[0]||null;
+  const lastNo3Date     = D.wq.filter(r=>r[5]!=null).slice(-1)[0]?.[0]||null;
+  const lastChemDate    = D.weekly_chem.length ? D.weekly_chem[D.weekly_chem.length-1][0] : null;
+
   // Footer dates
-  const lastWQDate   = s.last_wq_date||'—';
-  const lastSiphDate = D.siphons.length?D.siphons[D.siphons.length-1][0]:'—';
+  const lastWQDate     = s.last_wq_date||'—';
+  const lastSiphDate   = D.siphons.length?D.siphons[D.siphons.length-1][0]:'—';
   const latestFishDate = D.fish.length?D.fish[D.fish.length-1][0]:'—';
-  const lastEquipDate = s.latest_equip ? (D.compliance.slice().reverse().find(r=>r.f2)?.date||'—') : '—';
+  const lastEquipDate  = s.latest_equip_date||'—';
 
   const card = (icon, title, rows, footer) =>
     `<div class="sys-card">
@@ -1621,22 +1631,23 @@ function renderHealthRow(){
 
   // Card 1: Climate
   const climateRows =
-    mr(airRAG,  'Inside air temp',  s.latest_env_morn!=null?s.latest_env_morn+'°C':'—') +
-    mr(outRAG,  'Outside air temp', outsideTemp!=null?outsideTemp+'°C':'—') +
-    mr(diffRAG, 'Differential',     diff!=null?diff+'°C':'—');
+    mr(airRAG,  'Inside air temp',  s.latest_env_morn!=null?s.latest_env_morn+'°C':noData(lastInsideDate)) +
+    mr(outRAG,  'Outside air temp', outsideTemp!=null?outsideTemp+'°C':noData(lastOutsideDate)) +
+    mr(diffRAG, 'Differential',     diff!=null?diff+'°C':noData(lastOutsideDate));
 
   // Card 2: Water vitals
+  const lWQDate = lastWQDate !== '—' ? lastWQDate : null;
   const waterRows =
-    mr(phRAG,  'pH',          s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
-    mr(wtRAG,  'Water temp',  s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
-    mr(no2RAG, 'Nitrite NO₂', latestNO2!=null?latestNO2+' ppm':'—') +
-    mr(no3RAG, 'Nitrate NO₃', latestNO3!=null?latestNO3+' ppm':'—') +
-    mr(nh3RAG, 'Ammonia NH₃', nh3!=null?nh3+' ppm':'—') +
-    mr(caRAG,  'Calcium Ca',  ca!=null?ca+' ppm':'—') +
-    mr(mgRAG,  'Magnesium Mg',mg!=null?mg+' ppm':'—') +
-    mr(kRAG,   'Potassium K', kk!=null?kk+' ppm':'—') +
-    mr(mnRAG,  'Manganese Mn',mn!=null?mn+' ppm':'—') +
-    mr(feRAG,  'Iron Fe',     fe!=null?fe+' ppm':'—');
+    mr(phRAG,  'pH',          s.latest_ph!=null?fmt(s.latest_ph,2):noData(lWQDate)) +
+    mr(wtRAG,  'Water temp',  s.latest_wtemp!=null?s.latest_wtemp+'°C':noData(lWQDate)) +
+    mr(no2RAG, 'Nitrite NO₂', latestNO2!=null?latestNO2+' ppm':noData(lastNo2Date)) +
+    mr(no3RAG, 'Nitrate NO₃', latestNO3!=null?latestNO3+' ppm':noData(lastNo3Date)) +
+    mr(nh3RAG, 'Ammonia NH₃', nh3!=null?nh3+' ppm':noData(lastChemDate)) +
+    mr(caRAG,  'Calcium Ca',  ca!=null?ca+' ppm':noData(lastChemDate)) +
+    mr(mgRAG,  'Magnesium Mg',mg!=null?mg+' ppm':noData(lastChemDate)) +
+    mr(kRAG,   'Potassium K', kk!=null?kk+' ppm':noData(lastChemDate)) +
+    mr(mnRAG,  'Manganese Mn',mn!=null?mn+' ppm':noData(lastChemDate)) +
+    mr(feRAG,  'Iron Fe',     fe!=null?fe+' ppm':noData(lastChemDate));
 
   // Card 3: Fish tank
   const fishRows =
@@ -1645,7 +1656,7 @@ function renderHealthRow(){
 
   // Card 4: Siphon health — latest readings
   const siphRows = sl.every(v=>v==null)
-    ? mr('neutral','No siphon data yet','')
+    ? mr('neutral','No siphon data yet', lastSiphDate!=='—'?`<span style="font-size:10px;color:var(--muted)">last ${fmtDate(lastSiphDate)}</span>`:'')
     : mr(siphRAG, 'In target (15–18 min)', siphLatInTarget+' / 6') +
       (siphLatOut.length ? mr('warn','Outside target', siphLatOut.map(x=>`S${x.i+1}: ${x.v}min`).join(', ')) : mr('good','All within target',''));
 
