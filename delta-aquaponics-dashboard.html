@@ -1376,24 +1376,28 @@ function renderScorecards(){
   const issues = [];
   let wTotal=0, wScore=0;
   if(avgPH!=null){
-    const s=(avgPH>=6.8&&avgPH<=7.2)?1:(avgPH>=6.5&&avgPH<=7.5)?0.5:0;
+    // ideal 6.8–7.2 | acceptable 6.5–7.5 | borderline 6.2–6.5 / 7.5–8.0 | alert otherwise
+    const s=(avgPH>=6.8&&avgPH<=7.2)?1:(avgPH>=6.5&&avgPH<=7.5)?0.5:(avgPH>=6.2&&avgPH<=8.0)?0.25:0;
     wTotal+=35; wScore+=s*35;
-    if(s<1) issues.push('pH — '+(s===0?'out of range':'slightly off target'));
+    if(s<1) issues.push('pH — '+(s===0?'out of range':s===0.25?'high':'slightly off target'));
   }
   if(avgTmp!=null){
-    const s=(avgTmp>=24&&avgTmp<=26)?1:(avgTmp>=22&&avgTmp<=28)?0.5:0;
+    // ideal 24–26 | acceptable 22–28 | borderline 20–22 / 28–30 | alert <20 or >30
+    const s=(avgTmp>=24&&avgTmp<=26)?1:(avgTmp>=22&&avgTmp<=28)?0.5:(avgTmp>=20&&avgTmp<=30)?0.25:0;
     wTotal+=25; wScore+=s*25;
-    if(s<1) issues.push('Water temp — '+(s===0?'out of range':'outside ideal'));
+    if(s<1) issues.push('Water temp — '+(s===0?'out of range':s===0.25?'borderline':'outside ideal'));
   }
   if(avgNO2!=null){
-    const s=avgNO2<0.5?1:avgNO2<1.0?0.5:0;
+    // ideal <0.5 | acceptable 0.5–1.0 | borderline 1.0–1.5 | alert >1.5
+    const s=avgNO2<0.5?1:avgNO2<1.0?0.5:avgNO2<1.5?0.25:0;
     wTotal+=25; wScore+=s*25;
-    if(s<1) issues.push('Nitrite — '+(s===0?'alert level':'elevated'));
+    if(s<1) issues.push('Nitrite — '+(s===0?'alert level':s===0.25?'high':'elevated'));
   }
   if(avgNO3!=null){
-    const s=(avgNO3>=10&&avgNO3<=50)?1:(avgNO3>=5&&avgNO3<=80)?0.5:0;
+    // ideal 10–50 | acceptable 5–80 | borderline 2–5 / 80–100 | alert otherwise
+    const s=(avgNO3>=10&&avgNO3<=50)?1:(avgNO3>=5&&avgNO3<=80)?0.5:(avgNO3>=2&&avgNO3<=100)?0.25:0;
     wTotal+=15; wScore+=s*15;
-    if(s<1) issues.push('Nitrate — '+(s===0?'out of range':'outside ideal'));
+    if(s<1) issues.push('Nitrate — '+(s===0?'out of range':s===0.25?'borderline':'outside ideal'));
   }
   const waterScore = wTotal>0 ? Math.round(wScore/wTotal*100) : null;
   const waterRAG = waterScore==null?'neutral':waterScore>=80?'good':waterScore>=55?'warn':'bad';
