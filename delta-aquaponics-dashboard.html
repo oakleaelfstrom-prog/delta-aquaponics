@@ -407,6 +407,11 @@ tr:hover td{background:var(--surface-2)}
 
   <!-- OVERVIEW -->
   <div class="section active" id="sec-overview">
+    <div id="connect-banner" style="background:var(--c-warn-bg);border:1px solid var(--c-warn);border-radius:var(--r-sm);padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px">
+      <i class="ti ti-plug-connected-x" style="font-size:18px;color:var(--c-warn);flex-shrink:0"></i>
+      <span style="flex:1;font-size:13px;color:var(--c-warn)">No live data source connected. Dashboard is showing example data.</span>
+      <button onclick="openGSModal()" style="background:var(--c-warn);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer">Connect</button>
+    </div>
     <div id="alerts-area" style="margin-bottom:10px"></div>
     <div class="period-row">
       <button class="period-btn" id="pd-day" onclick="setPeriod('day')">Today</button>
@@ -607,19 +612,17 @@ tr:hover td{background:var(--surface-2)}
 <!-- GOOGLE SHEETS MODAL -->
 <div class="modal-overlay" id="gsModal">
   <div class="modal">
-    <h3>Connect Google Sheets</h3>
+    <h3>Connect live data</h3>
     <p class="modal-sub">
-      Once you run the setup script and get your Spreadsheet ID, paste it below.<br>
-      The dashboard will fetch live data from your Google Sheet every time it loads —
-      no more manual uploads needed.
+      Run the Apps Script setup, deploy it as a Web App, then paste the Web App URL below.
+      The dashboard fetches all tabs in one call — no spreadsheet ID needed.
     </p>
-    <label style="font-size:12px;font-weight:400;color:var(--muted);display:block;margin-bottom:6px">SPREADSHEET ID</label>
-    <input type="text" id="gsSheetIdInput" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" />
+    <label style="font-size:12px;font-weight:400;color:var(--muted);display:block;margin-bottom:6px">WEB APP URL</label>
+    <input type="text" id="gsWebAppInput" placeholder="https://script.google.com/macros/s/…/exec" />
     <div style="margin-top:8px;font-size:11px;color:var(--muted)">
-      Find your ID in the spreadsheet URL:<br>
-      <span style="font-family:monospace;background:var(--surface-2);padding:2px 6px;border-radius:4px">
-        docs.google.com/spreadsheets/d/<strong style="color:var(--c-good)">YOUR-ID-HERE</strong>/edit
-      </span>
+      In Apps Script: <strong>Deploy → New deployment → Web App</strong><br>
+      Execute as: <em>Me</em> &nbsp;·&nbsp; Who has access: <em>Anyone</em><br>
+      Copy the deployment URL and paste it above.
     </div>
     <div class="modal-btns">
       <button class="btn-secondary" onclick="closeGSModal()">Cancel</button>
@@ -632,19 +635,23 @@ tr:hover td{background:var(--surface-2)}
 
 <script>
 
-// ─── GOOGLE SHEETS INTEGRATION ──────────────────────────────────────────────
-let SHEET_ID = '1N0Qr-p_qUGaNVEesDqeSB28zGq6rj2A2U9gNOhohihY';
+// ─── GOOGLE SHEETS / WEB APP INTEGRATION ────────────────────────────────────
+// Data is fetched from a Google Apps Script Web App endpoint, not directly
+// from the spreadsheet.  The Web App URL is stored in localStorage.
+// ─────────────────────────────────────────────────────────────────────────────
+
+let WEBAPP_URL = localStorage.getItem('deltaWebAppUrl') || '';
 
 function openGSModal() {
-  document.getElementById('gsSheetIdInput').value = SHEET_ID;
+  document.getElementById('gsWebAppInput').value = WEBAPP_URL;
   document.getElementById('gs-test-result').style.display = 'none';
-  document.getElementById('gs-disconnect-btn').style.display = SHEET_ID ? 'inline-block' : 'none';
+  document.getElementById('gs-disconnect-btn').style.display = WEBAPP_URL ? 'inline-block' : 'none';
   document.getElementById('gsModal').classList.add('open');
 }
 function closeGSModal() { document.getElementById('gsModal').classList.remove('open'); }
 function disconnectGS() {
-  SHEET_ID = '';
-  localStorage.removeItem('deltaSheetId');
+  WEBAPP_URL = '';
+  localStorage.removeItem('deltaWebAppUrl');
   updateLiveBadge('offline');
   D = DEFAULT_DATA;
   renderAll();
@@ -652,17 +659,21 @@ function disconnectGS() {
 }
 
 async function saveGSAndSync() {
-  const id = document.getElementById('gsSheetIdInput').value.trim();
-  if (!id) { alert('Please enter a Spreadsheet ID.'); return; }
+  const url = document.getElementById('gsWebAppInput').value.trim();
+  if (!url) { alert('Please enter the Web App URL.'); return; }
+  if (!url.startsWith('https://script.google.com/')) {
+    alert('That does not look like a Google Apps Script URL.\nIt should start with https://script.google.com/macros/s/…');
+    return;
+  }
   const res = document.getElementById('gs-test-result');
   res.style.display = 'block';
   res.style.background = 'var(--blue-pale)';
   res.style.color = 'var(--blue)';
-  res.textContent = 'Connecting to Google Sheets…';
+  res.textContent = 'Connecting to Web App…';
   try {
-    const data = await fetchGoogleSheetsData(id);
-    SHEET_ID = id;
-    localStorage.setItem('deltaSheetId', id);
+    const data = await fetchWebAppData(url);
+    WEBAPP_URL = url;
+    localStorage.setItem('deltaWebAppUrl', url);
     D = data;
     renderAll();
     updateLiveBadge('connected');
@@ -673,16 +684,16 @@ async function saveGSAndSync() {
   } catch(err) {
     res.style.background = 'var(--c-bad-bg)';
     res.style.color = 'var(--c-bad)';
-    res.textContent = 'Could not connect: ' + err.message + '. Make sure the Sheet ID is correct and the spreadsheet is shared.';
+    res.textContent = 'Could not connect: ' + err.message + '. Check the URL and make sure the Web App is deployed with "Anyone" access.';
   }
 }
 
-function updateLiveBadge(state, newChecks=0, errMsg='') {
+function updateLiveBadge(state, errMsg='') {
   const badge = document.getElementById('liveBadge');
   if (state === 'connected') {
     badge.className = 'live-badge connected';
     badge.textContent = 'Live';
-    badge.title = newChecks > 0 ? `${newChecks} new checks` : 'Connected to Google Sheets';
+    badge.title = 'Connected to Google Sheets';
   } else if (state === 'syncing') {
     badge.className = 'live-badge syncing';
     badge.textContent = 'Syncing…';
@@ -693,172 +704,218 @@ function updateLiveBadge(state, newChecks=0, errMsg='') {
     badge.title = errMsg;
   } else {
     badge.className = 'live-badge offline';
-    badge.textContent = 'Live';
-    badge.title = '';
+    badge.textContent = 'Offline';
+    badge.title = 'No live data source connected';
   }
 }
 
-function gvizUrl(sheetId, sheetName) {
-  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-}
-
-async function fetchSheet(sheetId, sheetName) {
-  const res = await fetch(gvizUrl(sheetId, sheetName));
-  if (!res.ok) throw new Error(`Sheet "${sheetName}" not found (HTTP ${res.status})`);
-  return res.text();
-}
-
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  if (lines.length < 1) return { headers: [], rows: [] };
-  const parse = line => {
-    const out = []; let field = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') { inQ = !inQ; continue; }
-      if (line[i] === ',' && !inQ) { out.push(field.trim()); field = ''; continue; }
-      field += line[i];
-    }
-    out.push(field.trim());
-    return out;
-  };
-  const headers = parse(lines[0]);
-  const rows = lines.slice(1).map(parse).filter(r => r.some(c => c !== ''));
-  return { headers, rows };
-}
-
+// ── Utility helpers ───────────────────────────────────────────────────────────
 function cleanDate(v) {
   if (!v || v === 'null') return null;
+  // ISO string from Apps Script Date serialisation
+  const iso = v.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (iso) return iso[1];
+  // gviz legacy format
   const gm = v.match(/Date\((\d+),(\d+),(\d+)\)/);
   if (gm) return `${gm[1]}-${String(+gm[2]+1).padStart(2,'0')}-${String(+gm[3]).padStart(2,'0')}`;
+  // US date
   const us = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (us) return `${us[3]}-${String(+us[1]).padStart(2,'0')}-${String(+us[2]).padStart(2,'0')}`;
-  if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
   return null;
 }
-
 function col(headers, name) {
-  const i = headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
-  return i;
+  return headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
 }
-function fv(v) { const n = parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isNaN(n) ? null : Math.round(n*100)/100; }
-function sv(v) { return (v && v !== 'null' && v.trim() !== '') ? v.trim() : null; }
+function fv(v) { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g,'')); return isNaN(n) ? null : Math.round(n*100)/100; }
+function sv(v) { return (v != null && v !== '' && String(v) !== 'null') ? String(v).trim() || null : null; }
 
-async function fetchGoogleSheetsData(sheetId) {
-  const sheetNames = ['Daily Checks (Forms)', 'Fish Mortality (Forms)', 'Plant Records (Forms)', 'Maintenance Log (Forms)', 'Financial Records (Forms)', 'Monday Report (Forms)'];
-  const results = await Promise.allSettled(sheetNames.map(n => fetchSheet(sheetId, n).then(csv => ({ name: n, csv }))));
+// Classify timestamp as Morning / Midday / Evening using hour
+function timeLabel(isoStr) {
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return null;
+  const h = d.getHours();
+  return h < 11 ? 'Morning' : h < 15 ? 'Midday' : 'Evening';
+}
 
-  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], fin_rows = [], monday_rows = [];
+// ── Web App fetch ─────────────────────────────────────────────────────────────
+async function fetchWebAppData(webAppUrl) {
+  const base = webAppUrl.trim().replace(/[?&].*$/, '');
+  const res = await fetch(base + '?tab=all');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (json && json.error) throw new Error(json.error);
+  return parseWebAppData(json);
+}
 
-  results.forEach(r => {
-    if (r.status !== 'fulfilled') return;
-    const { name, csv } = r.value;
-    const { headers, rows } = parseCSV(csv);
+// ── Parse Web App JSON → D structure ─────────────────────────────────────────
+// The Web App returns { tabName: { headers:[...], rows:[[...], ...] }, … }
+// We map each tab to the arrays that buildMergedData() expects.
+function parseWebAppData(allData) {
+  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [];
 
-    if (name === 'Daily Checks (Forms)') {
-      const iDate = col(headers,'date'), iTime = col(headers,'check time'),
-            iWTemp = col(headers,'water temp'), iPH = col(headers,'ph'),
-            iATemp = col(headers,'air temp inside'), iWeather = col(headers,'weather'),
-            iNotes = col(headers,'notes');
-      rows.forEach(r => {
-        const dt = cleanDate(r[iDate]);
-        const tm = sv(r[iTime]);
-        if (!dt || !tm) return;
-        const wt = fv(r[iWTemp]), ph = fv(r[iPH]);
-        const at = fv(r[iATemp]);
-        wq_rows.push([dt, tm, wt, ph, sv(r[iNotes])]);
-        env_rows.push([dt, tm, at, sv(r[iWeather])]);
-        const siphVals = [
-          col(headers,'siphon 1'), col(headers,'siphon 2'), col(headers,'siphon 3'),
-          col(headers,'siphon 4'), col(headers,'siphon 5'), col(headers,'siphon 6')
-        ].map(i => i >= 0 ? fv(r[i]) : null);
-        siph_rows.push([dt, tm, ...siphVals]);
+  // ── Historical tabs (preserve as-is, column-index based on our schema) ─────
+  const histTab = (key, handler) => {
+    const t = allData[key];
+    if (!t || !t.rows) return;
+    t.rows.forEach(r => handler(r));
+  };
+
+  histTab('Water_Quality', r => {
+    const dt = cleanDate(String(r[0] || ''));
+    if (!dt) return;
+    wq_rows.push([dt, sv(r[1]), fv(r[2]), fv(r[3]), sv(r[4])]);
+  });
+
+  histTab('Environmental_Data', r => {
+    const dt = cleanDate(String(r[0] || ''));
+    if (!dt) return;
+    // [date, time, air_inside, air_outside, weather]
+    env_rows.push([dt, sv(r[1]), fv(r[2]), fv(r[3]), sv(r[4])]);
+  });
+
+  histTab('Siphons_Drain_Cycle', r => {
+    const dt = cleanDate(String(r[0] || ''));
+    if (!dt) return;
+    siph_rows.push([dt, sv(r[1]), fv(r[2]), fv(r[3]), fv(r[4]), fv(r[5]), fv(r[6]), fv(r[7])]);
+  });
+
+  histTab('Fish_Records', r => {
+    const dt = cleanDate(String(r[0] || ''));
+    if (!dt) return;
+    fish_rows.push([dt, sv(r[1]), fv(r[2]), fv(r[3]), sv(r[4]), sv(r[5]), fv(r[6])]);
+  });
+
+  histTab('Plant_Records', r => {
+    const dt = cleanDate(String(r[0] || ''));
+    if (!dt) return;
+    plant_rows.push([dt, sv(r[1]), sv(r[2]), sv(r[3]), sv(r[4]), cleanDate(String(r[5] || '')), sv(r[6])]);
+  });
+
+  histTab('System_Maintenance', r => {
+    const dt = cleanDate(String(r[0] || ''));
+    if (!dt) return;
+    maint_rows.push([dt, sv(r[1]), sv(r[2]), sv(r[3]), sv(r[4]), sv(r[5])]);
+  });
+
+  // ── Form 1 — 3× daily round ───────────────────────────────────────────────
+  // Extracts: siphon cycle times, air temps, water temp
+  histTab('Form1_DailyRounds', r => {
+    if (!r[0]) return;
+    const dt = cleanDate(String(r[0]));
+    if (!dt) return;
+    const tm = timeLabel(String(r[0])) || 'Morning';
+
+    // Siphon rows 1–6 (cols 10–15)
+    const s = [fv(r[10]), fv(r[11]), fv(r[12]), fv(r[13]), fv(r[14]), fv(r[15])];
+    if (s.some(v => v !== null)) siph_rows.push([dt, tm, ...s]);
+
+    // Environment (cols 2, 3, 5 = inside, outside, weather)
+    const ai = fv(r[2]), ao = fv(r[3]), wx = sv(r[5]);
+    if (ai !== null || ao !== null) env_rows.push([dt, tm, ai, ao, wx]);
+
+    // Water temp (col 4) — partial WQ row (no pH here, pH comes from Form 2)
+    const wt = fv(r[4]);
+    if (wt !== null) wq_rows.push([dt, tm, wt, null, sv(r[24])]);
+  });
+
+  // ── Form 2 — daily full check ─────────────────────────────────────────────
+  // Extracts: pH/nitrate/nitrite, plant health per bed, fish deaths
+  // Fish stock: running total calculated from ALL Form2 rows in date order
+  {
+    const f2 = allData['Form2_DailyCheck'];
+    if (f2 && f2.rows) {
+      // Sort rows by timestamp so running stock accumulates correctly
+      const sorted = [...f2.rows]
+        .filter(r => r[0])
+        .sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
+      // Seed running stock from the last historical Fish_Records entry (or 1295 minus known deaths)
+      const histMortality = fish_rows.reduce((sum, r) => sum + (r[3] || 0), 0);
+      let runningStock = 1295 - histMortality;
+
+      sorted.forEach(r => {
+        const dt = cleanDate(String(r[0]));
+        if (!dt) return;
+
+        // WQ chemistry (cols 3=pH, 4=NO₃, 5=NO₂)
+        const ph = fv(r[3]), no3 = fv(r[4]), no2 = fv(r[5]);
+        if (ph !== null) {
+          const note = [no3 !== null ? `NO₃ ${no3}` : '', no2 !== null ? `NO₂ ${no2}` : ''].filter(Boolean).join(' · ');
+          wq_rows.push([dt, 'Form2', null, ph, note || null]);
+        }
+
+        // Fish deaths (col 81)
+        const deaths = Math.max(0, fv(r[81]) || 0);
+        runningStock -= deaths;
+        const fishOk = sv(r[78]) !== 'No';
+        const gasping = sv(r[79]) === 'Yes';
+        const disease = sv(r[80]) === 'Yes';
+        const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
+        fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, sv(r[98]) || '', healthNote, Math.round(runningStock)]);
+
+        // Plant health per gravel row (rows 1–6 → cols 6–59, 9 fields each)
+        for (let i = 0; i < 6; i++) {
+          const b = 6 + i * 9;
+          const health = sv(r[b]);
+          if (!health) continue;
+          const harvested = sv(r[b+6]) === 'Yes';
+          const wt = fv(r[b+7]);
+          plant_rows.push([
+            dt, `Row ${i+1}`,
+            harvested ? 'Harvest' : 'Inspection',
+            `Health: ${health}`,
+            sv(r[b+3]),  // pests
+            null,        // no harvest date in Form2
+            [sv(r[b+8]), wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null
+          ]);
+        }
+
+        // Plant health per DWC tank (tank 1 = cols 60–68, tank 2 = 69–77)
+        for (let i = 0; i < 2; i++) {
+          const b = 60 + i * 9;
+          const health = sv(r[b]);
+          if (!health) continue;
+          const harvested = sv(r[b+6]) === 'Yes';
+          const wt = fv(r[b+7]);
+          const bitter = sv(r[b+4]);
+          plant_rows.push([
+            dt, `DWC Tank ${i+1}`,
+            harvested ? 'Harvest' : 'Inspection',
+            `Health: ${health}`,
+            sv(r[b+3]),  // pests
+            null,
+            [sv(r[b+8]), bitter ? `Bitterness: ${bitter}` : '', wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null
+          ]);
+        }
       });
     }
+  }
 
-    if (name === 'Fish Mortality (Forms)') {
-      const iDate = col(headers,'date'), iDeaths = col(headers,'number of fish'),
-            iCause = col(headers,'cause'), iStock = col(headers,'remaining'), iHealth = col(headers,'health');
-      let running = DEFAULT_DATA.stats.current_stock;
-      rows.forEach(r => {
-        const dt = cleanDate(r[iDate]);
-        if (!dt) return;
-        const deaths = fv(r[iDeaths]) || 0;
-        const stockVal = iStock >= 0 ? fv(r[iStock]) : null;
-        if (stockVal != null) running = stockVal; else running -= deaths;
-        fish_rows.push([dt, 'Three spotted tilapia', 1295, deaths, sv(r[iCause]), sv(r[iHealth]), Math.round(running)]);
-      });
-    }
+  // ── Form 3 — weekly check ─────────────────────────────────────────────────
+  // Extracts: harvest dates per bed, weekly fish health note
+  histTab('Form3_Weekly', r => {
+    if (!r[0]) return;
+    const dt = cleanDate(String(r[2] || r[0])); // week commencing date (col 2) or timestamp
+    if (!dt) return;
 
-    if (name === 'Plant Records (Forms)') {
-      const iDate = col(headers,'date'), iCrop = col(headers,'crop'),
-            iAct = col(headers,'activity'), iGrowth = col(headers,'growth'),
-            iPests = col(headers,'pests'), iHDate = col(headers,'harvest date'),
-            iYield = col(headers,'yield'), iNotes = col(headers,'notes');
-      rows.forEach(r => {
-        const dt = cleanDate(r[iDate]);
-        if (!dt) return;
-        plant_rows.push([dt, sv(r[iCrop]), sv(r[iAct]), sv(r[iGrowth]), sv(r[iPests]), iHDate>=0?cleanDate(r[iHDate]):null, sv(r[iNotes])]);
-      });
-    }
+    // Harvest dates: cols 16–23  (Row1…Row6, DWC1, DWC2)
+    const bedNames = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6','DWC Tank 1','DWC Tank 2'];
+    bedNames.forEach((name, i) => {
+      const hd = cleanDate(String(r[16+i] || ''));
+      if (hd) plant_rows.push([dt, name, 'Harvest date update', '', null, hd, null]);
+    });
 
-    if (name === 'Maintenance Log (Forms)') {
-      const iDate = col(headers,'date'), iComp = col(headers,'component'),
-            iType = col(headers,'type'), iDetails = col(headers,'what happened'),
-            iBy = col(headers,'performed'), iNotes = col(headers,'notes');
-      rows.forEach(r => {
-        const dt = cleanDate(r[iDate]);
-        if (!dt) return;
-        maint_rows.push([dt, sv(r[iComp]), sv(r[iType]), sv(r[iDetails]), sv(r[iBy]), sv(r[iNotes])]);
-      });
-    }
-
-    if (name === 'Financial Records (Forms)') {
-      const iDate = col(headers,'date'), iType = col(headers,'type'),
-            iItem = col(headers,'item'), iQty = col(headers,'quantity'),
-            iUnit = col(headers,'unit cost'), iTotal = col(headers,'total');
-      rows.forEach(r => {
-        const dt = cleanDate(r[iDate]);
-        if (!dt) return;
-        fin_rows.push([dt, sv(r[iType]), sv(r[iItem]), fv(r[iQty]), fv(r[iUnit]), fv(r[iTotal])]);
-      });
-    }
-
-    if (name === 'Monday Report (Forms)') {
-      const iDate = col(headers,'report date'), iWeek = col(headers,'week starting'),
-            iBed1 = col(headers,'bed 1'), iBed2 = col(headers,'bed 2'),
-            iBed3 = col(headers,'bed 3'), iBed4 = col(headers,'bed 4'),
-            iTaste = col(headers,'taste'), iHarvest = col(headers,'bolting'),
-            iTom1 = col(headers,'tomato plant'), iTom2 = col(headers,'fruit'),
-            iOther = col(headers,'unusual about any plant'),
-            iFishCount = col(headers,'fish alive'), iFishDeaths = col(headers,'fish died'),
-            iFishCause = col(headers,'deaths — which'), iFishBeh = col(headers,'feeding and behav'),
-            iSiph = col(headers,'siphon row'), iSiphIssue = col(headers,'siphon issue'),
-            iWater = col(headers,'water reading'),
-            iLastWk = col(headers,'team do last'), iHowWent = col(headers,'how did it go'),
-            iSurprise = col(headers,'surprise'),
-            iPriority = col(headers,'priorities'), iNeeds = col(headers,'need from management');
-      rows.forEach(r => {
-        const dt = cleanDate(r[iDate]);
-        if (!dt) return;
-        monday_rows.push({
-          date: dt,
-          week: cleanDate(r[iWeek]),
-          beds: [sv(r[iBed1]), sv(r[iBed2]), sv(r[iBed3]), sv(r[iBed4])],
-          taste: sv(r[iTaste]), harvest: sv(r[iHarvest]),
-          tomatoes: sv(r[iTom1]), tomatoFruit: sv(r[iTom2]),
-          otherCrops: sv(r[iOther]),
-          fishCount: fv(r[iFishCount]), fishDeaths: fv(r[iFishDeaths]),
-          fishCause: sv(r[iFishCause]), fishBehaviour: sv(r[iFishBeh]),
-          siphons: sv(r[iSiph]), siphonIssues: sv(r[iSiphIssue]),
-          waterReadings: sv(r[iWater]),
-          lastWeek: sv(r[iLastWk]), howWent: sv(r[iHowWent]), surprises: sv(r[iSurprise]),
-          priorities: sv(r[iPriority]), needs: sv(r[iNeeds])
-        });
-      });
+    // Weekly fish health note (col 14 = visual health, 11 = avg weight, 10 = sampled)
+    const fishHealth = sv(r[14]);
+    if (fishHealth && fishHealth !== 'Good') {
+      const wt = fv(r[11]), n = fv(r[10]);
+      const note = [fishHealth, wt !== null ? `avg ${wt}g` : '', n !== null ? `n=${n}` : ''].filter(Boolean).join(' · ');
+      // Push as a maintenance entry so it appears in the system health feed
+      maint_rows.push([dt, 'Fish', 'Weekly weigh', note, sv(r[1]) || 'Staff', sv(r[15])]);
     }
   });
 
-  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, fin_rows, monday_rows);
+  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], []);
 }
 
 function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[]) {
@@ -908,16 +965,15 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
 }
 
 async function autoLoadGS() {
-  if (!SHEET_ID) return;
+  if (!WEBAPP_URL) return;
   updateLiveBadge('syncing');
   try {
-    D = await fetchGoogleSheetsData(SHEET_ID);
+    D = await fetchWebAppData(WEBAPP_URL);
     renderAll();
-    const newChecks = D.wq.filter(r => r[0] >= new Date().toISOString().slice(0,8)+'01').length;
-    updateLiveBadge('connected', newChecks);
+    updateLiveBadge('connected');
   } catch(e) {
-    console.warn('Google Sheets sync failed:', e.message);
-    updateLiveBadge('error', 0, e.message);
+    console.warn('Web App sync failed:', e.message);
+    updateLiveBadge('error', e.message);
   }
 }
 
@@ -1124,6 +1180,10 @@ function computeAlerts(){
   return alerts;
 }
 function renderAlerts(){
+  // Show/hide the no-data-source banner based on whether Web App URL is set
+  const banner = document.getElementById('connect-banner');
+  if (banner) banner.style.display = WEBAPP_URL ? 'none' : 'flex';
+
   const alerts = computeAlerts();
   const active = alerts.filter(a=>a.active && !archivedAlerts.has(a.id));
   const history = [
@@ -2061,13 +2121,20 @@ function renderAll(){
 }
 
 window.addEventListener('load', ()=>{
+  // Migrate from legacy sheet-ID storage if present
+  if (!WEBAPP_URL && localStorage.getItem('deltaSheetId')) {
+    localStorage.removeItem('deltaSheetId'); // clear the old key
+  }
+
   renderAll();
   renderOpsNav('water');
   navStack = ['overview'];
   document.getElementById('loading').style.display='none';
-  if (SHEET_ID) {
+  if (WEBAPP_URL) {
     updateLiveBadge('syncing');
     autoLoadGS();
+  } else {
+    updateLiveBadge('offline');
   }
   document.getElementById('gsModal').addEventListener('click', e => { if(e.target===e.currentTarget) closeGSModal(); });
 });
