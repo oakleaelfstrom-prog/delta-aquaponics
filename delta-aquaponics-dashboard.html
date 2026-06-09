@@ -1466,16 +1466,20 @@ function renderScorecards(){
   const fishP = D.fish.filter(r=>r[0]>=cutoff);
   const deaths = fishP.reduce((s,r)=>s+(r[3]||0),0);
   const stock = D.stats.current_stock||0;
-  const stockAtStart = stock + deaths;
+  // Stock at period start: use runningStock from last record before cutoff, or original stocking if none
+  const preFish = D.fish.filter(r=>r[0]<cutoff);
+  const stockAtStart = preFish.length
+    ? (preFish[preFish.length-1][6] || stock)
+    : D.fish.length ? D.fish[0][2] : stock;
   const prevCutoff = new Date(new Date(cutoff)-daysElapsed*864e5).toISOString().slice(0,10);
   const prevDeaths = D.fish.filter(r=>r[0]>=prevCutoff&&r[0]<cutoff).reduce((s,r)=>s+(r[3]||0),0);
   const trend = deaths>prevDeaths?'up':deaths<prevDeaths?'down':'flat';
   const trendIcon = {'up':'↑','down':'↓','flat':'—'}[trend];
   const trendColor = {'up':'var(--c-bad)','down':'var(--c-good)','flat':'var(--muted)'}[trend];
-  const fishRAG = fishP.length===0?'neutral':deaths===0?'good':deaths/stockAtStart>0.01?'bad':'warn';
-  const fishLabel = fishP.length===0?'No data':deaths===0?'No losses':fishRAG==='bad'?'Alert':'Monitor';
-  const fishSub = fishP.length===0
-    ? (D.fish.length===0 ? 'No fish records yet' : 'No records in this period')
+  const fishRAG = D.fish.length===0?'neutral':deaths===0?'good':deaths/stockAtStart>0.01?'bad':'warn';
+  const fishLabel = D.fish.length===0?'No data':deaths===0?'No losses':fishRAG==='bad'?'Alert':'Monitor';
+  const fishSub = D.fish.length===0
+    ? 'No fish records yet'
     : deaths===0
       ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses'
       : 'Started '+stockAtStart.toLocaleString()+' · Lost '+deaths+' · '+stock.toLocaleString()+' remaining';
