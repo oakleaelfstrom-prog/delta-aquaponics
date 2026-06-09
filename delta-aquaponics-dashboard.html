@@ -751,7 +751,7 @@ async function fetchWebAppData(webAppUrl) {
 // The Web App returns { tabName: { headers:[...], rows:[[...], ...] }, … }
 // We map each tab to the arrays that buildMergedData() expects.
 function parseWebAppData(allData) {
-  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [];
+  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [], equip_rows = [];
   // compliance_map: date → {f1_morn, f1_mid, f1_eve, f2}
   const comp_map = {};
 
@@ -807,11 +807,13 @@ function parseWebAppData(allData) {
     if (!dt) return;
     const tm = timeLabel(String(r[0])) || 'Morning';
 
-    // Compliance: mark which round slot was submitted
+    // Compliance: store submission time string (truthy = submitted)
+    const fmtTs = ts => { try { const d=new Date(ts); return isNaN(d)?null:d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); } catch{return null;} };
+    const submitTime = fmtTs(String(r[0]));
     if (!comp_map[dt]) comp_map[dt] = {f1_morn:false, f1_mid:false, f1_eve:false, f2:false};
-    if (tm === 'Morning') comp_map[dt].f1_morn = true;
-    else if (tm === 'Midday') comp_map[dt].f1_mid = true;
-    else comp_map[dt].f1_eve = true;
+    if (tm === 'Morning') comp_map[dt].f1_morn = submitTime || true;
+    else if (tm === 'Midday') comp_map[dt].f1_mid = submitTime || true;
+    else comp_map[dt].f1_eve = submitTime || true;
 
     // Siphon rows 1–6 (cols 10–15)
     const s = [fv(r[10]), fv(r[11]), fv(r[12]), fv(r[13]), fv(r[14]), fv(r[15])];
@@ -865,6 +867,13 @@ function parseWebAppData(allData) {
         const disease = sv(r[80]) === 'Yes';
         const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
         fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, sv(r[98]) || '', healthNote, Math.round(runningStock)]);
+
+        // Equipment checklist (cols 83–89 = system checks, 90 = DWC1 blower, 94 = DWC2 blower)
+        equip_rows.push([dt, {
+          pump:     sv(r[83]), level:    sv(r[84]), leaks:    sv(r[85]),
+          clean:    sv(r[86]), biowaste: sv(r[87]), nutrients:sv(r[88]),
+          clarity:  sv(r[89]), blower1:  sv(r[90]), blower2:  sv(r[94])
+        }]);
 
         // Plant health per gravel row (rows 1–6 → cols 6–59, 9 fields each)
         for (let i = 0; i < 6; i++) {
@@ -934,10 +943,10 @@ function parseWebAppData(allData) {
 
   // Convert comp_map → sorted array [{date, f1_morn, f1_mid, f1_eve, f2}]
   const comp_rows = Object.entries(comp_map).sort().map(([date, v]) => ({date, ...v}));
-  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows);
+  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows, equip_rows);
 }
 
-function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[]) {
+function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[], equip_new=[]) {
   function mergeByKey(hist, newRows, keyFn) {
     const map = new Map();
     [...hist, ...newRows].forEach(r => map.set(keyFn(r), r));
@@ -975,13 +984,21 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   const cur_stock = stock_chart.length ? stock_chart[stock_chart.length-1][1] : DEFAULT_DATA.stats.current_stock;
   const chem = [...chem_new].sort((a,b)=>a[0]>b[0]?1:-1);
   const lc = chem.length ? chem[chem.length-1] : [];
+  // Latest siphon reading per row (most recent entry, not all-time average)
+  const siph_latest = [2,3,4,5,6,7].map(i => { const vs=siph.filter(r=>r[i]!=null); return vs.length?vs[vs.length-1][i]:null; });
+  // Outside air temp from latest morning env entry
+  const latest_env_out = env.filter(r=>r[1]==='Morning'&&r[3]!=null).slice(-1)[0]?.[3]??null;
+  // Latest equipment check
+  const equip_sorted = [...equip_new].sort((a,b)=>a[0]>b[0]?1:-1);
+  const latest_equip = equip_sorted.length ? equip_sorted[equip_sorted.length-1][1] : null;
 
   const monday = monday_new.sort((a,b)=>a.date>b.date?-1:1);
   return { wq, wq_chart, env, env_chart_morning:makeEnvByTime('Morning'), env_chart_midday:makeEnvByTime('Midday'), env_chart_evening:makeEnvByTime('Evening'),
-    fish, stock_chart, cause_data, plants, siphons:siph, siph_avgs, siph_chart_data,
+    fish, stock_chart, cause_data, plants, siphons:siph, siph_avgs, siph_latest, siph_chart_data,
     compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem,
     stats:{ current_stock:cur_stock, stocked:1295, total_mortality:1295-cur_stock, survival_pct:Math.round(cur_stock/1295*1000)/10,
       latest_ph:latest_wq[3]??null, latest_wtemp:latest_wq[2]??null, latest_env_morn:latest_env[2]??null,
+      latest_env_morn_out, latest_equip,
       latest_nh3:lc[1]??null, latest_ca:lc[2]??null, latest_mg:lc[3]??null,
       latest_k:lc[4]??null, latest_mn:lc[5]??null, latest_fe:lc[6]??null,
       total_spend:Math.round(total_spend), last_wq_date:wq.slice(-1)[0]?.[0]||'N/A' }};
@@ -1538,15 +1555,14 @@ function renderHealthRow(){
   const mr = (dotCls, label, value) =>
     `<div class="metric-row"><span class="dot dot-${dotCls}"></span><span class="metric-label">${label}</span><span class="metric-value">${value}</span></div>`;
 
-  // RAG for pH
-  const phRAG = s.latest_ph==null?'neutral':s.latest_ph>=6.8&&s.latest_ph<=7.2?'good':s.latest_ph<=7.5?'warn':'bad';
-  const wtRAG = s.latest_wtemp==null?'neutral':s.latest_wtemp>=24&&s.latest_wtemp<=30?'good':s.latest_wtemp>=20?'warn':'bad';
+  // RAG helpers
+  const phRAG  = s.latest_ph==null?'neutral':s.latest_ph>=6.8&&s.latest_ph<=7.2?'good':s.latest_ph<=7.5?'warn':'bad';
+  const wtRAG  = s.latest_wtemp==null?'neutral':s.latest_wtemp>=24&&s.latest_wtemp<=30?'good':s.latest_wtemp>=20?'warn':'bad';
   const airRAG = s.latest_env_morn==null?'neutral':s.latest_env_morn>=20&&s.latest_env_morn<=30?'good':s.latest_env_morn<=35?'warn':'bad';
 
   // Daily chemistry (Form2)
-  const latestWQ = [...D.wq].reverse().find(r => r[6] != null || r[5] != null);
-  const latestNO2 = latestWQ ? latestWQ[6] : null;
-  const latestNO3 = latestWQ ? latestWQ[5] : null;
+  const latestWQ = [...D.wq].reverse().find(r=>r[6]!=null||r[5]!=null);
+  const latestNO2 = latestWQ?latestWQ[6]:null, latestNO3 = latestWQ?latestWQ[5]:null;
   const no2RAG = latestNO2==null?'neutral':latestNO2<0.5?'good':latestNO2<1.0?'warn':'bad';
   const no3RAG = latestNO3==null?'neutral':(latestNO3>=10&&latestNO3<=50)?'good':(latestNO3>=5&&latestNO3<=80)?'warn':'bad';
   // Weekly chemistry (Form3)
@@ -1560,29 +1576,40 @@ function renderHealthRow(){
 
   // Deaths today
   const deathsToday = D.fish.filter(r=>r[0]===today).reduce((s,r)=>s+(r[3]||0),0);
-  // Fish stock thresholds: stocked 1,295. Amber = below 1,166 (10% loss). Red = below 900.
   const stockRAG = s.current_stock>=1166?'good':s.current_stock>=900?'warn':'bad';
 
-  // Siphon in-target count (15–18 min = target)
-  const siphInTarget = D.siph_avgs.filter(v=>v!=null&&v>=15&&v<=18).length;
-  const siphOutTarget = D.siph_avgs.filter(v=>v!=null&&(v<15||v>18));
-  const siphRAG = siphOutTarget.length===0?'good':siphOutTarget.length<=2?'warn':'bad';
+  // Siphon — latest readings per row (not all-time averages)
+  const sl = D.siph_latest || [];
+  const siphLatInTarget = sl.filter(v=>v!=null&&v>=15&&v<=18).length;
+  const siphLatOut = sl.map((v,i)=>({v,i})).filter(x=>x.v!=null&&(x.v<15||x.v>18));
+  const siphRAG = sl.every(v=>v==null)?'neutral':siphLatOut.length===0?'good':siphLatOut.length<=2?'warn':'bad';
 
-  // Last wq date
-  const lastWQDate = s.last_wq_date||'—';
+  // Climate — outside temp and differential
+  const outsideTemp = s.latest_env_morn_out;
+  const diff = s.latest_env_morn!=null&&outsideTemp!=null ? (s.latest_env_morn-outsideTemp).toFixed(1) : null;
+  const outRAG = outsideTemp==null?'neutral':outsideTemp>=15&&outsideTemp<=35?'good':outsideTemp<10||outsideTemp>40?'bad':'warn';
+  const diffRAG = diff==null?'neutral':Math.abs(diff)<=15?'good':Math.abs(diff)<=25?'warn':'bad';
 
-  // Latest siphon date
-  const lastSiphDate = D.siphons.length ? D.siphons[D.siphons.length-1][0] : '—';
+  // Equipment — latest Form2 checklist
+  const eq = s.latest_equip || {};
+  const eqDot = v => v==null?'neutral':v==='Yes'?'good':'bad';
+  const eqVal = v => v==null?'—':v;
 
-  // WQ check rounds today
-  const wqToday = D.wq.filter(r=>r[0]===today);
-  const hasMorn = wqToday.some(r=>r[1]==='Morning');
-  const hasMid  = wqToday.some(r=>r[1]==='Midday');
-  const hasEve  = wqToday.some(r=>r[1]==='Evening');
+  // Daily rounds — from compliance data
+  const todayComp = (D.compliance||[]).find(r=>r.date===today) || {};
   const nowHour = new Date().getHours();
-  const mornDot = hasMorn?'good':nowHour>10?'warn':'neutral';
-  const midDot  = hasMid?'good':nowHour>14?'warn':'neutral';
-  const eveDot  = hasEve?'good':nowHour>19?'warn':'neutral';
+  const mornDot = todayComp.f1_morn?'good':nowHour>=10?'warn':'neutral';
+  const midDot  = todayComp.f1_mid ?'good':nowHour>=14?'warn':'neutral';
+  const eveDot  = todayComp.f1_eve ?'good':nowHour>=19?'warn':'neutral';
+  const mornVal = todayComp.f1_morn?(typeof todayComp.f1_morn==='string'?todayComp.f1_morn:'Submitted'):'Not submitted';
+  const midVal  = todayComp.f1_mid ?(typeof todayComp.f1_mid==='string' ?todayComp.f1_mid :'Submitted'):'Not submitted';
+  const eveVal  = todayComp.f1_eve ?(typeof todayComp.f1_eve==='string' ?todayComp.f1_eve :'Submitted'):'Not submitted';
+
+  // Footer dates
+  const lastWQDate   = s.last_wq_date||'—';
+  const lastSiphDate = D.siphons.length?D.siphons[D.siphons.length-1][0]:'—';
+  const latestFishDate = D.fish.length?D.fish[D.fish.length-1][0]:'—';
+  const lastEquipDate = s.latest_equip ? (D.compliance.slice().reverse().find(r=>r.f2)?.date||'—') : '—';
 
   const card = (icon, title, rows, footer) =>
     `<div class="sys-card">
@@ -1594,9 +1621,9 @@ function renderHealthRow(){
 
   // Card 1: Climate
   const climateRows =
-    mr(airRAG, 'Inside air temp', s.latest_env_morn!=null?s.latest_env_morn+'°C':'—') +
-    mr('neutral', 'Outside air temp', '—') +
-    (s.latest_env_morn!=null ? mr('neutral', 'Differential', '—') : '');
+    mr(airRAG,  'Inside air temp',  s.latest_env_morn!=null?s.latest_env_morn+'°C':'—') +
+    mr(outRAG,  'Outside air temp', outsideTemp!=null?outsideTemp+'°C':'—') +
+    mr(diffRAG, 'Differential',     diff!=null?diff+'°C':'—');
 
   // Card 2: Water vitals
   const waterRows =
@@ -1612,35 +1639,42 @@ function renderHealthRow(){
     mr(feRAG,  'Iron Fe',     fe!=null?fe+' ppm':'—');
 
   // Card 3: Fish tank
-  const latestFishDate = D.fish.length ? D.fish[D.fish.length-1][0] : '—';
   const fishRows =
     mr(stockRAG, 'Stock', s.current_stock.toLocaleString()) +
     mr(deathsToday>0?'bad':'good', 'Deaths today', deathsToday===0?'None':String(deathsToday));
 
-  // Card 4: Siphon health
-  const siphRows =
-    mr(siphRAG, 'In target (15–18 min)', siphInTarget+' / 6') +
-    (siphOutTarget.length ? mr('warn', 'Outside target', siphOutTarget.map((v,i)=>`S${D.siph_avgs.indexOf(v)+1}: ${v}min`).join(', ')) : mr('good', 'All within target', ''));
+  // Card 4: Siphon health — latest readings
+  const siphRows = sl.every(v=>v==null)
+    ? mr('neutral','No siphon data yet','')
+    : mr(siphRAG, 'In target (15–18 min)', siphLatInTarget+' / 6') +
+      (siphLatOut.length ? mr('warn','Outside target', siphLatOut.map(x=>`S${x.i+1}: ${x.v}min`).join(', ')) : mr('good','All within target',''));
 
-  // Card 5: Equipment
-  const equipRows =
-    mr('neutral', 'Pump', '—') +
-    mr('neutral', 'Aerators', '—') +
-    mr('neutral', 'Evap cooler', '—');
+  // Card 5: Equipment — from latest Form2 checklist
+  const equipRows = !eq.pump
+    ? mr('neutral','No equipment check yet','')
+    : mr(eqDot(eq.pump),      'Circulation pump',   eqVal(eq.pump)) +
+      mr(eqDot(eq.level),     'Sump water level',   eqVal(eq.level)) +
+      mr(eqDot(eq.leaks),     'No leaks',           eqVal(eq.leaks)) +
+      mr(eqDot(eq.clean),     'System clean',       eqVal(eq.clean)) +
+      mr(eqDot(eq.biowaste),  'Biowaste bin',       eqVal(eq.biowaste)) +
+      mr(eqDot(eq.nutrients), 'Nutrient bins',      eqVal(eq.nutrients)) +
+      mr(eqDot(eq.clarity),   'Water clarity',      eqVal(eq.clarity)) +
+      mr(eqDot(eq.blower1),   'DWC1 blower',        eqVal(eq.blower1)) +
+      mr(eqDot(eq.blower2),   'DWC2 blower',        eqVal(eq.blower2));
 
-  // Card 6: Last check
+  // Card 6: Daily rounds — Form1 submission times
   const checkRows =
-    mr(mornDot, 'Morning', hasMorn?'Done':'Not recorded') +
-    mr(midDot,  'Midday',  hasMid?'Done':'Not recorded') +
-    mr(eveDot,  'Evening', hasEve?'Done':'Not recorded');
+    mr(mornDot, 'Morning round',  mornVal) +
+    mr(midDot,  'Midday round',   midVal) +
+    mr(eveDot,  'Evening round',  eveVal);
 
   document.getElementById('health-grid-new').innerHTML =
     card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate) +
     card('droplet',  'Water vitals',  waterRows,   'Last tested: '+lastWQDate) +
     card('fish',     'Fish tank',     fishRows,    'Last entry: '+latestFishDate) +
     card('activity', 'Siphon health', siphRows,    'Last recorded: '+lastSiphDate) +
-    card('settings', 'Equipment',     equipRows,   'Equipment checks not yet tracked') +
-    card('calendar', 'Last check',    checkRows,   'Entries today: '+wqToday.length);
+    card('settings', 'Equipment',     equipRows,   'Last checked: '+lastEquipDate) +
+    card('calendar', 'Daily rounds',  checkRows,   'Today — Form 1 submissions');
 }
 
 // ─── GROWING BEDS ────────────────────────────────────────────────────────────
