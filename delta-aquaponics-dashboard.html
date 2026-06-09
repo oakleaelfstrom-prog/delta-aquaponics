@@ -1429,7 +1429,7 @@ function renderScorecards(){
   const compRAG = compPct==null?'neutral':compPct>=90?'good':compPct>=70?'warn':'bad';
   const compLabel = {good:'On track',warn:'Slipping',bad:'Behind',neutral:'No data'}[compRAG];
   const compSub = compPct==null
-    ? ((D.compliance||[]).length===0 ? 'No form submissions yet' : 'No submissions in this period')
+    ? ((D.compliance||[]).length===0 ? 'No form submissions yet' : 'No submissions in period')
     : missedRounds>0 && missedChecks>0 ? missedRounds+' round'+(missedRounds>1?'s':'')+' + '+missedChecks+' check'+(missedChecks>1?'s':'')+' missed'
     : missedRounds>0 ? missedRounds+' round'+(missedRounds>1?'s':'')+' missed'
     : missedChecks>0 ? missedChecks+' daily check'+(missedChecks>1?'s':'')+' missed'
