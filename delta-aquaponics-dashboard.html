@@ -1451,11 +1451,11 @@ function renderScorecards(){
   // Primary metric = next upcoming harvest
   let soonestDays = upcomingAll.length ? upcomingAll[0].daysLeft : null;
   let soonestName = upcomingAll.length ? upcomingAll[0].name : '';
-  // Sub-label: upcoming within 10 days + any overdue rows ("Row 3 ready 5d ago")
+  // Sub-label: overdue first (most overdue → least), then upcoming
   const upcomingSoon = [
+    ...overdueAll.slice().reverse().map(e => e.name+' ready '+Math.abs(e.daysLeft)+'d ago'),
     ...upcomingAll.filter(e => e.daysLeft <= 10)
-      .map(e => e.daysLeft === 0 ? e.name+' ready now' : e.name+' in '+e.daysLeft+'d'),
-    ...overdueAll.map(e => e.name+' ready '+Math.abs(e.daysLeft)+'d ago')
+      .map(e => e.daysLeft === 0 ? e.name+' ready now' : e.name+' in '+e.daysLeft+'d')
   ];
   // Fallback: if no Form3 harvest dates exist, use HARVEST_WINDOWS on crop-name records
   if (allScheduled.length === 0) {
