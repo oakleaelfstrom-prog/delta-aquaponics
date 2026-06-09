@@ -1535,6 +1535,13 @@ function renderHealthRow(){
   const wtRAG = s.latest_wtemp==null?'neutral':s.latest_wtemp>=24&&s.latest_wtemp<=30?'good':s.latest_wtemp>=20?'warn':'bad';
   const airRAG = s.latest_env_morn==null?'neutral':s.latest_env_morn>=20&&s.latest_env_morn<=30?'good':s.latest_env_morn<=35?'warn':'bad';
 
+  // Latest NO₂ and NO₃ from wq rows (index 6 and 5)
+  const latestWQ = [...D.wq].reverse().find(r => r[6] != null || r[5] != null);
+  const latestNO2 = latestWQ ? latestWQ[6] : null;
+  const latestNO3 = latestWQ ? latestWQ[5] : null;
+  const no2RAG = latestNO2==null?'neutral':latestNO2<0.5?'good':latestNO2<1.0?'warn':'bad';
+  const no3RAG = latestNO3==null?'neutral':(latestNO3>=10&&latestNO3<=50)?'good':(latestNO3>=5&&latestNO3<=80)?'warn':'bad';
+
   // Deaths today
   const deathsToday = D.fish.filter(r=>r[0]===today).reduce((s,r)=>s+(r[3]||0),0);
   // Fish stock thresholds: stocked 1,295. Amber = below 1,166 (10% loss). Red = below 900.
@@ -1579,7 +1586,8 @@ function renderHealthRow(){
   const waterRows =
     mr(phRAG, 'pH', s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
     mr(wtRAG, 'Water temp', s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
-    mr('neutral', 'Nitrite / Nitrate', '—');
+    mr(no2RAG, 'Nitrite NO₂', latestNO2!=null?latestNO2+' ppm':'—') +
+    mr(no3RAG, 'Nitrate NO₃', latestNO3!=null?latestNO3+' ppm':'—');
 
   // Card 3: Fish tank
   const latestFishDate = D.fish.length ? D.fish[D.fish.length-1][0] : '—';
