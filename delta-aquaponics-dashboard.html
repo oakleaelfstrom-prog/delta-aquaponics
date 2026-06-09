@@ -1428,7 +1428,8 @@ function renderScorecards(){
   const compPct = totalSlots>0 ? Math.round(filledSlots/totalSlots*100) : null;
   const compRAG = compPct==null?'neutral':compPct>=90?'good':compPct>=70?'warn':'bad';
   const compLabel = {good:'On track',warn:'Slipping',bad:'Behind',neutral:'No data'}[compRAG];
-  const compSub = compPct==null ? 'No form submissions yet'
+  const compSub = compPct==null
+    ? ((D.compliance||[]).length===0 ? 'No form submissions yet' : 'No submissions in this period')
     : missedRounds>0 && missedChecks>0 ? missedRounds+' round'+(missedRounds>1?'s':'')+' + '+missedChecks+' check'+(missedChecks>1?'s':'')+' missed'
     : missedRounds>0 ? missedRounds+' round'+(missedRounds>1?'s':'')+' missed'
     : missedChecks>0 ? missedChecks+' daily check'+(missedChecks>1?'s':'')+' missed'
@@ -1471,11 +1472,13 @@ function renderScorecards(){
   const trend = deaths>prevDeaths?'up':deaths<prevDeaths?'down':'flat';
   const trendIcon = {'up':'↑','down':'↓','flat':'—'}[trend];
   const trendColor = {'up':'var(--c-bad)','down':'var(--c-good)','flat':'var(--muted)'}[trend];
-  const fishRAG = deaths===0?'good':deaths/stockAtStart>0.01?'bad':'warn';
-  const fishLabel = deaths===0?'No losses':fishRAG==='bad'?'Alert':'Monitor';
-  const fishSub = deaths===0
-    ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses'
-    : 'Started '+stockAtStart.toLocaleString()+' · Lost '+deaths+' · '+stock.toLocaleString()+' remaining';
+  const fishRAG = fishP.length===0?'neutral':deaths===0?'good':deaths/stockAtStart>0.01?'bad':'warn';
+  const fishLabel = fishP.length===0?'No data':deaths===0?'No losses':fishRAG==='bad'?'Alert':'Monitor';
+  const fishSub = fishP.length===0
+    ? (D.fish.length===0 ? 'No fish records yet' : 'No records in this period')
+    : deaths===0
+      ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses'
+      : 'Started '+stockAtStart.toLocaleString()+' · Lost '+deaths+' · '+stock.toLocaleString()+' remaining';
 
   const sc = (rag, icon, lbl, val, badge, sub, sec, extra='') =>
     `<div class="sc-card" onclick="navTo('${sec}')">
