@@ -987,7 +987,7 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   // Latest siphon reading per row (most recent entry, not all-time average)
   const siph_latest = [2,3,4,5,6,7].map(i => { const vs=siph.filter(r=>r[i]!=null); return vs.length?vs[vs.length-1][i]:null; });
   // Outside air temp from latest morning env entry
-  const latest_env_out = env.filter(r=>r[1]==='Morning'&&r[3]!=null).slice(-1)[0]?.[3]??null;
+  const latest_env_morn_out = env.filter(r=>r[1]==='Morning'&&r[3]!=null).slice(-1)[0]?.[3]??null;
   // Latest equipment check
   const equip_sorted = [...equip_new].sort((a,b)=>a[0]>b[0]?1:-1);
   const latest_equip = equip_sorted.length ? equip_sorted[equip_sorted.length-1][1] : null;
