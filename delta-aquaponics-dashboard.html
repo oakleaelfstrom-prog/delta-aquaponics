@@ -1488,93 +1488,113 @@ function renderCropGrid(){
   const grid = document.getElementById('beds-grid');
   if(!grid) return;
 
-  // Latest active entry per crop key (no harvest date yet)
+  const SPRAY_RE = /spray|neem|foliar|pesticide|treat/i;
+
+  // Build lookup: latest active plant record per crop name
   const byType = {};
   [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r=>{
     if(!r[1]) return;
     const k = r[1].toLowerCase().split(' ').slice(0,2).join(' ');
-    byType[k] = r;
+    if(!byType[k]) byType[k] = r; // keep latest
   });
-  const items = Object.values(byType).filter(r=>!r[5]).sort((a,b)=>{
-    const today = new Date();
-    const pct = r => {
-      const wKey = Object.keys(HARVEST_WINDOWS).find(k=>(r[1]||'').toLowerCase().includes(k))||'lettuce';
-      const mx = HARVEST_WINDOWS[wKey][1];
-      const d = r[0] ? Math.round((today-new Date(r[0]))/864e5) : 0;
-      return Math.min(100, Math.round(d/mx*100));
-    };
-    return pct(b) - pct(a);
-  }).slice(0,8);
+  // Active crops sorted by harvest urgency
+  const activeSorted = Object.values(byType)
+    .filter(r=>!r[5])
+    .sort((a,b)=>{
+      const urgency = r => {
+        const wKey = Object.keys(HARVEST_WINDOWS).find(k=>(r[1]||'').toLowerCase().includes(k))||'lettuce';
+        const mx = HARVEST_WINDOWS[wKey][1];
+        return r[0] ? Math.round((today-new Date(r[0]))/864e5)/mx : 0;
+      };
+      return urgency(b)-urgency(a);
+    });
 
-  if(!items.length){
-    grid.innerHTML = '<p style="color:var(--muted);font-size:12px;padding:8px">No active crops recorded yet.</p>';
-    return;
-  }
+  // Separate DWC from gravel rows
+  const isDWC = r => /dwc|tank|deep water/i.test(r[1]||'');
+  const gravelCrops = activeSorted.filter(r=>!isDWC(r));
+  const dwcCrops    = activeSorted.filter(r=>isDWC(r));
 
-  const SPRAY_RE = /spray|neem|foliar|pesticide|treat/i;
-
-  grid.innerHTML = items.map((r, idx) => {
-    const name = r[1] || 'Unknown';
+  // Always render 8 fixed slots: 6 gravel rows + 2 DWC tanks
+  const bedCard = (label, isDwc, r, rowIdx) => {
+    // r may be null (empty slot)
+    const name = r ? r[1] : '';
     const nameLower = name.toLowerCase();
-    const wKey = Object.keys(HARVEST_WINDOWS).find(k=>nameLower.includes(k)) || 'lettuce';
-    const [mn, mx] = HARVEST_WINDOWS[wKey];
-    const plantDate = r[0] ? new Date(r[0]) : null;
-    const daysIn = plantDate ? Math.round((today - plantDate) / 864e5) : null;
-    const daysLeft = daysIn != null ? Math.max(0, mn - daysIn) : null;
-    const pct = daysIn != null ? Math.min(100, Math.round(daysIn / mx * 100)) : 0;
-    const isReady = pct >= 100;
-    const isNear = pct >= 75 && !isReady;
-    const harvestText = isReady ? 'Ready now' : daysLeft > 0 ? 'In '+daysLeft+'d' : 'In harvest window';
-    const harvestRAG = isReady?'good':isNear?'warn':'neutral';
-    const harvestColor = isReady?'var(--c-good)':isNear?'var(--c-warn)':'var(--muted)';
+    const headerLabel = r ? `${label} — ${name}` : `${label} — Empty`;
 
-    // Crop records for this bed
-    const cropRecords = [...D.plants]
-      .filter(p => p[1] && p[1].toLowerCase() === nameLower)
-      .sort((a,b) => (a[0]||'') > (b[0]||'') ? -1 : 1);
+    // Harvest
+    let harvestText = '—', harvestColor = 'var(--muted)', bdgCls = 'badge-neutral', bdgLabel = r ? 'Growing' : 'Empty';
+    if(r && r[0]){
+      const wKey = Object.keys(HARVEST_WINDOWS).find(k=>nameLower.includes(k))||'lettuce';
+      const [mn,mx] = HARVEST_WINDOWS[wKey];
+      const daysIn = Math.round((today-new Date(r[0]))/864e5);
+      const daysLeft = Math.max(0, mn-daysIn);
+      const pct = Math.min(100, Math.round(daysIn/mx*100));
+      const isReady = pct>=100, isNear = pct>=75&&!isReady;
+      harvestText  = isReady ? 'Ready now' : daysLeft>0 ? 'In '+daysLeft+'d' : 'In harvest window';
+      harvestColor = isReady ? 'var(--c-good)' : isNear ? 'var(--c-warn)' : 'var(--muted)';
+      bdgCls   = isReady?'badge-good':isNear?'badge-warn':'badge-neutral';
+      bdgLabel = isReady?'Ready now':isNear?'Near harvest':'Growing';
+    }
 
-    const latestWithNotes = cropRecords.find(p => p[3] || p[4]);
-    const pestNote = latestWithNotes ? latestWithNotes[4] : null;
+    // Obs: pests & spray
+    let pestNote = null;
+    if(r){
+      const cropRecords = [...D.plants]
+        .filter(p=>p[1]&&p[1].toLowerCase()===nameLower)
+        .sort((a,b)=>(a[0]||'')>(b[0]||'')?-1:1);
+      const latestNotes = cropRecords.find(p=>p[3]||p[4]);
+      pestNote = latestNotes ? latestNotes[4] : null;
+      const sprayPlant = cropRecords.find(p=>SPRAY_RE.test(p[2]||'')||SPRAY_RE.test(p[3]||'')||SPRAY_RE.test(p[6]||''));
+      const sprayMaint = [...D.maintenance].sort((a,b)=>(a[0]||'')>(b[0]||'')?-1:1).find(m=>SPRAY_RE.test((m[3]||'')+(m[5]||'')));
+      const sprayEvent = sprayPlant||sprayMaint;
+      const sprayDate = sprayEvent?sprayEvent[0]:null;
+      const sprayDaysAgo = sprayDate?Math.round((today-new Date(sprayDate))/864e5):null;
+      var sprayDot = !sprayDate?'warn':sprayDaysAgo>14?'warn':'neutral';
+      var sprayLabel = !sprayDate?'No spray on record':sprayDaysAgo===0?'Today':sprayDaysAgo+'d ago';
+    } else {
+      var sprayDot = 'neutral', sprayLabel = '—';
+    }
 
-    // Most recent spray
-    const sprayPlant = cropRecords.find(p => SPRAY_RE.test(p[2]||'') || SPRAY_RE.test(p[3]||'') || SPRAY_RE.test(p[6]||''));
-    const sprayMaint = [...D.maintenance].sort((a,b)=>(a[0]||'')>(b[0]||'')?-1:1).find(m=>SPRAY_RE.test((m[3]||'')+(m[5]||'')));
-    const sprayEvent = sprayPlant || sprayMaint;
-    const sprayDate = sprayEvent ? sprayEvent[0] : null;
-    const sprayDaysAgo = sprayDate ? Math.round((today - new Date(sprayDate)) / 864e5) : null;
-    const sprayDot = !sprayDate ? 'warn' : sprayDaysAgo > 14 ? 'warn' : 'neutral';
-    const sprayLabel = !sprayDate ? 'No spray recorded' : sprayDaysAgo===0 ? 'Today' : sprayDaysAgo+'d ago';
+    // Siphon (gravel rows only; DWC uses aeration instead)
+    let footer = '';
+    if(!isDwc){
+      const siphCol = rowIdx + 2; // S1=col2 … S6=col7
+      const siphVals = D.siphons.slice(-10).map(s=>s[siphCol]).filter(v=>v!=null&&v>0);
+      const avgSiph = siphVals.length?(siphVals.reduce((a,b)=>a+b,0)/siphVals.length).toFixed(1):null;
+      const siphOk = avgSiph!=null&&avgSiph>=15&&avgSiph<=18;
+      const siphBad = avgSiph!=null&&avgSiph>22;
+      const siphDot = !avgSiph?'neutral':siphOk?'good':siphBad?'bad':'warn';
+      const siphMark = siphOk?'<i class="ti ti-check" style="font-size:11px;color:var(--c-good)"></i>':'<i class="ti ti-alert-triangle" style="font-size:11px;color:var(--c-warn)"></i>';
+      footer = `<span style="color:var(--muted)"><span class="dot dot-${siphDot}" style="margin-right:4px;display:inline-block"></span>S${rowIdx+1}: ${avgSiph!=null?avgSiph+'m ':' — '}${avgSiph!=null?siphMark:''}</span>`;
+    } else {
+      footer = `<span style="color:var(--muted)">Aeration: <span style="color:var(--c-neutral)">—</span></span>`;
+    }
 
-    // Siphon
-    const siphCol = (idx % 6) + 2;
-    const siphVals = D.siphons.slice(-10).map(s => s[siphCol]).filter(v => v != null && v > 0);
-    const avgSiph = siphVals.length ? (siphVals.reduce((a,b)=>a+b,0)/siphVals.length).toFixed(1) : null;
-    const siphOk = avgSiph!=null && avgSiph>=15 && avgSiph<=18;
-    const siphBad = avgSiph!=null && avgSiph>22;
-    const siphDot = !avgSiph?'neutral':siphOk?'good':siphBad?'bad':'warn';
-
-    // Badge
-    const bdgCls = isReady?'badge-good':isNear?'badge-warn':'badge-neutral';
-    const bdgLabel = isReady?'Ready now':isNear?'Near harvest':'Growing';
-
-    return `<div class="bed-card-new" onclick="openBedDrillDown(${JSON.stringify(name).replace(/"/g,'&quot;')},${idx})">
+    const onclick = r ? `onclick="openBedDrillDown(${JSON.stringify(name).replace(/"/g,'&quot;')},${rowIdx})"` : '';
+    return `<div class="bed-card-new" ${onclick} style="${r?'cursor:pointer':'opacity:0.6'}">
       <div class="bed-card-new-header">
-        <span>Row ${idx+1} — ${name}</span>
+        <span>${headerLabel}</span>
         <span class="badge ${bdgCls}">${bdgLabel}</span>
       </div>
       <div class="bed-obs-grid">
         <div class="bed-obs-item"><span class="dot dot-neutral"></span><span>Yellowing</span></div>
         <div class="bed-obs-item"><span class="dot dot-neutral"></span><span>Wilting</span></div>
-        <div class="bed-obs-item"><span class="dot dot-${pestNote?'bad':'neutral'}"></span><span>${pestNote?'Pests':'No pests'}</span></div>
+        <div class="bed-obs-item"><span class="dot dot-${pestNote?'bad':'neutral'}"></span><span>${pestNote?'Pests noted':'No pests'}</span></div>
         <div class="bed-obs-item"><span class="dot dot-${sprayDot}"></span><span>Spray: ${sprayLabel}</span></div>
       </div>
       <hr class="card-divider">
       <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
         <span style="color:${harvestColor};font-weight:500">${harvestText}</span>
-        <span style="color:var(--muted)"><span class="dot dot-${siphDot}" style="margin-right:4px"></span>S${(idx%6)+1}: ${avgSiph!=null?avgSiph+'m':'—'}</span>
+        ${footer}
       </div>
     </div>`;
-  }).join('');
+  };
+
+  const cards = [];
+  for(let i=0;i<6;i++) cards.push(bedCard(`Row ${i+1}`, false, gravelCrops[i]||null, i));
+  for(let i=0;i<2;i++) cards.push(bedCard(`DWC Tank ${i+1}`, true, dwcCrops[i]||null, i));
+
+  grid.innerHTML = cards.join('');
 }
 
 // ─── OVERVIEW ───────────────────────────────────────────────────────────────
