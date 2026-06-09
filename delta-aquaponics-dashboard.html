@@ -1435,26 +1435,41 @@ function renderScorecards(){
     : missedChecks>0 ? missedChecks+' daily check'+(missedChecks>1?'s':'')+' missed'
     : 'All rounds submitted';
 
-  // SC3: HARVEST
-  const byType={};
-  [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r=>{
-    if(!r[1]) return;
-    const k=r[1].toLowerCase().split(' ').slice(0,2).join(' ');
-    byType[k]=r;
+  // SC3: HARVEST — primary source: Form3 harvest dates per row
+  // Find the most recent harvest-date record per bed/row
+  const bedHarvest = {};
+  D.plants.forEach(r => {
+    if (!r[1] || !r[5]) return;
+    if (!bedHarvest[r[1]] || r[0] > bedHarvest[r[1]][0]) bedHarvest[r[1]] = r;
   });
-  const activeCrops = Object.values(byType).filter(r=>!r[5]);
-  let soonestDays=null, soonestName='';
-  const upcomingSoon=[];
-  activeCrops.forEach(r=>{
-    const nm=r[1];
-    const wKey=Object.keys(HARVEST_WINDOWS).find(k=>nm.toLowerCase().includes(k))||'lettuce';
-    const [mn]=HARVEST_WINDOWS[wKey];
-    if(!r[0]) return;
-    const daysIn=Math.round((now-new Date(r[0]))/864e5);
-    const daysLeft=Math.max(0,mn-daysIn);
-    if(soonestDays===null||daysLeft<soonestDays){soonestDays=daysLeft;soonestName=nm;}
-    if(daysLeft<=10) upcomingSoon.push(daysLeft===0?nm+' ready now':nm+' in '+daysLeft+'d');
-  });
+  // Upcoming = rows with a harvest date today or in the future
+  const upcomingAll = Object.values(bedHarvest)
+    .map(r => ({ name: r[1], daysLeft: Math.round((new Date(r[5]) - now) / 864e5) }))
+    .filter(e => e.daysLeft >= 0)
+    .sort((a,b) => a.daysLeft - b.daysLeft);
+  let soonestDays = upcomingAll.length ? upcomingAll[0].daysLeft : null;
+  let soonestName = upcomingAll.length ? upcomingAll[0].name : '';
+  const upcomingSoon = upcomingAll.filter(e => e.daysLeft <= 10)
+    .map(e => e.daysLeft === 0 ? e.name+' ready now' : e.name+' in '+e.daysLeft+'d');
+  // Fallback: if no Form3 harvest dates exist, use HARVEST_WINDOWS on crop-name records
+  if (upcomingAll.length === 0) {
+    const byType = {};
+    [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r => {
+      if (!r[1]) return;
+      const k = r[1].toLowerCase().split(' ').slice(0,2).join(' ');
+      byType[k] = r;
+    });
+    Object.values(byType).filter(r => !r[5]).forEach(r => {
+      const nm = r[1];
+      const wKey = Object.keys(HARVEST_WINDOWS).find(k=>nm.toLowerCase().includes(k))||'lettuce';
+      const [mn] = HARVEST_WINDOWS[wKey];
+      if (!r[0]) return;
+      const daysIn = Math.round((now - new Date(r[0])) / 864e5);
+      const daysLeft = Math.max(0, mn - daysIn);
+      if (soonestDays===null||daysLeft<soonestDays) { soonestDays=daysLeft; soonestName=nm; }
+      if (daysLeft<=10) upcomingSoon.push(daysLeft===0 ? nm+' ready now' : nm+' in '+daysLeft+'d');
+    });
+  }
   const harvestRAG = soonestDays===null?'neutral':soonestDays===0?'good':soonestDays<=3?'warn':'neutral';
   const harvestPrimary = soonestDays===null?'No data':soonestDays===0?'Ready now':'In '+soonestDays+'d';
   const harvestLabel = soonestDays===null?'No crops':soonestDays===0?'Harvest now':soonestDays<=3?'Coming up':'On track';
