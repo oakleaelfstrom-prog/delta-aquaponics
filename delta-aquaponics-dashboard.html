@@ -1465,16 +1465,17 @@ function renderScorecards(){
   const fishP = D.fish.filter(r=>r[0]>=cutoff);
   const deaths = fishP.reduce((s,r)=>s+(r[3]||0),0);
   const stock = D.stats.current_stock||0;
-  const morPct = stock>0 ? (deaths/stock*100).toFixed(2) : null;
+  const stockAtStart = stock + deaths;
   const prevCutoff = new Date(new Date(cutoff)-daysElapsed*864e5).toISOString().slice(0,10);
   const prevDeaths = D.fish.filter(r=>r[0]>=prevCutoff&&r[0]<cutoff).reduce((s,r)=>s+(r[3]||0),0);
   const trend = deaths>prevDeaths?'up':deaths<prevDeaths?'down':'flat';
   const trendIcon = {'up':'↑','down':'↓','flat':'—'}[trend];
   const trendColor = {'up':'var(--c-bad)','down':'var(--c-good)','flat':'var(--muted)'}[trend];
-  const fishRAG = deaths===0?'good':morPct>1?'bad':'warn';
+  const fishRAG = deaths===0?'good':deaths/stockAtStart>0.01?'bad':'warn';
   const fishLabel = deaths===0?'No losses':fishRAG==='bad'?'Alert':'Monitor';
-  const fishSub = deaths===0 ? stock.toLocaleString()+' fish alive · no losses'
-    : (morPct!=null?morPct+'% of stock · ':'')+stock.toLocaleString()+' remaining';
+  const fishSub = deaths===0
+    ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses'
+    : 'Started '+stockAtStart.toLocaleString()+' · Lost '+deaths+' · '+stock.toLocaleString()+' remaining';
 
   const sc = (rag, icon, lbl, val, badge, sub, sec, extra='') =>
     `<div class="sc-card" onclick="navTo('${sec}')">
