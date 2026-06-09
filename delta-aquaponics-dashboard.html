@@ -547,7 +547,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="ops-nav" id="ops-nav-siphons"></div>
     <div class="section-header">
       <h2>Siphon Drain Cycles</h2>
-      <p>Six gravel-bed autosiphons — target drain cycle 18–22 minutes. Consistent timing indicates a healthy system.</p>
+      <p>Six gravel-bed autosiphons — target drain cycle 15–18 minutes. Row 6 is the benchmark row. Green = 15–18 min, amber = 18–20 min, red = above 20 min.</p>
     </div>
     <div class="kpi-row" id="siph-kpis"></div>
     <div class="card">
@@ -1053,7 +1053,7 @@ function openBedDrillDown(cropName, bedIdx){
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${siphHistory.map(s=>{
           const v = s[siphCol];
-          const ok = v>=15&&v<=18, bad = v>22||v<12;
+          const ok = v>=15&&v<=18, bad = v>20||v<12;
           const c = bad?'var(--c-bad)':ok?'var(--c-good)':'var(--c-warn)';
           return `<div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;text-align:center">
             <div style="font-weight:500;color:${c}">${v}m</div>
@@ -1249,7 +1249,7 @@ function renderExecutiveSummary(){
       </div>`;
   } else {
     const activePlants = D.plants.filter(r=>!r[5]).length;
-    const badSiph = D.siph_avgs.filter(v=>v!=null&&v>20).length;
+    const badSiph = D.siph_avgs.filter(v=>v!=null&&v>20).length; // red threshold: >20 min
     document.getElementById('exec-summary').innerHTML = `
       <div class="exec-card">
         <div class="exec-card-head">
@@ -1406,7 +1406,8 @@ function renderHealthRow(){
 
   // Deaths today
   const deathsToday = D.fish.filter(r=>r[0]===today).reduce((s,r)=>s+(r[3]||0),0);
-  const stockRAG = s.survival_pct>80?'good':s.survival_pct>65?'warn':'bad';
+  // Fish stock thresholds: stocked 1,295. Amber = below 1,166 (10% loss). Red = below 900.
+  const stockRAG = s.current_stock>=1166?'good':s.current_stock>=900?'warn':'bad';
 
   // Siphon in-target count (15–18 min = target)
   const siphInTarget = D.siph_avgs.filter(v=>v!=null&&v>=15&&v<=18).length;
@@ -1561,7 +1562,7 @@ function renderCropGrid(){
       const siphVals = D.siphons.slice(-10).map(s=>s[siphCol]).filter(v=>v!=null&&v>0);
       const avgSiph = siphVals.length?(siphVals.reduce((a,b)=>a+b,0)/siphVals.length).toFixed(1):null;
       const siphOk = avgSiph!=null&&avgSiph>=15&&avgSiph<=18;
-      const siphBad = avgSiph!=null&&avgSiph>22;
+      const siphBad = avgSiph!=null&&avgSiph>20;
       const siphDot = !avgSiph?'neutral':siphOk?'good':siphBad?'bad':'warn';
       const siphMark = siphOk?'<i class="ti ti-check" style="font-size:11px;color:var(--c-good)"></i>':'<i class="ti ti-alert-triangle" style="font-size:11px;color:var(--c-warn)"></i>';
       footer = `<span style="color:var(--muted)"><span class="dot dot-${siphDot}" style="margin-right:4px;display:inline-block"></span>S${rowIdx+1}: ${avgSiph!=null?avgSiph+'m ':' — '}${avgSiph!=null?siphMark:''}</span>`;
@@ -1579,7 +1580,9 @@ function renderCropGrid(){
         <div class="bed-obs-item"><span class="dot dot-neutral"></span><span>Yellowing</span></div>
         <div class="bed-obs-item"><span class="dot dot-neutral"></span><span>Wilting</span></div>
         <div class="bed-obs-item"><span class="dot dot-${pestNote?'bad':'neutral'}"></span><span>${pestNote?'Pests noted':'No pests'}</span></div>
-        <div class="bed-obs-item"><span class="dot dot-${sprayDot}"></span><span>Spray: ${sprayLabel}</span></div>
+        ${isDwc
+          ? `<div class="bed-obs-item"><span class="dot dot-neutral"></span><span>Bitterness</span></div>`
+          : `<div class="bed-obs-item"><span class="dot dot-${sprayDot}"></span><span>Spray: ${sprayLabel}</span></div>`}
       </div>
       <hr class="card-divider">
       <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
@@ -1818,14 +1821,14 @@ function renderPlants(){
 function renderSiphons(){
   const names = ['Siphon 1','Siphon 2','Siphon 3','Siphon 4','Siphon 5','Siphon 6'];
   document.getElementById('siph-kpis').innerHTML = D.siph_avgs.map((v,i)=>{
-    const cls = v&&v>=15&&v<=18?'good':v&&(v<15||v>22)?'bad':'warn';
+    const cls = v&&v>=15&&v<=18?'good':v&&v>20?'bad':'warn';
     return `<div class="kpi-card"><div class="label">${names[i]}</div><div class="value" style="color:${cls==='good'?'var(--c-good)':cls==='warn'?'var(--c-warn)':'var(--c-bad)'}">${v!=null?v:'—'}</div><div class="sub">avg minutes</div><span class="badge ${cls}">${cls==='good'?'Normal':cls==='warn'?'Watch':'Check'}</span></div>`;
   }).join('');
 
   destroyChart('siph-avg-chart');
   charts['siph-avg-chart'] = new Chart(document.getElementById('siph-avg-chart').getContext('2d'),{
     type:'bar',
-    data:{labels:names,datasets:[{label:'Avg drain time (min)',data:D.siph_avgs,backgroundColor:D.siph_avgs.map(v=>v&&v>=15&&v<=18?'rgba(42,122,42,.8)':'rgba(180,83,9,.75)'),borderWidth:0,borderRadius:4}]},
+    data:{labels:names,datasets:[{label:'Avg drain time (min)',data:D.siph_avgs,backgroundColor:D.siph_avgs.map(v=>v&&v>=15&&v<=18?'rgba(42,122,42,.8)':v&&v>20?'rgba(185,28,28,.75)':'rgba(180,83,9,.75)'),borderWidth:0,borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},annotation:{annotations:{ideal:{type:'box',yMin:15,yMax:18,backgroundColor:'rgba(42,122,42,.08)',borderWidth:0}}}},
       scales:{
