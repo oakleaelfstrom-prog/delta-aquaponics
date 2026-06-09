@@ -415,7 +415,6 @@ tr:hover td{background:var(--surface-2)}
     <div class="section-divider">Scorecards</div>
     <div id="scorecard-row"></div>
     <div class="section-divider">System Health</div>
-    <div id="exec-summary" style="margin-bottom:10px"></div>
     <div id="alerts-area" style="margin-bottom:10px"></div>
     <div id="health-grid-new"></div>
     <div class="section-divider">Growing Beds</div>
@@ -1601,7 +1600,7 @@ function renderCropGrid(){
 function renderOverview(){
   const s = D.stats;
   document.getElementById('lastUpdated').textContent = 'Data as of ' + (s.last_wq_date||'N/A');
-  renderExecutiveSummary();
+  // renderExecutiveSummary(); // hidden for now
   renderAlerts();
   renderScorecards();
   renderHealthRow();
