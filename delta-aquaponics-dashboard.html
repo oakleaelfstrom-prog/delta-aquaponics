@@ -1442,17 +1442,23 @@ function renderScorecards(){
     if (!r[1] || !r[5]) return;
     if (!bedHarvest[r[1]] || r[0] > bedHarvest[r[1]][0]) bedHarvest[r[1]] = r;
   });
-  // Upcoming = rows with a harvest date today or in the future
-  const upcomingAll = Object.values(bedHarvest)
+  // Map all rows with harvest dates to days from today (negative = already past due)
+  const allScheduled = Object.values(bedHarvest)
     .map(r => ({ name: r[1], daysLeft: Math.round((new Date(r[5]) - now) / 864e5) }))
-    .filter(e => e.daysLeft >= 0)
     .sort((a,b) => a.daysLeft - b.daysLeft);
+  const upcomingAll = allScheduled.filter(e => e.daysLeft >= 0);
+  const overdueAll  = allScheduled.filter(e => e.daysLeft < 0);
+  // Primary metric = next upcoming harvest
   let soonestDays = upcomingAll.length ? upcomingAll[0].daysLeft : null;
   let soonestName = upcomingAll.length ? upcomingAll[0].name : '';
-  const upcomingSoon = upcomingAll.filter(e => e.daysLeft <= 10)
-    .map(e => e.daysLeft === 0 ? e.name+' ready now' : e.name+' in '+e.daysLeft+'d');
+  // Sub-label: upcoming within 10 days + any overdue rows ("Row 3 ready 5d ago")
+  const upcomingSoon = [
+    ...upcomingAll.filter(e => e.daysLeft <= 10)
+      .map(e => e.daysLeft === 0 ? e.name+' ready now' : e.name+' in '+e.daysLeft+'d'),
+    ...overdueAll.map(e => e.name+' ready '+Math.abs(e.daysLeft)+'d ago')
+  ];
   // Fallback: if no Form3 harvest dates exist, use HARVEST_WINDOWS on crop-name records
-  if (upcomingAll.length === 0) {
+  if (allScheduled.length === 0) {
     const byType = {};
     [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r => {
       if (!r[1]) return;
