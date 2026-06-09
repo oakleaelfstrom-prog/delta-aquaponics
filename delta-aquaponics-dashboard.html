@@ -1399,7 +1399,7 @@ function renderScorecards(){
   const waterRAG = waterScore==null?'neutral':waterScore>=80?'good':waterScore>=55?'warn':'bad';
   const waterLabel = {good:'Good',warn:'Watch',bad:'Alert',neutral:'No data'}[waterRAG];
   const waterSub = wqP.length===0 ? 'No readings in period'
-    : issues.length ? issues[0]
+    : issues.length ? issues.join(' · ')
     : 'pH, temp, NO₂ & NO₃ on target';
 
   // SC2: CHECK ROUNDS COMPLIANCE
