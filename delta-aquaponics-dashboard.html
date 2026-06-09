@@ -1499,7 +1499,7 @@ function renderScorecards(){
   const fishSub = D.fish.length===0
     ? 'No fish records yet'
     : deaths===0
-      ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses'
+      ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses in period'
       : 'Started '+stockAtStart.toLocaleString()+' · Lost '+deaths+' · '+stock.toLocaleString()+' remaining';
 
   const sc = (rag, icon, lbl, val, badge, sub, sec, extra='') =>
