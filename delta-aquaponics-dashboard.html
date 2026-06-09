@@ -1466,11 +1466,8 @@ function renderScorecards(){
   const fishP = D.fish.filter(r=>r[0]>=cutoff);
   const deaths = fishP.reduce((s,r)=>s+(r[3]||0),0);
   const stock = D.stats.current_stock||0;
-  // Stock at period start: use runningStock from last record before cutoff, or original stocking if none
-  const preFish = D.fish.filter(r=>r[0]<cutoff);
-  const stockAtStart = preFish.length
-    ? (preFish[preFish.length-1][6] || stock)
-    : D.fish.length ? D.fish[0][2] : stock;
+  // "Started with" = original stocking quantity (index 2 of first fish record)
+  const stockAtStart = D.fish.length ? D.fish[0][2] : stock;
   const prevCutoff = new Date(new Date(cutoff)-daysElapsed*864e5).toISOString().slice(0,10);
   const prevDeaths = D.fish.filter(r=>r[0]>=prevCutoff&&r[0]<cutoff).reduce((s,r)=>s+(r[3]||0),0);
   const trend = deaths>prevDeaths?'up':deaths<prevDeaths?'down':'flat';
