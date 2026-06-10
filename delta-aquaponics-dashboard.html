@@ -808,7 +808,7 @@ function parseWebAppData(allData) {
     const tm = timeLabel(String(r[0])) || 'Morning';
 
     // Compliance: store submission time string (truthy = submitted)
-    const fmtTs = ts => { try { const d=new Date(ts); return isNaN(d)?null:d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); } catch{return null;} };
+    const fmtTs = ts => { try { const d=new Date(ts); return isNaN(d)?null:d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); } catch(e){return null;} };
     const submitTime = fmtTs(String(r[0]));
     if (!comp_map[dt]) comp_map[dt] = {f1_morn:false, f1_mid:false, f1_eve:false, f2:false};
     if (tm === 'Morning') comp_map[dt].f1_morn = submitTime || true;
@@ -1555,7 +1555,7 @@ function renderHealthRow(){
   // metric-row helper
   const mr = (dotCls, label, value) =>
     `<div class="metric-row"><span class="dot dot-${dotCls}"></span><span class="metric-label">${label}</span><span class="metric-value">${value}</span></div>`;
-  const fmtDate = dt => { try { const d=new Date(dt+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch{return dt;} };
+  const fmtDate = dt => { try { const d=new Date(dt+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch(e){return dt;} };
   const noData = dt => dt ? `—<span style="font-size:10px;color:var(--muted);margin-left:4px">last ${fmtDate(dt)}</span>` : '—';
 
   // RAG helpers
