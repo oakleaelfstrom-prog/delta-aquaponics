@@ -1749,6 +1749,14 @@ function renderCropGrid(){
   const yn = v => v==='Yes'?'bad':v==='No'?'good':'neutral'; // Yes=bad(problem), No=good, null=neutral
   const healthDot = h => h==='Good'?'good':h==='Fair'?'warn':h?'bad':'neutral';
   const eq = (D.stats&&D.stats.latest_equip)||{};
+  const fmtBedDate = dt => { try { const d=new Date(dt+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch(e){ return dt; } };
+
+  // Latest Form 2 submission date per named bed (Row 1…6, DWC Tank 1…4)
+  const lastBedDate = {};
+  D.plants.forEach(p => {
+    if(!p[1]||!p[0]) return;
+    if(!lastBedDate[p[1]] || p[0] > lastBedDate[p[1]]) lastBedDate[p[1]] = p[0];
+  });
 
   // Render one bed card (gravel or DWC)
   const bedCard = (label, isDwc, r, rowIdx) => {
@@ -1833,7 +1841,7 @@ function renderCropGrid(){
         <span style="color:${harvestColor};font-weight:500">${harvestText}</span>
         ${footer}
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">${r&&r[0]?'Last reading: '+r[0]:'No data yet'}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${lastBedDate[label]?'Last reading: '+fmtBedDate(lastBedDate[label]):'No data yet'}</div>
     </div>`;
   };
 
