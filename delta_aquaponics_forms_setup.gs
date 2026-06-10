@@ -35,26 +35,30 @@ const CONFIG = {
 // COLUMN MAPS
 // ============================================================
 
-// ── Form1_DailyRounds (19 cols, 0–18) ────────────────────────
+// ── Form1_DailyRounds (23 cols, 0–22) ────────────────────────
 //  Col  0: Timestamp (auto)
 //  Col  1: Staff name
-//  Col  2: Temperature inside greenhouse (°C)
-//  Col  3: Temperature outside greenhouse (°C)
-//  Col  4: Water temperature — fish tank (°C)
-//  Col  5: Weather conditions
-//  Col  6: Greenhouse fan
-//  Col  7: Did you feed the fish this round?
-//  Col  8: How much feed? (grams) [optional]
-//  Col  9: What time did you feed the fish? [optional]
-//  Col 10: Row 1 — drain cycle time (minutes)
-//  Col 11: Row 2 — drain cycle time (minutes)
-//  Col 12: Row 3 — drain cycle time (minutes)
-//  Col 13: Row 4 — drain cycle time (minutes)
-//  Col 14: Row 5 — drain cycle time (minutes)
-//  Col 15: Row 6 — drain cycle time (minutes)
-//  Col 16: Is top layer of gravel dry on all beds?
-//  Col 17: Is algae visible on gravel surface?
-//  Col 18: Any issues or observations [optional]
+//  Col  2: Round (Morning / Midday / Evening)
+//  Col  3: Temperature inside greenhouse (°C)
+//  Col  4: Temperature outside greenhouse (°C)
+//  Col  5: Water temperature — fish tank (°C)
+//  Col  6: Weather conditions
+//  Col  7: Greenhouse fan
+//  Col  8: Shade cloth position
+//  Col  9: Did you feed the fish this round?
+//  Col 10: How much feed? (grams) [optional]
+//  Col 11: What time did you feed the fish? [optional]
+//  Col 12: Row 1 — drain cycle time (minutes)
+//  Col 13: Row 2 — drain cycle time (minutes)
+//  Col 14: Row 3 — drain cycle time (minutes)
+//  Col 15: Row 4 — drain cycle time (minutes)
+//  Col 16: Row 5 — drain cycle time (minutes)
+//  Col 17: Row 6 — drain cycle time (minutes)
+//  Col 18: Is top layer of gravel dry on all beds?
+//  Col 19: Which rows are not dry? [optional — shown if No above]
+//  Col 20: Is algae visible on gravel surface?
+//  Col 21: Which rows have algae? [optional — shown if Yes above]
+//  Col 22: Any issues or observations [optional]
 
 // ── Form2_DailyCheck (73 cols, 0–72) ─────────────────────────
 //  Col  0: Timestamp (auto)
@@ -146,12 +150,12 @@ const CONFIG = {
 
 const HEADERS = {
   Form1_DailyRounds: [
-    'Timestamp', 'Staff name',
+    'Timestamp', 'Staff name', 'Round',
     'Inside greenhouse temp (°C)', 'Outside greenhouse temp (°C)', 'Fish tank water temp (°C)',
-    'Weather', 'Greenhouse fan', 'Fish fed this round', 'Feed amount (g)', 'Feeding time',
+    'Weather', 'Greenhouse fan', 'Shade cloth position', 'Fish fed this round', 'Feed amount (g)', 'Feeding time',
     'Row 1 — drain cycle (mins)', 'Row 2 — drain cycle (mins)', 'Row 3 — drain cycle (mins)',
     'Row 4 — drain cycle (mins)', 'Row 5 — drain cycle (mins)', 'Row 6 — drain cycle (mins)',
-    'Gravel top layer dry?', 'Algae visible?',
+    'Gravel top layer dry?', 'Rows not dry', 'Algae visible?', 'Rows with algae',
     'Notes'
   ],
   Form2_DailyCheck: [
@@ -366,6 +370,11 @@ function createForm1() {
 function buildForm1(form) {
   form.addTextItem().setTitle('Staff name').setRequired(true);
 
+  form.addListItem()
+    .setTitle('Which round is this?')
+    .setChoiceValues(['Morning', 'Midday', 'Evening'])
+    .setRequired(true);
+
   // Temperatures
   const tempHeader = form.addSectionHeaderItem().setTitle('Temperatures');
   if (tempHeader.setHelpText) tempHeader.setHelpText('Read the thermometers and write down the numbers you see.');
@@ -382,9 +391,18 @@ function buildForm1(form) {
     .setChoiceValues(['Sunny', 'Partly sunny', 'Cloudy', 'Light rain', 'Heavy rain', 'Very hot', 'Cold', 'Windy'])
     .setRequired(true);
 
+  // Fan + shade cloth (checked together each round)
+  form.addSectionHeaderItem().setTitle('Fan and shade cloths');
+
   form.addListItem()
     .setTitle('Is the greenhouse fan running?')
     .setChoiceValues(['On', 'Off'])
+    .setRequired(true);
+
+  form.addListItem()
+    .setTitle('What is the position of the shade cloths?')
+    .setHelpText('Check that the shade cloths are in the correct position for the time of day and weather.')
+    .setChoiceValues(['Open — no shade', 'Half closed — partial shade', 'Fully closed — full shade'])
     .setRequired(true);
 
   // Fish feeding
@@ -411,21 +429,55 @@ function buildForm1(form) {
       'Start timing when the water begins to drain. Stop when it has fully refilled.');
   }
 
-  form.addMultipleChoiceItem()
+  // Gravel dry — with conditional branch to "which rows?" section
+  const dryItem = form.addMultipleChoiceItem()
     .setTitle('Is the top layer of gravel dry on all beds? (the top 5–7 cm should be dry between floods)')
-    .setChoiceValues(['Yes', 'No'])
     .setRequired(true);
 
-  form.addMultipleChoiceItem()
+  // Section 2: which rows are not dry
+  const notDrySection = form.addPageBreakItem()
+    .setTitle('Gravel moisture — which rows?');
+  form.addCheckboxItem()
+    .setTitle('Which rows have a wet or soggy top layer? (select all that apply)')
+    .setHelpText('Select every row where the top layer feels wet when you press it.')
+    .setChoiceValues(['Row 1', 'Row 2', 'Row 3', 'Row 4', 'Row 5', 'Row 6'])
+    .setRequired(false);
+
+  // Section 3: algae check
+  const algaeSection = form.addPageBreakItem()
+    .setTitle('Algae check');
+  const algaeItem = form.addMultipleChoiceItem()
     .setTitle('Is green algae (slime) visible on the gravel surface?')
-    .setChoiceValues(['Yes — on most beds', 'Yes — on some beds', 'No'])
     .setRequired(true);
 
-  // Notes
-  form.addSectionHeaderItem().setTitle('Notes');
+  // Section 4: which rows have algae
+  const algaeRowsSection = form.addPageBreakItem()
+    .setTitle('Algae — which rows?');
+  form.addCheckboxItem()
+    .setTitle('Which rows have algae visible? (select all that apply)')
+    .setChoiceValues(['Row 1', 'Row 2', 'Row 3', 'Row 4', 'Row 5', 'Row 6'])
+    .setRequired(false);
+
+  // Section 5: notes (final)
+  const notesSection = form.addPageBreakItem()
+    .setTitle('Notes');
   form.addParagraphTextItem()
     .setTitle('Any issues or observations this round? (optional)')
     .setRequired(false);
+
+  // Wire up conditional navigation
+  dryItem.setChoices([
+    dryItem.createChoice('Yes — all beds are dry', algaeSection),
+    dryItem.createChoice('No — some beds are wet', notDrySection),
+  ]);
+  notDrySection.setGoToPage(algaeSection);
+
+  algaeItem.setChoices([
+    algaeItem.createChoice('Yes — on most beds', algaeRowsSection),
+    algaeItem.createChoice('Yes — on some beds', algaeRowsSection),
+    algaeItem.createChoice('No', notesSection),
+  ]);
+  algaeRowsSection.setGoToPage(notesSection);
 }
 
 // ============================================================

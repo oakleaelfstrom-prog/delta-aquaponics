@@ -872,9 +872,24 @@ function parseWebAppData(allData) {
     if (!r[0]) return;
     const dt = cleanDate(String(r[0]));
     if (!dt) return;
-    const tm = timeLabel(String(r[0])) || 'Morning';
 
-    // Compliance: store submission time string (truthy = submitted)
+    // Version detection: new=23 cols (added Round, Shade cloth, row-specific gravel/algae)
+    //   old-new=19 cols (current), old-old=31+ cols (had DWC quick check)
+    const isNewF1 = r.length >= 23;
+    const isOldOld = !isNewF1 && r.length > 20;
+
+    // Round: explicit field in new form; inferred from timestamp in old forms
+    const tm = isNewF1 ? (sv(r[2]) || 'Morning') : (timeLabel(String(r[0])) || 'Morning');
+
+    // Column offsets per version
+    const aiCol = isNewF1 ? 3 : 2;   // inside temp
+    const aoCol = isNewF1 ? 4 : 3;   // outside temp
+    const wtCol = isNewF1 ? 5 : 4;   // water temp
+    const wxCol = isNewF1 ? 6 : 5;   // weather
+    const s0    = isNewF1 ? 12 : 10; // first siphon col
+    const notesCol = isNewF1 ? 22 : isOldOld ? 30 : 18;
+
+    // Compliance
     const fmtTs = ts => { try { const d=new Date(ts); return isNaN(d)?null:d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); } catch(e){return null;} };
     const submitTime = fmtTs(String(r[0]));
     if (!comp_map[dt]) comp_map[dt] = {f1_morn:false, f1_mid:false, f1_eve:false, f2:false};
@@ -882,20 +897,27 @@ function parseWebAppData(allData) {
     else if (tm === 'Midday') comp_map[dt].f1_mid = submitTime || true;
     else comp_map[dt].f1_eve = submitTime || true;
 
-    // Siphon rows 1–6 (cols 10–15)
-    const s = [fv(r[10]), fv(r[11]), fv(r[12]), fv(r[13]), fv(r[14]), fv(r[15])];
+    // Siphon rows 1–6
+    const s = [0,1,2,3,4,5].map(i => fv(r[s0+i]));
     if (s.some(v => v !== null)) siph_rows.push([dt, tm, ...s]);
 
-    // Environment (cols 2, 3, 5 = inside, outside, weather)
-    const ai = fv(r[2]), ao = fv(r[3]), wx = sv(r[5]);
+    // Environment
+    const ai = fv(r[aiCol]), ao = fv(r[aoCol]), wx = sv(r[wxCol]);
     if (ai !== null || ao !== null) env_rows.push([dt, tm, ai, ao, wx]);
 
-    // Water temp (col 4) — partial WQ row (no pH here, pH comes from Form 2)
-    // Notes: col 18 in new format (19-col), col 30 in old format (31-col)
-    const wt = fv(r[4]);
-    const f1notes = sv(r.length > 20 ? r[30] : r[18]);
+    // Water temp + notes
+    const wt = fv(r[wtCol]);
+    const f1notes = sv(r[notesCol]);
     if (wt !== null) wq_rows.push([dt, tm, wt, null, f1notes]);
     jNote(dt, tm, 'Daily Rounds', 'General', f1notes);
+
+    // New-form-only: log gravel moisture and algae rows to journal
+    if (isNewF1) {
+      const notDryRows = sv(r[19]);
+      const algaeRows  = sv(r[21]);
+      if (notDryRows) jNote(dt, tm, 'Daily Rounds', 'Gravel moisture', 'Top layer not dry: ' + notDryRows);
+      if (algaeRows)  jNote(dt, tm, 'Daily Rounds', 'Algae', 'Algae visible on: ' + algaeRows);
+    }
   });
 
   // ── Form 2 — daily full check ─────────────────────────────────────────────
