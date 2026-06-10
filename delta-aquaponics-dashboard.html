@@ -406,12 +406,12 @@ tr:hover td{background:var(--surface-2)}
   </div>
   <button class="nav-link active" data-section="overview" style="padding-left:16px;border-top:1px solid rgba(255,255,255,.08)"><i class="ti ti-layout-dashboard icon"></i>Overview</button>
   <div class="drawer-ops-label">Operations</div>
-  <button class="nav-link" data-section="water"><i class="ti ti-droplet icon"></i>Water Quality</button>
+  <button class="nav-link" data-section="water"><i class="ti ti-droplet icon" style="color:#60a5fa"></i>Water Quality</button>
   <button class="nav-link" data-section="environment"><i class="ti ti-sun icon"></i>Environment</button>
-  <button class="nav-link" data-section="fish"><i class="ti ti-fish icon"></i>Fish</button>
-  <button class="nav-link" data-section="plants"><i class="ti ti-plant-2 icon"></i>Plants</button>
-  <button class="nav-link" data-section="siphons"><i class="ti ti-settings icon"></i>Siphons</button>
-  <button class="nav-link" data-section="maintenance"><i class="ti ti-tool icon"></i>Maintenance</button>
+  <button class="nav-link" data-section="fish"><i class="ti ti-fish icon" style="color:#f97316"></i>Fish</button>
+  <button class="nav-link" data-section="plants"><i class="ti ti-plant-2 icon" style="color:#4ade80"></i>Plants</button>
+  <button class="nav-link" data-section="siphons"><i class="ti ti-settings icon" style="color:#a78bfa"></i>Siphons</button>
+  <button class="nav-link" data-section="maintenance"><i class="ti ti-tool icon" style="color:#fbbf24"></i>Maintenance</button>
   <button class="nav-link" data-section="phases" style="padding-left:16px;border-top:1px solid rgba(255,255,255,.06)"><i class="ti ti-calendar icon"></i>Timeline</button>
 </div>
 
@@ -500,7 +500,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="kpi-row" id="wq-kpis"></div>
     <div class="card">
       <div class="card-header">
-        <h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px"></i>pH Over Time</h3>
+        <h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px;color:#a78bfa"></i>pH Over Time</h3>
         <div class="card-actions range-btns" id="ph-range-btns">
           <button class="range-btn active" data-days="7" onclick="setWQRange(7)">7d</button>
           <button class="range-btn" data-days="30" onclick="setWQRange(30)">1m</button>
@@ -512,7 +512,7 @@ tr:hover td{background:var(--surface-2)}
     </div>
     <div class="card">
       <div class="card-header">
-        <h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px"></i>Water Temperature Over Time</h3>
+        <h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px;color:#a78bfa"></i>Water Temperature Over Time</h3>
         <div class="card-actions range-btns" id="wt-range-btns">
           <button class="range-btn active" data-days="7" onclick="setWTRange(7)">7d</button>
           <button class="range-btn" data-days="30" onclick="setWTRange(30)">1m</button>
@@ -542,7 +542,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="kpi-row" id="env-kpis"></div>
     <div class="card">
       <div class="card-header">
-        <h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px"></i>Greenhouse Temperature (Morning / Midday / Evening)</h3>
+        <h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px;color:#a78bfa"></i>Greenhouse Temperature (Morning / Midday / Evening)</h3>
         <div class="card-actions range-btns" id="env-range-btns">
           <button class="range-btn active" data-days="7" onclick="setEnvRange(7)">7d</button>
           <button class="range-btn" data-days="30" onclick="setEnvRange(30)">1m</button>
@@ -1812,19 +1812,19 @@ function renderScorecards(){
       ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses in period'
       : 'Started '+stockAtStart.toLocaleString()+' · Lost '+deaths+' · '+stock.toLocaleString()+' remaining';
 
-  const sc = (rag, icon, lbl, val, badge, sub, onclick) =>
+  const sc = (rag, icon, lbl, val, badge, sub, onclick, iconColor='var(--muted)') =>
     `<div class="sc-card" onclick="${onclick}">
-      <div class="sc-label"><i class="ti ti-${icon}" style="font-size:13px;margin-right:4px"></i>${lbl}</div>
+      <div class="sc-label"><i class="ti ti-${icon}" style="font-size:13px;margin-right:4px;color:${iconColor}"></i>${lbl}</div>
       <div class="sc-value" style="color:${ragColor(rag)}">${val}</div>
       <span class="badge ${badgeCls(rag)}">${badge}</span>
       <div class="sc-sub">${sub}</div>
     </div>`;
 
   document.getElementById('scorecard-row').innerHTML =
-    sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `navTo('water')`) +
-    sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalPage()') +
-    sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, `navTo('plants')`) +
-    sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':'')+(deaths>0?` <span style="font-size:16px;font-weight:400;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`:''), fishLabel, fishSub, `navTo('fish')`);
+    sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `navTo('water')`, '#60a5fa') +
+    sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalPage()', '#fbbf24') +
+    sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, `navTo('plants')`, '#4ade80') +
+    sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':'')+(deaths>0?` <span style="font-size:16px;font-weight:400;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`:''), fishLabel, fishSub, `navTo('fish')`, '#f97316');
 }
 
 // ─── SYSTEM HEALTH GRID ──────────────────────────────────────────────────────
@@ -1915,9 +1915,9 @@ function renderHealthRow(){
   const lastRoundDate  = lastRoundEntry ? lastRoundEntry.date : '—';
   const lastRoundSlot  = lastRoundEntry ? (lastRoundEntry.f1_eve?'Evening':lastRoundEntry.f1_mid?'Midday':'Morning') : null;
 
-  const card = (icon, title, rows, footer, freq='') =>
+  const card = (icon, title, rows, footer, freq='', iconColor='var(--muted)') =>
     `<div class="sys-card">
-      <div class="sys-card-header"><i class="ti ti-${icon}"></i>${title}${freq?`<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">${freq}</span>`:''}
+      <div class="sys-card-header"><i class="ti ti-${icon}" style="color:${iconColor}"></i>${title}${freq?`<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">${freq}</span>`:''}
       </div>
       ${rows}
       <hr class="card-divider">
@@ -1981,12 +1981,12 @@ function renderHealthRow(){
     mr(eveDot,  'Evening round',  eveVal);
 
   document.getElementById('health-grid-new').innerHTML =
-    card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate+(lastWQSlot?' · '+lastWQSlot:''),         '3× daily') +
-    `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet"></i>Water vitals<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">3× daily · 1× daily · weekly</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
-    card('fish',     'Fish tank',     fishRows,    'Last reading: '+latestFishDate,                                               '1× daily') +
-    card('activity', 'Siphon health', siphRows,    'Last reading: '+lastSiphDate+(lastSiphSlot?' · '+lastSiphSlot:''),           '3× daily') +
-    card('settings', 'Equipment',     equipRows,   'Last reading: '+lastEquipDate,                                               '1× daily') +
-    card('calendar', 'Daily rounds',  checkRows,   'Last reading: '+lastRoundDate+(lastRoundSlot?' · '+lastRoundSlot:''),        '3× daily');
+    card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate+(lastWQSlot?' · '+lastWQSlot:''),         '3× daily', '#fbbf24') +
+    `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet" style="color:#60a5fa"></i>Water vitals<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">3× daily · 1× daily · weekly</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
+    card('fish',     'Fish tank',     fishRows,    'Last reading: '+latestFishDate,                                               '1× daily', '#f97316') +
+    card('activity', 'Siphon health', siphRows,    'Last reading: '+lastSiphDate+(lastSiphSlot?' · '+lastSiphSlot:''),           '3× daily', '#a78bfa') +
+    card('settings', 'Equipment',     equipRows,   'Last reading: '+lastEquipDate,                                               '1× daily', '#94a3b8') +
+    card('calendar', 'Daily rounds',  checkRows,   'Last reading: '+lastRoundDate+(lastRoundSlot?' · '+lastRoundSlot:''),        '3× daily', '#5eead4');
 }
 
 // ─── GROWING BEDS ────────────────────────────────────────────────────────────
