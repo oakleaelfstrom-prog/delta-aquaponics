@@ -1623,6 +1623,7 @@ function renderHealthRow(){
   const lastSiphDate   = D.siphons.length?D.siphons[D.siphons.length-1][0]:'—';
   const latestFishDate = D.fish.length?D.fish[D.fish.length-1][0]:'—';
   const lastEquipDate  = s.latest_equip_date||'—';
+  const lastRoundDate  = [...(D.compliance||[])].reverse().find(r=>r.f1_morn||r.f1_mid||r.f1_eve)?.date||'—';
 
   const card = (icon, title, rows, footer, freq='') =>
     `<div class="sys-card">
@@ -1652,12 +1653,13 @@ function renderHealthRow(){
     mrW(kRAG,  'K',  kk!=null?kk+' ppm':'—') +
     mrW(mnRAG, 'Mn', mn!=null?mn+' ppm':'—') +
     mrW(feRAG, 'Fe', fe!=null?fe+' ppm':'—');
-  const waterFooter = 'Last daily: '+lastWQDate+(lastChemDate?' · Chem: '+fmtDate(lastChemDate):'');
+  const waterFooter = 'Last reading: '+lastWQDate;
 
   // Card 3: Fish tank
   const fishRows =
     mr(stockRAG, 'Stock', s.current_stock.toLocaleString()) +
-    mr(deathsToday>0?'bad':'good', 'Deaths today', deathsToday===0?'None':String(deathsToday));
+    mr(deathsToday>0?'bad':'good', 'Deaths today', deathsToday===0?'None':String(deathsToday)) +
+    mr('neutral', 'Last fed', latestFishDate!=='—'?fmtDate(latestFishDate):'—');
 
   // Card 4: Siphon health — latest readings
   const siphRows = sl.every(v=>v==null)
@@ -1687,10 +1689,10 @@ function renderHealthRow(){
   document.getElementById('health-grid-new').innerHTML =
     card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate,     '3× daily') +
     `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet"></i>Water vitals<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">3× daily · 1× daily · weekly</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
-    card('fish',     'Fish tank',     fishRows,    'Last entry: '+latestFishDate,   '1× daily') +
-    card('activity', 'Siphon health', siphRows,    'Last recorded: '+lastSiphDate,  '3× daily') +
-    card('settings', 'Equipment',     equipRows,   'Last checked: '+lastEquipDate,  '1× daily') +
-    card('calendar', 'Daily rounds',  checkRows,   'Today — Form 1 submissions',    '3× daily');
+    card('fish',     'Fish tank',     fishRows,    'Last reading: '+latestFishDate, '1× daily') +
+    card('activity', 'Siphon health', siphRows,    'Last reading: '+lastSiphDate,   '3× daily') +
+    card('settings', 'Equipment',     equipRows,   'Last reading: '+lastEquipDate,  '1× daily') +
+    card('calendar', 'Daily rounds',  checkRows,   'Last reading: '+lastRoundDate,  '3× daily');
 }
 
 // ─── GROWING BEDS ────────────────────────────────────────────────────────────
