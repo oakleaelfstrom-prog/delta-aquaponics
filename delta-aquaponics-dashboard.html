@@ -1635,19 +1635,20 @@ function renderHealthRow(){
     mr(outRAG,  'Outside air temp', outsideTemp!=null?outsideTemp+'°C':noData(lastOutsideDate)) +
     mr(diffRAG, 'Differential',     diff!=null?diff+'°C':noData(lastOutsideDate));
 
-  // Card 2: Water vitals
-  const lWQDate = lastWQDate !== '—' ? lastWQDate : null;
-  const waterRows =
-    mr(phRAG,  'pH',          s.latest_ph!=null?fmt(s.latest_ph,2):noData(lWQDate)) +
-    mr(wtRAG,  'Water temp',  s.latest_wtemp!=null?s.latest_wtemp+'°C':noData(lWQDate)) +
-    mr(no2RAG, 'Nitrite NO₂', latestNO2!=null?latestNO2+' ppm':noData(lastNo2Date)) +
-    mr(no3RAG, 'Nitrate NO₃', latestNO3!=null?latestNO3+' ppm':noData(lastNo3Date)) +
-    mr(nh3RAG, 'Ammonia NH₃', nh3!=null?nh3+' ppm':noData(lastChemDate)) +
-    mr(caRAG,  'Calcium Ca',  ca!=null?ca+' ppm':noData(lastChemDate)) +
-    mr(mgRAG,  'Magnesium Mg',mg!=null?mg+' ppm':noData(lastChemDate)) +
-    mr(kRAG,   'Potassium K', kk!=null?kk+' ppm':noData(lastChemDate)) +
-    mr(mnRAG,  'Manganese Mn',mn!=null?mn+' ppm':noData(lastChemDate)) +
-    mr(feRAG,  'Iron Fe',     fe!=null?fe+' ppm':noData(lastChemDate));
+  // Card 2: Water vitals — 2-column layout (5 metrics each)
+  const waterCol1 =
+    mr(phRAG,  'pH',   s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
+    mr(wtRAG,  'Temp', s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
+    mr(no2RAG, 'NO₂',  latestNO2!=null?latestNO2+' ppm':'—') +
+    mr(no3RAG, 'NO₃',  latestNO3!=null?latestNO3+' ppm':'—') +
+    mr(nh3RAG, 'NH₃',  nh3!=null?nh3+' ppm':'—');
+  const waterCol2 =
+    mr(caRAG, 'Ca', ca!=null?ca+' ppm':'—') +
+    mr(mgRAG, 'Mg', mg!=null?mg+' ppm':'—') +
+    mr(kRAG,  'K',  kk!=null?kk+' ppm':'—') +
+    mr(mnRAG, 'Mn', mn!=null?mn+' ppm':'—') +
+    mr(feRAG, 'Fe', fe!=null?fe+' ppm':'—');
+  const waterFooter = 'Last daily: '+lastWQDate+(lastChemDate?' · Chem: '+fmtDate(lastChemDate):'');
 
   // Card 3: Fish tank
   const fishRows =
@@ -1681,7 +1682,7 @@ function renderHealthRow(){
 
   document.getElementById('health-grid-new').innerHTML =
     card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate) +
-    card('droplet',  'Water vitals',  waterRows,   'Last tested: '+lastWQDate) +
+    `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet"></i>Water vitals</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 6px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
     card('fish',     'Fish tank',     fishRows,    'Last entry: '+latestFishDate) +
     card('activity', 'Siphon health', siphRows,    'Last recorded: '+lastSiphDate) +
     card('settings', 'Equipment',     equipRows,   'Last checked: '+lastEquipDate) +
