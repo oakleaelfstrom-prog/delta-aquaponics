@@ -842,9 +842,9 @@ function parseWebAppData(allData) {
         .filter(r => r[0])
         .sort((a, b) => new Date(a[0]) - new Date(b[0]));
 
-      // Seed running stock from the last historical Fish_Records entry (or 1295 minus known deaths)
-      const histMortality = fish_rows.reduce((sum, r) => sum + (r[3] || 0), 0);
-      let runningStock = 1295 - histMortality;
+      // Seed running stock from last Fish_Records entry's running_total (r[6]), so restocks are picked up automatically
+      const histLastStock = fish_rows.length ? (Number(fish_rows[fish_rows.length-1][6]) || 1295) : 1295;
+      let runningStock = histLastStock;
 
       sorted.forEach(r => {
         const dt = cleanDate(String(r[0]));
@@ -1397,7 +1397,16 @@ function renderExecutiveSummary(){
 }
 
 // ─── SCORECARDS ─────────────────────────────────────────────────────────────
-const HARVEST_WINDOWS = {smile:[30,40],multigreen:[35,50],'elise prime':[30,40],commander:[50,55],tomato:[75,100],lettuce:[40,55],pepper:[70,90],cucumber:[55,65],spinach:[25,35],kale:[55,65]};
+const HARVEST_WINDOWS = {
+  // DWC varieties (specific names match first)
+  smile:[30,40], multigreen:[35,50], 'elise prime':[30,40], commander:[50,55],
+  // Gravel row crops (specific before generic)
+  cherry:[60,80], trinity:[80,100], tomato:[75,95],
+  chilli:[75,100], pepper:[70,85],
+  // Common crops
+  lettuce:[40,55], spinach:[25,35], basil:[35,50], chard:[45,60],
+  kale:[55,65], 'pak choi':[30,45], cucumber:[55,65],
+};
 
 function renderScorecards(){
   const now = new Date();
@@ -1585,27 +1594,30 @@ function renderHealthRow(){
   const noData = dt => dt ? `—<span style="font-size:10px;color:var(--muted);margin-left:4px">last ${fmtDate(dt)}</span>` : '—';
 
   // RAG helpers
-  const phRAG  = s.latest_ph==null?'neutral':s.latest_ph>=6.8&&s.latest_ph<=7.2?'good':s.latest_ph<=7.5?'warn':'bad';
-  const wtRAG  = s.latest_wtemp==null?'neutral':s.latest_wtemp>=24&&s.latest_wtemp<=30?'good':s.latest_wtemp>=20?'warn':'bad';
-  const airRAG = s.latest_env_morn==null?'neutral':s.latest_env_morn>=20&&s.latest_env_morn<=30?'good':s.latest_env_morn<=35?'warn':'bad';
+  const phRAG  = s.latest_ph==null?'neutral':s.latest_ph>=6.8&&s.latest_ph<=7.2?'good':s.latest_ph>=6.5&&s.latest_ph<=7.5?'warn':'bad';
+  // Water temp: optimal 25–28°C, acceptable 20–30°C, cascade failure <17°C (fish stop feeding → system collapses)
+  const wtRAG  = s.latest_wtemp==null?'neutral':(s.latest_wtemp>=22&&s.latest_wtemp<=28)?'good':(s.latest_wtemp>=17&&s.latest_wtemp<=30)?'warn':'bad';
+  // Inside air: ideal daytime 30–35°C, acceptable dip 12–13°C, fan trigger >40°C
+  const airRAG = s.latest_env_morn==null?'neutral':(s.latest_env_morn>=18&&s.latest_env_morn<=35)?'good':(s.latest_env_morn>=13&&s.latest_env_morn<=40)?'warn':'bad';
 
   // Daily chemistry (Form2)
   const latestWQ = [...D.wq].reverse().find(r=>r[6]!=null||r[5]!=null);
   const latestNO2 = latestWQ?latestWQ[6]:null, latestNO3 = latestWQ?latestWQ[5]:null;
-  const no2RAG = latestNO2==null?'neutral':latestNO2<0.5?'good':latestNO2<1.0?'warn':'bad';
-  const no3RAG = latestNO3==null?'neutral':(latestNO3>=10&&latestNO3<=50)?'good':(latestNO3>=5&&latestNO3<=80)?'warn':'bad';
+  // NO₂: >0.5 = alert manager immediately; NO₃: target 5–80, >160 alert
+  const no2RAG = latestNO2==null?'neutral':latestNO2<0.1?'good':latestNO2<0.5?'warn':'bad';
+  const no3RAG = latestNO3==null?'neutral':(latestNO3>=10&&latestNO3<=80)?'good':(latestNO3>=5&&latestNO3<=160)?'warn':'bad';
   // Weekly chemistry (Form3)
   const nh3=s.latest_nh3, ca=s.latest_ca, mg=s.latest_mg, kk=s.latest_k, mn=s.latest_mn, fe=s.latest_fe;
-  const nh3RAG = nh3==null?'neutral':nh3<0.5?'good':nh3<1.0?'warn':'bad';
-  const caRAG  = ca==null?'neutral':(ca>=40&&ca<=100)?'good':(ca>=20&&ca<=150)?'warn':'bad';
-  const mgRAG  = mg==null?'neutral':(mg>=10&&mg<=30)?'good':(mg>=5&&mg<=50)?'warn':'bad';
-  const kRAG   = kk==null?'neutral':(kk>=100&&kk<=200)?'good':(kk>=50&&kk<=300)?'warn':'bad';
-  const mnRAG  = mn==null?'neutral':(mn>=0.1&&mn<=0.5)?'good':(mn>=0.05&&mn<=1.0)?'warn':'bad';
-  const feRAG  = fe==null?'neutral':(fe>=2&&fe<=5)?'good':(fe>=1&&fe<=8)?'warn':'bad';
+  const nh3RAG = nh3==null?'neutral':nh3<0.5?'good':nh3<2.0?'warn':'bad';
+  const caRAG  = ca==null?'neutral':(ca>=30&&ca<=100)?'good':(ca>=15&&ca<=150)?'warn':'bad';
+  const mgRAG  = mg==null?'neutral':(mg>=10&&mg<=50)?'good':(mg>=5&&mg<=80)?'warn':'bad';
+  const kRAG   = kk==null?'neutral':(kk>=15&&kk<=50)?'good':(kk>=5&&kk<=80)?'warn':'bad';
+  const mnRAG  = mn==null?'neutral':(mn>=0.5&&mn<=5)?'good':(mn>=0.1&&mn<=8)?'warn':'bad';
+  const feRAG  = fe==null?'neutral':(fe>=1&&fe<=5)?'good':(fe>=0.5&&fe<=8)?'warn':'bad';
 
   // Deaths today
   const deathsToday = D.fish.filter(r=>r[0]===today).reduce((s,r)=>s+(r[3]||0),0);
-  const stockRAG = s.current_stock>=1166?'good':s.current_stock>=900?'warn':'bad';
+  const stockRAG = s.current_stock>=1560?'good':s.current_stock>=1210?'warn':'bad';
 
   // Siphon — latest readings per row (not all-time averages)
   const sl = D.siph_latest || [];

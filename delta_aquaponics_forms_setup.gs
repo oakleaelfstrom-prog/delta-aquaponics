@@ -705,6 +705,9 @@ const CROP_LIST = [
   'Butterhead Lettuce', 'Lollo Rossa Lettuce', 'Romaine Lettuce', 'Baby Leaf Lettuce', 'Oak Leaf Lettuce',
   'Spinach', 'Basil', 'Swiss Chard', 'Kale', 'Pak Choi / Bok Choy',
   'Coriander (Cilantro)', 'Parsley', 'Celery', 'Spring Onion', 'Mint',
+  'Tomato — Cherry (Samantha)', 'Tomato — Trinity F1', 'Tomato — Other',
+  'Sweet Pepper — Yolo Wonder', 'Sweet Pepper — Other',
+  'Chilli Pepper — Star', 'Chilli Pepper — Other',
   'Empty — nothing planted', 'Other'
 ];
 
@@ -1114,6 +1117,7 @@ function seedDemoData() {
       [new Date(2025,8,1),  'Three-spotted tilapia', 1295, 22, 'Unknown',              'Small losses, fish otherwise healthy.',              946],
       [new Date(2025,11,1), 'Three-spotted tilapia', 1295, 18, 'Unknown',              'Year-end stock count. Fish healthy.',                928],
       [new Date(2026,2,15), 'Three-spotted tilapia', 1295, 31, 'Unknown',              'Losses over winter period.',                        897],
+      [new Date(2026,4,1),  'Three-spotted tilapia', 1733, 0,  'Restock',              'Restocked to 1,733 fish (6 cages × ~289). All healthy on arrival.', 1733],
     ];
     fishSheet.getRange(2,1,fishData.length,7).setValues(fishData);
     Logger.log('Fish_Records seeded with ' + fishData.length + ' rows.');
