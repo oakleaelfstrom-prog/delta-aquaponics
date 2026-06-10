@@ -1555,6 +1555,9 @@ function renderHealthRow(){
   // metric-row helper
   const mr = (dotCls, label, value) =>
     `<div class="metric-row"><span class="dot dot-${dotCls}"></span><span class="metric-label">${label}</span><span class="metric-value">${value}</span></div>`;
+  // compact metric-row for two-column water card
+  const mrW = (dotCls, label, value) =>
+    `<div class="metric-row" style="padding:3px 0"><span class="dot dot-${dotCls}" style="width:7px;height:7px"></span><span class="metric-label" style="font-size:11px">${label}</span><span class="metric-value" style="font-size:11px">${value}</span></div>`;
   const fmtDate = dt => { try { const d=new Date(dt+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch(e){return dt;} };
   const noData = dt => dt ? `—<span style="font-size:10px;color:var(--muted);margin-left:4px">last ${fmtDate(dt)}</span>` : '—';
 
@@ -1637,17 +1640,17 @@ function renderHealthRow(){
 
   // Card 2: Water vitals — 2-column layout (5 metrics each)
   const waterCol1 =
-    mr(phRAG,  'pH',   s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
-    mr(wtRAG,  'Temp', s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
-    mr(no2RAG, 'NO₂',  latestNO2!=null?latestNO2+' ppm':'—') +
-    mr(no3RAG, 'NO₃',  latestNO3!=null?latestNO3+' ppm':'—') +
-    mr(nh3RAG, 'NH₃',  nh3!=null?nh3+' ppm':'—');
+    mrW(phRAG,  'pH',   s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
+    mrW(wtRAG,  'Temp', s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
+    mrW(no2RAG, 'NO₂',  latestNO2!=null?latestNO2+' ppm':'—') +
+    mrW(no3RAG, 'NO₃',  latestNO3!=null?latestNO3+' ppm':'—') +
+    mrW(nh3RAG, 'NH₃',  nh3!=null?nh3+' ppm':'—');
   const waterCol2 =
-    mr(caRAG, 'Ca', ca!=null?ca+' ppm':'—') +
-    mr(mgRAG, 'Mg', mg!=null?mg+' ppm':'—') +
-    mr(kRAG,  'K',  kk!=null?kk+' ppm':'—') +
-    mr(mnRAG, 'Mn', mn!=null?mn+' ppm':'—') +
-    mr(feRAG, 'Fe', fe!=null?fe+' ppm':'—');
+    mrW(caRAG, 'Ca', ca!=null?ca+' ppm':'—') +
+    mrW(mgRAG, 'Mg', mg!=null?mg+' ppm':'—') +
+    mrW(kRAG,  'K',  kk!=null?kk+' ppm':'—') +
+    mrW(mnRAG, 'Mn', mn!=null?mn+' ppm':'—') +
+    mrW(feRAG, 'Fe', fe!=null?fe+' ppm':'—');
   const waterFooter = 'Last daily: '+lastWQDate+(lastChemDate?' · Chem: '+fmtDate(lastChemDate):'');
 
   // Card 3: Fish tank
@@ -1682,7 +1685,7 @@ function renderHealthRow(){
 
   document.getElementById('health-grid-new').innerHTML =
     card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate) +
-    `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet"></i>Water vitals</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 6px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
+    `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet"></i>Water vitals</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
     card('fish',     'Fish tank',     fishRows,    'Last entry: '+latestFishDate) +
     card('activity', 'Siphon health', siphRows,    'Last recorded: '+lastSiphDate) +
     card('settings', 'Equipment',     equipRows,   'Last checked: '+lastEquipDate) +
