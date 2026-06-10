@@ -130,20 +130,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ov-hd-beds{background:rgba(74,222,128,.1);color:#4ade80;border-left:3px solid #22c55e}
 .ov-hd-dwc{background:rgba(251,191,36,.1);color:#fcd34d;border-left:3px solid #f59e0b}
 
-/* ── JOURNAL DRILL-DOWN ── */
-.journal-search{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface-2);color:var(--text);outline:none;transition:border .15s;box-sizing:border-box;margin-bottom:14px}
+/* ── JOURNAL PAGES ── */
+.journal-page{position:fixed;inset:0;z-index:600;background:var(--bg);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+.journal-page.open{transform:translateX(0)}
+.journal-pg-hd{display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:0.5px solid var(--border);background:var(--surface);flex-shrink:0;height:54px}
+.journal-pg-back{background:none;border:none;color:var(--text);font-size:26px;line-height:1;cursor:pointer;padding:0 8px 0 0;display:flex;align-items:center;color:var(--muted)}
+.journal-pg-title{font-size:16px;font-weight:500;color:var(--text)}
+.journal-pg-body{overflow-y:auto;flex:1;padding:16px}
+.journal-search{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface-2);color:var(--text);outline:none;transition:border .15s;box-sizing:border-box;margin-bottom:10px}
 .journal-search:focus{border-color:var(--c-good)}
-.journal-week{border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
-.journal-week-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;background:var(--surface);user-select:none}
-.journal-week-hd:hover{background:var(--surface-2)}
-.journal-week-label{font-size:13px;font-weight:500;color:var(--text)}
-.journal-week-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.journal-week-count{font-size:11px;color:var(--muted)}
-.journal-week-arrow{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block}
-.journal-week.open .journal-week-arrow{transform:rotate(90deg)}
-.journal-week-body{display:none;border-top:0.5px solid var(--border)}
-.journal-week.open .journal-week-body{display:block}
-.journal-day{padding:10px 14px}
+.journal-search-count{font-size:11px;color:var(--muted);margin-bottom:12px}
+.journal-week-row{display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.journal-week-row:active{background:var(--surface-2)}
+.journal-week-row-label{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.journal-week-row-count{font-size:12px;color:var(--muted)}
+.journal-week-row-arrow{font-size:18px;color:var(--muted);flex-shrink:0}
+.journal-day{padding:10px 0}
 .journal-day:not(:last-child){border-bottom:0.5px solid var(--border)}
 .journal-day-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
 .journal-entry{padding:7px 0}
@@ -153,8 +155,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .journal-entry-cat{font-size:11px;color:var(--muted)}
 .journal-entry-text{font-size:13px;color:var(--text);line-height:1.5}
 .journal-entry-text mark{background:rgba(251,191,36,.3);color:inherit;border-radius:2px;padding:0 1px}
-.journal-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:13px}
-.journal-search-count{font-size:11px;color:var(--muted);margin-bottom:10px}
+.journal-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:13px}
+.journal-search-results-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px}
 
 /* ── PERIOD SELECTOR ── */
 .period-row{display:flex;gap:8px;margin-bottom:4px}
@@ -423,6 +425,24 @@ tr:hover td{background:var(--surface-2)}
     </div>
     <div id="drill-body"></div>
   </div>
+</div>
+
+<!-- JOURNAL PAGE: OVERVIEW (weeks + search) -->
+<div id="journal-page-overview" class="journal-page">
+  <div class="journal-pg-hd">
+    <button class="journal-pg-back" onclick="closeJournalPage()">‹</button>
+    <span class="journal-pg-title">Farm Journal</span>
+  </div>
+  <div class="journal-pg-body" id="journal-overview-body"></div>
+</div>
+
+<!-- JOURNAL PAGE: WEEK DETAIL (day-by-day) -->
+<div id="journal-page-week" class="journal-page">
+  <div class="journal-pg-hd">
+    <button class="journal-pg-back" onclick="backToJournalOverview()">‹</button>
+    <span class="journal-pg-title" id="journal-week-page-title">Week</span>
+  </div>
+  <div class="journal-pg-body" id="journal-week-body"></div>
 </div>
 
 <!-- TOP NAV -->
@@ -1218,19 +1238,11 @@ function closeDrillDown(){
   document.body.style.overflow = '';
 }
 
-// ─── JOURNAL DRILL-DOWN ──────────────────────────────────────────────────────
-function openJournalDrillDown() {
-  const all = [...(D.journal||[])].sort((a,b)=>b[0]>a[0]?-1:1); // newest first
-
-  document.getElementById('drill-title').textContent = 'Farm Journal';
-  const bodyEl = document.getElementById('drill-body');
-  bodyEl.innerHTML = `
-    <input type="search" class="journal-search" id="journal-search" placeholder="Search notes… e.g. 'rat', 'pump', 'pH'" autocomplete="off"/>
-    <div id="journal-search-count" class="journal-search-count" style="display:none"></div>
-    <div id="journal-content"></div>`;
-
+// ─── JOURNAL PAGES ───────────────────────────────────────────────────────────
+(function(){
+  // Shared helpers (scoped so they don't pollute global namespace)
   function weekKey(dateStr) {
-    const d = new Date(dateStr+'T12:00:00'), day=d.getDay();
+    const d=new Date(dateStr+'T12:00:00'), day=d.getDay();
     const mon=new Date(d); mon.setDate(d.getDate()-(day===0?6:day-1));
     return mon.toISOString().slice(0,10);
   }
@@ -1242,7 +1254,7 @@ function openJournalDrillDown() {
     return `${f(mon)} – ${f(sun)}`;
   }
   function dayLabel(dateStr) {
-    try { return new Date(dateStr+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+    try{return new Date(dateStr+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long'});}
     catch(e){return dateStr;}
   }
   function tagStyle(src) {
@@ -1265,58 +1277,110 @@ function openJournalDrillDown() {
     </div>`;
   }
 
-  function renderContent(query) {
-    const q=query.trim();
-    const countEl=document.getElementById('journal-search-count');
-
-    if(q) {
-      const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
-      const hits=all.filter(e=>re.test(e[4]));
-      countEl.style.display='block';
-      countEl.textContent=hits.length?`${hits.length} result${hits.length!==1?'s':''} for "${q}"`:`No results for "${q}"`;
-      if(!hits.length){document.getElementById('journal-content').innerHTML=`<div class="journal-empty">No notes match "<strong>${q}</strong>"<br><span style="font-size:11px">Try a different word</span></div>`;return;}
-      // Flat list grouped by date
-      const byDate={};
-      hits.forEach(e=>{if(!byDate[e[0]])byDate[e[0]]=[];byDate[e[0]].push(e);});
-      document.getElementById('journal-content').innerHTML=Object.entries(byDate)
-        .sort((a,b)=>b[0]>a[0]?-1:1)
-        .map(([d,es])=>`<div class="journal-week"><div class="journal-week-body" style="display:block"><div class="journal-day"><div class="journal-day-label">${dayLabel(d)}</div>${es.map(e=>entryHtml(e,q)).join('')}</div></div></div>`)
-        .join('');
-      return;
-    }
-
-    countEl.style.display='none';
-    if(!all.length){document.getElementById('journal-content').innerHTML=`<div class="journal-empty">No notes written yet.<br><span style="font-size:11px">Notes come from the optional fields in Forms 1, 2 and 3.</span></div>`;return;}
-
-    // Week accordion
+  // Build week map from journal entries
+  function buildWeekMap(entries) {
     const byWeek={};
-    all.forEach(e=>{const wk=weekKey(e[0]);if(!byWeek[wk]){byWeek[wk]={label:weekLabel(e[0]),entries:[]};}byWeek[wk].entries.push(e);});
-    document.getElementById('journal-content').innerHTML=Object.entries(byWeek)
-      .sort((a,b)=>b[0]>a[0]?-1:1)
-      .map(([wk,{label,entries:wkEs}],idx)=>{
-        const byDay={};
-        wkEs.forEach(e=>{if(!byDay[e[0]])byDay[e[0]]=[];byDay[e[0]].push(e);});
-        const daysHtml=Object.entries(byDay).sort((a,b)=>b[0]>a[0]?-1:1)
-          .map(([d,es])=>`<div class="journal-day"><div class="journal-day-label">${dayLabel(d)}</div>${es.map(e=>entryHtml(e)).join('')}</div>`).join('');
-        return `<div class="journal-week${idx===0?' open':''}" data-wk="${wk}">
-          <div class="journal-week-hd" onclick="this.parentElement.classList.toggle('open')">
-            <div class="journal-week-label">📅 ${label}</div>
-            <div class="journal-week-meta"><span class="journal-week-count">${wkEs.length} note${wkEs.length!==1?'s':''}</span><span class="journal-week-arrow">▶</span></div>
-          </div>
-          <div class="journal-week-body">${daysHtml}</div>
-        </div>`;
-      }).join('');
+    entries.forEach(e=>{
+      const wk=weekKey(e[0]);
+      if(!byWeek[wk]){byWeek[wk]={label:weekLabel(e[0]),entries:[]};}
+      byWeek[wk].entries.push(e);
+    });
+    return byWeek;
   }
 
-  renderContent('');
-  setTimeout(()=>{
-    const inp=document.getElementById('journal-search');
-    if(inp) inp.addEventListener('input',e=>renderContent(e.target.value));
-  },30);
+  // ── OVERVIEW PAGE ──────────────────────────────────────────────────────────
+  window.openJournalPage = function() {
+    const all=[...(D.journal||[])].sort((a,b)=>a[0]>b[0]?-1:1); // newest first
+    const bodyEl=document.getElementById('journal-overview-body');
+    bodyEl.innerHTML=`
+      <input type="search" class="journal-search" id="journal-search" placeholder="Search all notes… e.g. 'rat', 'pump', 'pH'" autocomplete="off"/>
+      <div id="journal-search-count" class="journal-search-count" style="display:none"></div>
+      <div id="journal-overview-content"></div>`;
 
-  document.getElementById('drill-modal').classList.add('open');
-  document.body.style.overflow='hidden';
-}
+    function renderOverview(query) {
+      const q=query.trim();
+      const countEl=document.getElementById('journal-search-count');
+      const contentEl=document.getElementById('journal-overview-content');
+
+      if(q) {
+        const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
+        const hits=all.filter(e=>re.test(e[4]));
+        countEl.style.display='block';
+        countEl.textContent=hits.length?`${hits.length} result${hits.length!==1?'s':''} for "${q}"`:`No results for "${q}"`;
+        if(!hits.length){
+          contentEl.innerHTML=`<div class="journal-empty">No notes match "<strong>${q}</strong>"<br><span style="font-size:11px">Try a different word</span></div>`;
+          return;
+        }
+        // Flat date-grouped list with highlights — no week rows when searching
+        const byDate={};
+        hits.forEach(e=>{if(!byDate[e[0]])byDate[e[0]]=[];byDate[e[0]].push(e);});
+        contentEl.innerHTML=Object.entries(byDate)
+          .sort((a,b)=>b[0]>a[0]?-1:1)
+          .map(([d,es])=>`<div style="margin-bottom:16px"><div class="journal-day-label">${dayLabel(d)}</div>${es.map(e=>entryHtml(e,q)).join('')}</div>`)
+          .join('');
+        return;
+      }
+
+      countEl.style.display='none';
+      if(!all.length){
+        contentEl.innerHTML=`<div class="journal-empty">No notes written yet.<br><span style="font-size:11px">Notes come from the optional fields in Forms 1, 2 and 3.</span></div>`;
+        return;
+      }
+      // Week rows — tap to go to week detail page
+      const byWeek=buildWeekMap(all);
+      contentEl.innerHTML=Object.entries(byWeek)
+        .sort((a,b)=>b[0]>a[0]?-1:1)
+        .map(([wk,{label,entries:wkEs}])=>`
+          <div class="journal-week-row" onclick="openJournalWeekPage('${wk}')">
+            <div>
+              <div class="journal-week-row-label">${label}</div>
+              <div class="journal-week-row-count">${wkEs.length} note${wkEs.length!==1?'s':''}</div>
+            </div>
+            <span class="journal-week-row-arrow">›</span>
+          </div>`)
+        .join('');
+    }
+
+    renderOverview('');
+    setTimeout(()=>{
+      const inp=document.getElementById('journal-search');
+      if(inp) inp.addEventListener('input',e=>renderOverview(e.target.value));
+    },30);
+
+    document.getElementById('journal-page-overview').classList.add('open');
+    document.body.style.overflow='hidden';
+  };
+
+  // ── WEEK DETAIL PAGE ───────────────────────────────────────────────────────
+  window.openJournalWeekPage = function(wk) {
+    const all=[...(D.journal||[])].sort((a,b)=>a[0]>b[0]?-1:1);
+    const byWeek=buildWeekMap(all);
+    const weekData=byWeek[wk];
+    if(!weekData) return;
+
+    document.getElementById('journal-week-page-title').textContent=weekData.label;
+
+    const byDay={};
+    weekData.entries.forEach(e=>{if(!byDay[e[0]])byDay[e[0]]=[];byDay[e[0]].push(e);});
+    document.getElementById('journal-week-body').innerHTML=
+      Object.entries(byDay).sort((a,b)=>b[0]>a[0]?-1:1)
+        .map(([d,es])=>`<div class="journal-day"><div class="journal-day-label">${dayLabel(d)}</div>${es.map(e=>entryHtml(e)).join('')}</div>`)
+        .join('');
+
+    document.getElementById('journal-page-week').classList.add('open');
+  };
+
+  // ── NAVIGATION ─────────────────────────────────────────────────────────────
+  window.closeJournalPage = function() {
+    document.getElementById('journal-page-overview').classList.remove('open');
+    document.getElementById('journal-page-week').classList.remove('open');
+    document.body.style.overflow='';
+  };
+
+  window.backToJournalOverview = function() {
+    document.getElementById('journal-page-week').classList.remove('open');
+  };
+})();
 
 // ─── BED DRILL-DOWN ──────────────────────────────────────────────────────────
 function openBedDrillDown(cropName, bedIdx){
@@ -1758,7 +1822,7 @@ function renderScorecards(){
 
   document.getElementById('scorecard-row').innerHTML =
     sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `navTo('water')`) +
-    sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalDrillDown()') +
+    sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalPage()') +
     sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, `navTo('plants')`) +
     sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':'')+(deaths>0?` <span style="font-size:16px;font-weight:400;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`:''), fishLabel, fishSub, `navTo('fish')`);
 }
