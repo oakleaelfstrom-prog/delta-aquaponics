@@ -412,7 +412,6 @@ tr:hover td{background:var(--surface-2)}
   <button class="nav-link" data-section="plants"><i class="ti ti-plant-2 icon" style="color:#4ade80"></i>Plants</button>
   <button class="nav-link" data-section="siphons"><i class="ti ti-settings icon" style="color:#a78bfa"></i>Siphons</button>
   <button class="nav-link" data-section="maintenance"><i class="ti ti-tool icon" style="color:#fbbf24"></i>Maintenance</button>
-  <button class="nav-link" data-section="phases" style="padding-left:16px;border-top:1px solid rgba(255,255,255,.06)"><i class="ti ti-calendar icon"></i>Timeline</button>
 </div>
 
 <!-- DRILL-DOWN MODAL -->
@@ -1750,26 +1749,29 @@ function renderScorecards(){
   // Primary metric = next upcoming harvest
   let soonestDays = upcomingAll.length ? upcomingAll[0].daysLeft : null;
   let soonestName = upcomingAll.length ? upcomingAll[0].name : '';
-  // Sub-label: overdue first (most overdue → least), then upcoming
+  // Sub-label: only gravel rows (Row 1–6), overdue first then upcoming
+  const isRowBed = name => /^Row \d+$/i.test(name);
+  const rowOverdue  = overdueAll.slice().reverse().filter(e => isRowBed(e.name));
+  const rowUpcoming = upcomingAll.filter(e => isRowBed(e.name) && e.daysLeft <= 10);
   const upcomingSoon = [
-    ...overdueAll.slice().reverse().map(e => e.name+' ready '+Math.abs(e.daysLeft)+'d ago'),
-    ...upcomingAll.filter(e => e.daysLeft <= 10)
-      .map(e => e.daysLeft === 0 ? e.name+' ready now' : e.name+' in '+e.daysLeft+'d')
+    ...rowOverdue.map(e => e.name+' ready '+Math.abs(e.daysLeft)+'d ago'),
+    ...rowUpcoming.map(e => e.daysLeft === 0 ? e.name+' ready now' : e.name+' in '+e.daysLeft+'d')
   ];
-  // Fallback: if no Form3 harvest dates exist, use HARVEST_WINDOWS on crop-name records
+  // Fallback: if no Form3 harvest dates exist, use HARVEST_WINDOWS on planted-date records
   if (allScheduled.length === 0) {
-    const byType = {};
+    const byBed = {};
     [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r => {
-      if (!r[1]) return;
-      const k = r[1].toLowerCase().split(' ').slice(0,2).join(' ');
-      byType[k] = r;
+      if (!r[1] || !isRowBed(r[1])) return;
+      byBed[r[1]] = r;
     });
-    Object.values(byType).filter(r => !r[5]).forEach(r => {
+    Object.values(byBed).filter(r => !r[5]).forEach(r => {
       const nm = r[1];
-      const wKey = Object.keys(HARVEST_WINDOWS).find(k=>nm.toLowerCase().includes(k))||'lettuce';
+      const cropNm = (r[10]||'').toLowerCase();
+      const wKey = Object.keys(HARVEST_WINDOWS).find(k=>cropNm.includes(k))||'lettuce';
       const [mn] = HARVEST_WINDOWS[wKey];
-      if (!r[0]) return;
-      const daysIn = Math.round((now - new Date(r[0])) / 864e5);
+      const dateRef = r[11] || r[0];
+      if (!dateRef) return;
+      const daysIn = Math.round((now - new Date(dateRef)) / 864e5);
       const daysLeft = Math.max(0, mn - daysIn);
       if (soonestDays===null||daysLeft<soonestDays) { soonestDays=daysLeft; soonestName=nm; }
       if (daysLeft<=10) upcomingSoon.push(daysLeft===0 ? nm+' ready now' : nm+' in '+daysLeft+'d');
@@ -1780,7 +1782,7 @@ function renderScorecards(){
   const harvestLabel = soonestDays===null?'No crops':soonestDays===0?'Harvest now':soonestDays<=3?'Coming up':'On track';
   const harvestSub = upcomingSoon.length ? upcomingSoon.slice(0,3).join(' · ')
     : soonestName ? 'Next: '+soonestName+(soonestDays?' in '+soonestDays+'d':'')
-    : 'No active crop records';
+    : 'No row harvest dates set';
 
   // SC4: FISH
   const fishP = D.fish.filter(r=>r[0]>=cutoff);
@@ -1811,9 +1813,9 @@ function renderScorecards(){
 
   document.getElementById('scorecard-row').innerHTML =
     sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `navTo('water')`, '#60a5fa') +
-    sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalPage()', '#fbbf24') +
     sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, `navTo('plants')`, '#4ade80') +
-    sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':'')+(deaths>0?` <span style="font-size:16px;font-weight:400;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`:''), fishLabel, fishSub, `navTo('fish')`, '#f97316');
+    sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':'')+(deaths>0?` <span style="font-size:16px;font-weight:400;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`:''), fishLabel, fishSub, `navTo('fish')`, '#f97316') +
+    sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalPage()', '#fbbf24');
 }
 
 // ─── SYSTEM HEALTH GRID ──────────────────────────────────────────────────────
@@ -2092,17 +2094,16 @@ function renderCropGrid(){
       var sprayDot = 'neutral', sprayLabel = '—';
     }
 
-    // Footer: siphon avg for gravel rows; DWC bubbles for tanks
+    // Footer: latest siphon reading for gravel rows; DWC bubbles for tanks
     let footer = '';
     if(!isDwc){
       const siphCol = rowIdx + 2; // S1=col2 … S6=col7
-      const siphVals = D.siphons.slice(-10).map(s=>s[siphCol]).filter(v=>v!=null&&v>0);
-      const avgSiph = siphVals.length?(siphVals.reduce((a,b)=>a+b,0)/siphVals.length).toFixed(1):null;
-      const siphOk = avgSiph!=null&&avgSiph>=15&&avgSiph<=18;
-      const siphBad = avgSiph!=null&&avgSiph>20;
-      const siphDot = !avgSiph?'neutral':siphOk?'good':siphBad?'bad':'warn';
+      const latestSiph = D.siphons.slice().reverse().map(s=>s[siphCol]).find(v=>v!=null&&v>0) ?? null;
+      const siphOk = latestSiph!=null&&latestSiph>=15&&latestSiph<=18;
+      const siphBad = latestSiph!=null&&latestSiph>20;
+      const siphDot = latestSiph==null?'neutral':siphOk?'good':siphBad?'bad':'warn';
       const siphMark = siphOk?'<i class="ti ti-check" style="font-size:11px;color:var(--c-good)"></i>':'<i class="ti ti-alert-triangle" style="font-size:11px;color:var(--c-warn)"></i>';
-      footer = `<span style="color:var(--muted)"><span class="dot dot-${siphDot}" style="margin-right:4px;display:inline-block"></span>S${rowIdx+1}: ${avgSiph!=null?avgSiph+'m ':' — '}${avgSiph!=null?siphMark:''}</span>`;
+      footer = `<span style="color:var(--muted)"><span class="dot dot-${siphDot}" style="margin-right:4px;display:inline-block"></span>S${rowIdx+1}: ${latestSiph!=null?latestSiph+'m ':' — '}${latestSiph!=null?siphMark:''}</span>`;
     } else {
       const bubVal = rowIdx===0?eq.bubbles1:rowIdx===1?eq.bubbles2:rowIdx===2?eq.bubbles3:rowIdx===3?eq.bubbles4:null;
       const bubDot = bubVal==='Yes'?'good':bubVal==='No'?'bad':'neutral';
