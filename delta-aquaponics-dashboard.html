@@ -1624,9 +1624,10 @@ function renderHealthRow(){
   const latestFishDate = D.fish.length?D.fish[D.fish.length-1][0]:'—';
   const lastEquipDate  = s.latest_equip_date||'—';
 
-  const card = (icon, title, rows, footer) =>
+  const card = (icon, title, rows, footer, freq='') =>
     `<div class="sys-card">
-      <div class="sys-card-header"><i class="ti ti-${icon}"></i>${title}</div>
+      <div class="sys-card-header"><i class="ti ti-${icon}"></i>${title}${freq?`<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">${freq}</span>`:''}
+      </div>
       ${rows}
       <hr class="card-divider">
       <div style="font-size:11px;color:var(--muted)">${footer}</div>
@@ -1684,12 +1685,12 @@ function renderHealthRow(){
     mr(eveDot,  'Evening round',  eveVal);
 
   document.getElementById('health-grid-new').innerHTML =
-    card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate) +
-    `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet"></i>Water vitals</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
-    card('fish',     'Fish tank',     fishRows,    'Last entry: '+latestFishDate) +
-    card('activity', 'Siphon health', siphRows,    'Last recorded: '+lastSiphDate) +
-    card('settings', 'Equipment',     equipRows,   'Last checked: '+lastEquipDate) +
-    card('calendar', 'Daily rounds',  checkRows,   'Today — Form 1 submissions');
+    card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate,     '3× daily') +
+    `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet"></i>Water vitals<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">3× daily · 1× daily · weekly</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
+    card('fish',     'Fish tank',     fishRows,    'Last entry: '+latestFishDate,   '1× daily') +
+    card('activity', 'Siphon health', siphRows,    'Last recorded: '+lastSiphDate,  '3× daily') +
+    card('settings', 'Equipment',     equipRows,   'Last checked: '+lastEquipDate,  '1× daily') +
+    card('calendar', 'Daily rounds',  checkRows,   'Today — Form 1 submissions',    '3× daily');
 }
 
 // ─── GROWING BEDS ────────────────────────────────────────────────────────────
