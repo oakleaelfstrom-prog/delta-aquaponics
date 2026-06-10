@@ -642,7 +642,8 @@ tr:hover td{background:var(--surface-2)}
 // from the spreadsheet.  The Web App URL is stored in localStorage.
 // ─────────────────────────────────────────────────────────────────────────────
 
-let WEBAPP_URL = localStorage.getItem('deltaWebAppUrl') || '';
+const DEFAULT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxVpKeVkudSCYG802UWe6pUSceK-JNKoJ9fn2YD4jj9CZqnyNMn1CXYsF5sfWIg8xh1/exec';
+let WEBAPP_URL = localStorage.getItem('deltaWebAppUrl') || DEFAULT_WEBAPP_URL;
 
 function openGSModal() {
   document.getElementById('gsWebAppInput').value = WEBAPP_URL;
