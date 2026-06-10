@@ -66,12 +66,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .drawer-header{padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
 .drawer-header h2{color:#fff;font-size:15px;font-weight:500}
 .drawer-header p{color:var(--nav-text);font-size:11px;opacity:.65;margin-top:3px}
-.drawer-cat{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;color:rgba(255,255,255,.45);font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .15s;user-select:none;border-top:1px solid rgba(255,255,255,.06);margin-top:4px}
-.drawer-cat:hover{background:rgba(255,255,255,.06)}
-.drawer-cat .cat-arrow{font-size:10px;transition:transform .2s}
-.drawer-cat.open .cat-arrow{transform:rotate(90deg)}
-.drawer-items{display:none}
-.drawer-items.open{display:block}
+.drawer-ops-label{padding:10px 16px;color:rgba(255,255,255,.38);font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;border-top:1px solid rgba(255,255,255,.06);margin-top:4px}
 .nav-link{display:flex;align-items:center;gap:10px;padding:10px 16px 10px 26px;color:var(--nav-text);font-size:13px;cursor:pointer;transition:background .15s;border:none;background:transparent;width:100%;text-align:left;font-weight:400}
 .nav-link:hover{background:rgba(255,255,255,.06)}
 .nav-link.active{background:rgba(74,222,128,.12);color:#fff;border-left:3px solid var(--nav-active);padding-left:23px}
@@ -113,9 +108,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .section-header h2{font-size:19px;font-weight:500;color:var(--text);letter-spacing:-.01em}
 .section-header p{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
 
-/* ── SECTION DIVIDERS ── */
+/* ── SECTION DIVIDERS (legacy) ── */
 .section-divider{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:24px 0 8px}
 .section-divider:first-child{padding-top:0}
+
+/* ── QUICKJUMP BAR ── */
+#quickjump{position:sticky;top:54px;z-index:90;background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:8px 16px;margin:0 -16px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+#quickjump::-webkit-scrollbar{display:none}
+.qj-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s}
+.qj-btn[data-sec="pillars"].active{background:rgba(99,102,241,.15);color:#a5b4fc;border-color:rgba(99,102,241,.4)}
+.qj-btn[data-sec="analytics"].active{background:rgba(20,184,166,.15);color:#5eead4;border-color:rgba(20,184,166,.4)}
+.qj-btn[data-sec="beds"].active{background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4)}
+.qj-btn[data-sec="dwc"].active{background:rgba(251,191,36,.15);color:#fcd34d;border-color:rgba(251,191,36,.4)}
+
+/* ── OVERVIEW SECTION HEADERS ── */
+.ov-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;margin:20px -16px 14px;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;scroll-margin-top:104px}
+.ov-hd:first-of-type{margin-top:12px}
+.ov-hd i{font-size:16px}
+.ov-hd-pillars{background:rgba(99,102,241,.1);color:#a5b4fc;border-left:3px solid #6366f1}
+.ov-hd-analytics{background:rgba(20,184,166,.1);color:#5eead4;border-left:3px solid #14b8a6}
+.ov-hd-beds{background:rgba(74,222,128,.1);color:#4ade80;border-left:3px solid #22c55e}
+.ov-hd-dwc{background:rgba(251,191,36,.1);color:#fcd34d;border-left:3px solid #f59e0b}
 
 /* ── PERIOD SELECTOR ── */
 .period-row{display:flex;gap:8px;margin-bottom:4px}
@@ -364,17 +377,13 @@ tr:hover td{background:var(--surface-2)}
     <p>Delta Eco Concerns · Shorobe, Botswana</p>
   </div>
   <button class="nav-link active" data-section="overview" style="padding-left:16px;border-top:1px solid rgba(255,255,255,.08)"><i class="ti ti-layout-dashboard icon"></i>Overview</button>
-  <div class="drawer-cat" onclick="toggleCat(this)">
-    <span>Operations</span><span class="cat-arrow">▶</span>
-  </div>
-  <div class="drawer-items">
-    <button class="nav-link" data-section="water"><i class="ti ti-droplet icon"></i>Water Quality</button>
-    <button class="nav-link" data-section="environment"><i class="ti ti-sun icon"></i>Environment</button>
-    <button class="nav-link" data-section="fish"><i class="ti ti-fish icon"></i>Fish</button>
-    <button class="nav-link" data-section="plants"><i class="ti ti-plant-2 icon"></i>Plants</button>
-    <button class="nav-link" data-section="siphons"><i class="ti ti-settings icon"></i>Siphons</button>
-    <button class="nav-link" data-section="maintenance"><i class="ti ti-tool icon"></i>Maintenance</button>
-  </div>
+  <div class="drawer-ops-label">Operations</div>
+  <button class="nav-link" data-section="water"><i class="ti ti-droplet icon"></i>Water Quality</button>
+  <button class="nav-link" data-section="environment"><i class="ti ti-sun icon"></i>Environment</button>
+  <button class="nav-link" data-section="fish"><i class="ti ti-fish icon"></i>Fish</button>
+  <button class="nav-link" data-section="plants"><i class="ti ti-plant-2 icon"></i>Plants</button>
+  <button class="nav-link" data-section="siphons"><i class="ti ti-settings icon"></i>Siphons</button>
+  <button class="nav-link" data-section="maintenance"><i class="ti ti-tool icon"></i>Maintenance</button>
   <button class="nav-link" data-section="phases" style="padding-left:16px;border-top:1px solid rgba(255,255,255,.06)"><i class="ti ti-calendar icon"></i>Timeline</button>
 </div>
 
@@ -418,13 +427,19 @@ tr:hover td{background:var(--surface-2)}
       <button class="period-btn active" id="pd-week" onclick="setPeriod('week')">This Week</button>
       <button class="period-btn" id="pd-month" onclick="setPeriod('month')">This Month</button>
     </div>
-    <div class="section-divider">Scorecards</div>
+    <div id="quickjump">
+      <button class="qj-btn active" data-sec="pillars" onclick="jumpTo('anc-pillars',this)"><i class="ti ti-chart-bar" style="font-size:12px;margin-right:3px"></i>Pillars</button>
+      <button class="qj-btn" data-sec="analytics" onclick="jumpTo('anc-analytics',this)"><i class="ti ti-activity" style="font-size:12px;margin-right:3px"></i>System Analytics</button>
+      <button class="qj-btn" data-sec="beds" onclick="jumpTo('anc-beds',this)"><i class="ti ti-plant-2" style="font-size:12px;margin-right:3px"></i>Growing Beds</button>
+      <button class="qj-btn" data-sec="dwc" onclick="jumpTo('anc-dwc',this)"><i class="ti ti-droplet" style="font-size:12px;margin-right:3px"></i>DWC Tanks</button>
+    </div>
+    <div class="ov-hd ov-hd-pillars" id="anc-pillars" data-sec="pillars"><i class="ti ti-chart-bar"></i>Pillars</div>
     <div id="scorecard-row"></div>
-    <div class="section-divider">System Health</div>
+    <div class="ov-hd ov-hd-analytics" id="anc-analytics" data-sec="analytics"><i class="ti ti-activity"></i>Current System Analytics</div>
     <div id="health-grid-new"></div>
-    <div class="section-divider">Growing Beds</div>
+    <div class="ov-hd ov-hd-beds" id="anc-beds" data-sec="beds"><i class="ti ti-plant-2"></i>Growing Beds</div>
     <div id="beds-grid"></div>
-    <div class="section-divider" style="margin-top:20px">DWC Tanks</div>
+    <div class="ov-hd ov-hd-dwc" id="anc-dwc" data-sec="dwc"><i class="ti ti-droplet"></i>DWC Tanks</div>
     <div id="dwc-grid"></div>
   </div>
 
@@ -1074,10 +1089,33 @@ function toggleDrawer(){
   document.getElementById('drawer').classList.toggle('open');
   document.getElementById('drawer-overlay').classList.toggle('open');
 }
-function toggleCat(el){
-  el.classList.toggle('open');
-  el.nextElementSibling.classList.toggle('open');
+function jumpTo(id, btn) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  if (btn) {
+    document.querySelectorAll('.qj-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
 }
+// Highlight active quickjump button as user scrolls
+(function(){
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const sec = entry.target.dataset.sec;
+        document.querySelectorAll('.qj-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.querySelector('.qj-btn[data-sec="' + sec + '"]');
+        if (btn) btn.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-100px 0px -65% 0px', threshold:0});
+  document.addEventListener('DOMContentLoaded', () => {
+    ['anc-pillars','anc-analytics','anc-beds','anc-dwc'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    });
+  });
+})();
 function showSection(sec){
   document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
   const el = document.getElementById('sec-' + sec);
