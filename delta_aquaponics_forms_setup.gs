@@ -1,259 +1,277 @@
 // ============================================================
 // DELTA AQUAPONICS — FULL DATA PIPELINE SETUP
-// Google Apps Script  ·  Version 2.0
+// Google Apps Script  ·  Version 3.0
 // ============================================================
 //
-// SETUP INSTRUCTIONS:
-//   1. Create a new Google Apps Script project at script.google.com
+// FIRST-TIME SETUP:
+//   1. Create a Google Apps Script project at script.google.com
 //   2. Paste this entire script (replace any existing code)
-//   3. If you already have a Google Sheet, paste its ID into
-//      CONFIG.SPREADSHEET_ID below.  Otherwise leave it blank
-//      and setup() will create a new spreadsheet.
-//   4. Click Run → setup().  Approve permissions when prompted.
-//   5. After setup runs, open View → Logs to copy the form URLs.
+//   3. Paste your Google Sheet ID into CONFIG.SPREADSHEET_ID below,
+//      or leave blank and setup() will create a new spreadsheet.
+//   4. Click Run → setup() — approve permissions when prompted.
+//   5. Check View → Logs to copy form URLs and share with staff.
 //   6. Deploy as a Web App:
 //        Deploy → New deployment → Type: Web App
 //        Execute as: Me  ·  Who has access: Anyone
-//      Copy the Web App URL.
-//   7. Paste the Web App URL into the dashboard Settings modal.
+//      Copy the Web App URL into the dashboard Settings modal.
+//
+// UPDATING EXISTING FORMS (after pasting a new version):
+//   Run updateForms() — do NOT run setup() again.
+//   • Existing form URLs stay the same — no resharing needed.
+//   • The Google Sheet is kept; historical tabs are untouched.
+//   • Old rows in Form1/2/3 tabs will have columns in the old order.
+//     This is expected — only new submissions use the new layout.
 //
 // IMPORTANT:
-//   • Run setup() only once.  Running it again creates duplicate
-//     forms and triggers.  If you need to re-run, delete the
-//     script properties first (Project Settings → Script Props).
-//   • Tabs 4–9 (Environmental_Data … System_Maintenance) are
-//     historical data.  This script never touches them.
+//   • Run setup() only once (first install).
 //   • Financial_Records is never read or referenced here.
 // ============================================================
 
-// ── CONFIG ────────────────────────────────────────────────────
-// Edit SPREADSHEET_ID before running setup().
-// FORM_IDS are filled automatically by setup() via Script Properties.
 const CONFIG = {
-  SPREADSHEET_ID: '',   // ← paste existing Sheet ID, or leave blank
+  SPREADSHEET_ID: '',  // ← paste existing Sheet ID, or leave blank
 };
 
 // ============================================================
 // COLUMN MAPS
-// These document exactly what is stored in every tab so anyone
-// can update field positions if the forms change later.
 // ============================================================
 
-// ── Form1_DailyRounds ────────────────────────────────────────
-//  Col  0: Timestamp  (auto)
+// ── Form1_DailyRounds (31 cols, 0–30) ────────────────────────
+//  Col  0: Timestamp (auto)
 //  Col  1: Staff name
-//  Col  2: Air temp — inside greenhouse (°C)
-//  Col  3: Air temp — outside greenhouse (°C)
-//  Col  4: Water temp — fish tank (°C)
+//  Col  2: Temperature inside greenhouse (°C)
+//  Col  3: Temperature outside greenhouse (°C)
+//  Col  4: Water temperature — fish tank (°C)
 //  Col  5: Weather conditions
 //  Col  6: Greenhouse fan
-//  Col  7: Fish fed this round
-//  Col  8: Feed amount given (g)            [optional]
-//  Col  9: Feeding time
-//  Col 10: Gravel bed row 1 cycle time (mins)
-//  Col 11: Gravel bed row 2 cycle time (mins)
-//  Col 12: Gravel bed row 3 cycle time (mins)
-//  Col 13: Gravel bed row 4 cycle time (mins)
-//  Col 14: Gravel bed row 5 cycle time (mins)
-//  Col 15: Gravel bed row 6 cycle time (mins)
-//  Col 16: Dry zone present on all rows (top 50–75 mm dry)
-//  Col 17: Algae visible on gravel surface
+//  Col  7: Did you feed the fish this round?
+//  Col  8: How much feed? (grams) [optional]
+//  Col  9: What time did you feed the fish? [optional]
+//  Col 10: Row 1 — drain cycle time (minutes)
+//  Col 11: Row 2 — drain cycle time (minutes)
+//  Col 12: Row 3 — drain cycle time (minutes)
+//  Col 13: Row 4 — drain cycle time (minutes)
+//  Col 14: Row 5 — drain cycle time (minutes)
+//  Col 15: Row 6 — drain cycle time (minutes)
+//  Col 16: Is top layer of gravel dry on all beds?
+//  Col 17: Is algae visible on gravel surface?
 //  Col 18: DWC Tank 1 — bubbles visible
-//  Col 19: DWC Tank 1 — water running in
-//  Col 20: DWC Tank 1 — boards not blocking outlets
+//  Col 19: DWC Tank 1 — water flowing in
+//  Col 20: DWC Tank 1 — boards clear of outlets
 //  Col 21: DWC Tank 2 — bubbles visible
-//  Col 22: DWC Tank 2 — water running in
-//  Col 23: DWC Tank 2 — boards not blocking outlets
-//  Col 24: Any issues or observations       [optional]
+//  Col 22: DWC Tank 2 — water flowing in
+//  Col 23: DWC Tank 2 — boards clear of outlets
+//  Col 24: DWC Tank 3 — bubbles visible        ← NEW (was Notes)
+//  Col 25: DWC Tank 3 — water flowing in        ← NEW
+//  Col 26: DWC Tank 3 — boards clear of outlets ← NEW
+//  Col 27: DWC Tank 4 — bubbles visible         ← NEW
+//  Col 28: DWC Tank 4 — water flowing in         ← NEW
+//  Col 29: DWC Tank 4 — boards clear of outlets  ← NEW
+//  Col 30: Any issues or observations [optional] ← was col 24
 
-// ── Form2_DailyCheck ─────────────────────────────────────────
-//  Col  0: Timestamp  (auto)
+// ── Form2_DailyCheck (125 cols, 0–124) ───────────────────────
+//  Col  0: Timestamp (auto)
 //  Col  1: Staff name
 //  Col  2: Date
-//  Col  3: pH
-//  Col  4: Nitrate NO₃ (ppm)
-//  Col  5: Nitrite NO₂ (ppm)
-//  Col  6: Row 1 — overall health
-//  Col  7: Row 1 — yellowing or discolouration
-//  Col  8: Row 1 — drooping or wilting
-//  Col  9: Row 1 — pests observed
-//  Col 10: Row 1 — canopy management done
-//  Col 11: Row 1 — ready to harvest
-//  Col 12: Row 1 — harvested today
-//  Col 13: Row 1 — estimated harvest weight (kg)  [optional]
-//  Col 14: Row 1 — notes                          [optional]
-//  Col 15-23: Row 2  (same 9 fields, same order)
-//  Col 24-32: Row 3
-//  Col 33-41: Row 4
-//  Col 42-50: Row 5
-//  Col 51-59: Row 6
-//  Col 60: DWC Tank 1 — overall health
-//  Col 61: DWC Tank 1 — yellowing or discolouration
-//  Col 62: DWC Tank 1 — drooping or wilting
-//  Col 63: DWC Tank 1 — pests observed
-//  Col 64: DWC Tank 1 — lettuce taste check — any bitterness
-//  Col 65: DWC Tank 1 — trays ready to harvest
-//  Col 66: DWC Tank 1 — harvested today
-//  Col 67: DWC Tank 1 — estimated harvest weight (kg)  [optional]
-//  Col 68: DWC Tank 1 — notes                          [optional]
-//  Col 69-77: DWC Tank 2  (same 9 fields)
-//  Col 78: Fish active and feeding normally
-//  Col 79: Any fish listing, gasping or sitting on bottom
-//  Col 80: Any visible disease signs
-//  Col 81: Dead fish count
-//  Col 82: Dead fish removed and logged
-//  Col 83: Circulation pumps running
-//  Col 84: Sump water level normal
-//  Col 85: No leaks or overflows
-//  Col 86: System clean — no debris or buildup
-//  Col 87: Biowaste bin empty
-//  Col 88: Nutrient bins full
-//  Col 89: Water clear, no bad smell
-//  Col 90: DWC Tank 1 — air blower on
-//  Col 91: DWC Tank 1 — bubbles visible (equipment check)
-//  Col 92: DWC Tank 1 — water running in (equipment check)
-//  Col 93: DWC Tank 1 — boards not blocking outlets (equipment check)
-//  Col 94: DWC Tank 2 — air blower on
-//  Col 95: DWC Tank 2 — bubbles visible (equipment check)
-//  Col 96: DWC Tank 2 — water running in (equipment check)
-//  Col 97: DWC Tank 2 — boards not blocking outlets (equipment check)
-//  Col 98: Any issues or observations  [optional]
+//  Col  3: pH reading
+//  Col  4: Nitrate reading (ppm) [NO₃]
+//  Col  5: Nitrite reading (ppm) [NO₂]
+//  Col  6– 14: Row 1 inspection (9 fields)
+//  Col 15– 23: Row 2 inspection
+//  Col 24– 32: Row 3 inspection
+//  Col 33– 41: Row 4 inspection
+//  Col 42– 50: Row 5 inspection
+//  Col 51– 59: Row 6 inspection
+//  Col 60– 68: DWC Tank 1 inspection (9 fields)
+//  Col 69– 77: DWC Tank 2 inspection
+//  Col 78– 86: DWC Tank 3 inspection ← NEW
+//  Col 87– 95: DWC Tank 4 inspection ← NEW
+//  [9-field block starting at base b:]
+//    b+0: overall health
+//    b+1: yellowing or discolouration
+//    b+2: drooping or wilting
+//    b+3: pests observed
+//    b+4: canopy management (gravel) / taste bitterness (DWC)
+//    b+5: ready to harvest
+//    b+6: harvested today
+//    b+7: harvest weight (kg) [optional]
+//    b+8: notes [optional]
+//  Col  96: Fish — active and feeding normally   ← was 78
+//  Col  97: Fish — listing, gasping or sitting   ← was 79
+//  Col  98: Fish — visible disease signs         ← was 80
+//  Col  99: Fish — dead count                    ← was 81
+//  Col 100: Fish — dead fish removed and logged  ← was 82
+//  Col 101: Equip — circulation pumps running    ← was 83
+//  Col 102: Equip — sump water level normal      ← was 84
+//  Col 103: Equip — no leaks or overflows        ← was 85
+//  Col 104: Equip — system clean                 ← was 86
+//  Col 105: Equip — biowaste bin empty           ← was 87
+//  Col 106: Equip — nutrient bins full           ← was 88
+//  Col 107: Equip — water clear, no bad smell    ← was 89
+//  Col 108: DWC Tank 1 — air blower on           ← was 90
+//  Col 109: DWC Tank 1 — bubbles visible (equip) ← was 91
+//  Col 110: DWC Tank 1 — water running in        ← was 92
+//  Col 111: DWC Tank 1 — boards not blocking     ← was 93
+//  Col 112: DWC Tank 2 — air blower on           ← was 94
+//  Col 113: DWC Tank 2 — bubbles visible (equip) ← was 95
+//  Col 114: DWC Tank 2 — water running in        ← was 96
+//  Col 115: DWC Tank 2 — boards not blocking     ← was 97
+//  Col 116: DWC Tank 3 — air blower on           ← NEW
+//  Col 117: DWC Tank 3 — bubbles visible (equip) ← NEW
+//  Col 118: DWC Tank 3 — water running in        ← NEW
+//  Col 119: DWC Tank 3 — boards not blocking     ← NEW
+//  Col 120: DWC Tank 4 — air blower on           ← NEW
+//  Col 121: DWC Tank 4 — bubbles visible (equip) ← NEW
+//  Col 122: DWC Tank 4 — water running in        ← NEW
+//  Col 123: DWC Tank 4 — boards not blocking     ← NEW
+//  Col 124: Any issues or observations [optional] ← was 98
 
-// ── Form3_Weekly ─────────────────────────────────────────────
-//  Col  0: Timestamp  (auto)
+// ── Form3_Weekly (39 cols, 0–38) ─────────────────────────────
+//  Col  0: Timestamp (auto)
 //  Col  1: Staff name
 //  Col  2: Week commencing date
-//  Col  3: Ammonia NH₃ (ppm)
-//  Col  4: Calcium Ca (ppm)
-//  Col  5: Magnesium Mg (ppm)
-//  Col  6: Potassium K (ppm)
-//  Col  7: Manganese Mn (ppm)
-//  Col  8: Iron Fe (ppm)
+//  Col  3: Ammonia reading (ppm) [NH₃]
+//  Col  4: Calcium reading (ppm) [Ca]
+//  Col  5: Magnesium reading (ppm) [Mg]
+//  Col  6: Potassium reading (ppm) [K]
+//  Col  7: Manganese reading (ppm) [Mn]
+//  Col  8: Iron reading (ppm) [Fe]
 //  Col  9: Number of fish sampled
 //  Col 10: Average fish weight (g)
 //  Col 11: Feed type
 //  Col 12: Daily feed quantity (g)
 //  Col 13: Fish visual health
-//  Col 14: Health observations  [optional]
-//  Col 15: Row 1 — expected harvest date  [optional]
-//  Col 16: Row 2 — expected harvest date  [optional]
-//  Col 17: Row 3 — expected harvest date  [optional]
-//  Col 18: Row 4 — expected harvest date  [optional]
-//  Col 19: Row 5 — expected harvest date  [optional]
-//  Col 20: Row 6 — expected harvest date  [optional]
-//  Col 21: DWC Tank 1 — expected harvest date  [optional]
-//  Col 22: DWC Tank 2 — expected harvest date  [optional]
-//  Col 23: Total harvest this week (kg)
-//  Col 24: Any crop losses or beds replanted
-//  Col 25: Crop loss or replanting notes  [optional]
-//  Col 26: Any issues or observations     [optional]
+//  Col 14: Health observations [optional]
+//  Col 15: Row 1 — current crop                        ← NEW
+//  Col 16: Row 1 — expected harvest date [optional]    ← was col 15
+//  Col 17: Row 2 — current crop                        ← NEW
+//  Col 18: Row 2 — expected harvest date [optional]    ← was col 16
+//  Col 19: Row 3 — current crop                        ← NEW
+//  Col 20: Row 3 — expected harvest date [optional]    ← was col 17
+//  Col 21: Row 4 — current crop                        ← NEW
+//  Col 22: Row 4 — expected harvest date [optional]    ← was col 18
+//  Col 23: Row 5 — current crop                        ← NEW
+//  Col 24: Row 5 — expected harvest date [optional]    ← was col 19
+//  Col 25: Row 6 — current crop                        ← NEW
+//  Col 26: Row 6 — expected harvest date [optional]    ← was col 20
+//  Col 27: DWC Tank 1 — current crop                   ← NEW
+//  Col 28: DWC Tank 1 — expected harvest date [optional] ← was col 21
+//  Col 29: DWC Tank 2 — current crop                   ← NEW
+//  Col 30: DWC Tank 2 — expected harvest date [optional] ← was col 22
+//  Col 31: DWC Tank 3 — current crop                   ← NEW
+//  Col 32: DWC Tank 3 — expected harvest date [optional] ← NEW
+//  Col 33: DWC Tank 4 — current crop                   ← NEW
+//  Col 34: DWC Tank 4 — expected harvest date [optional] ← NEW
+//  Col 35: Total harvest this week (kg)                ← was col 23
+//  Col 36: Any crop losses or beds replanted           ← was col 24
+//  Col 37: Crop loss or replanting notes [optional]    ← was col 25
+//  Col 38: Any issues or observations [optional]       ← was col 26
 
-// ── Historical tabs (tabs 4–9) ────────────────────────────────
-//  Environmental_Data:    Date | Time | Air temp inside | Air temp outside | Weather
-//  Water_Quality:         Date | Time | Water temp (°C) | pH | Notes
-//  Siphons_Drain_Cycle:   Date | Time | Row1 | Row2 | Row3 | Row4 | Row5 | Row6  (cycle mins)
-//  Fish_Records:          Date | Species | Initial stock | Deaths | Cause | Health notes | Running total
-//  Plant_Records:         Date | Crop / Bed | Activity | Growth notes | Pests | Expected harvest date | Notes
-//  System_Maintenance:    Date | Component | Type | Details | Performed by | Notes
+// ── Historical tabs (tabs 4–9) — unchanged ────────────────────
+//  Environmental_Data:   Date | Time | Air temp inside | Air temp outside | Weather
+//  Water_Quality:        Date | Time | Water temp (°C) | pH | Notes
+//  Siphons_Drain_Cycle:  Date | Time | Row1 | Row2 | Row3 | Row4 | Row5 | Row6 (mins)
+//  Fish_Records:         Date | Species | Initial stock | Deaths | Cause | Health notes | Running total
+//  Plant_Records:        Date | Crop / Bed | Activity | Growth notes | Pests | Expected harvest date | Notes
+//  System_Maintenance:   Date | Component | Type | Details | Performed by | Notes
 
 // ============================================================
-// SHEET HEADERS (must match form question titles exactly)
+// SHEET HEADERS
 // ============================================================
 
 const HEADERS = {
   Form1_DailyRounds: [
     'Timestamp', 'Staff name',
-    'Air temp — inside greenhouse (°C)', 'Air temp — outside greenhouse (°C)',
-    'Water temp — fish tank (°C)', 'Weather conditions', 'Greenhouse fan',
-    'Fish fed this round', 'Feed amount given (g)', 'Feeding time',
-    'Gravel bed row 1 cycle time (mins)', 'Gravel bed row 2 cycle time (mins)',
-    'Gravel bed row 3 cycle time (mins)', 'Gravel bed row 4 cycle time (mins)',
-    'Gravel bed row 5 cycle time (mins)', 'Gravel bed row 6 cycle time (mins)',
-    'Dry zone present on all rows (top 50–75 mm dry)', 'Algae visible on gravel surface',
-    'DWC Tank 1 — bubbles visible', 'DWC Tank 1 — water running in', 'DWC Tank 1 — boards not blocking outlets',
-    'DWC Tank 2 — bubbles visible', 'DWC Tank 2 — water running in', 'DWC Tank 2 — boards not blocking outlets',
-    'Any issues or observations'
+    'Inside greenhouse temp (°C)', 'Outside greenhouse temp (°C)', 'Fish tank water temp (°C)',
+    'Weather', 'Greenhouse fan', 'Fish fed this round', 'Feed amount (g)', 'Feeding time',
+    'Row 1 — drain cycle (mins)', 'Row 2 — drain cycle (mins)', 'Row 3 — drain cycle (mins)',
+    'Row 4 — drain cycle (mins)', 'Row 5 — drain cycle (mins)', 'Row 6 — drain cycle (mins)',
+    'Gravel top layer dry?', 'Algae visible?',
+    'DWC Tank 1 — bubbles', 'DWC Tank 1 — water flowing', 'DWC Tank 1 — boards clear',
+    'DWC Tank 2 — bubbles', 'DWC Tank 2 — water flowing', 'DWC Tank 2 — boards clear',
+    'DWC Tank 3 — bubbles', 'DWC Tank 3 — water flowing', 'DWC Tank 3 — boards clear',
+    'DWC Tank 4 — bubbles', 'DWC Tank 4 — water flowing', 'DWC Tank 4 — boards clear',
+    'Notes'
   ],
   Form2_DailyCheck: [
-    'Timestamp', 'Staff name', 'Date', 'pH', 'Nitrate NO₃ (ppm)', 'Nitrite NO₂ (ppm)',
-    'Row 1 — overall health', 'Row 1 — yellowing or discolouration', 'Row 1 — drooping or wilting',
-    'Row 1 — pests observed', 'Row 1 — canopy management done', 'Row 1 — ready to harvest',
-    'Row 1 — harvested today', 'Row 1 — estimated harvest weight (kg)', 'Row 1 — notes',
-    'Row 2 — overall health', 'Row 2 — yellowing or discolouration', 'Row 2 — drooping or wilting',
-    'Row 2 — pests observed', 'Row 2 — canopy management done', 'Row 2 — ready to harvest',
-    'Row 2 — harvested today', 'Row 2 — estimated harvest weight (kg)', 'Row 2 — notes',
-    'Row 3 — overall health', 'Row 3 — yellowing or discolouration', 'Row 3 — drooping or wilting',
-    'Row 3 — pests observed', 'Row 3 — canopy management done', 'Row 3 — ready to harvest',
-    'Row 3 — harvested today', 'Row 3 — estimated harvest weight (kg)', 'Row 3 — notes',
-    'Row 4 — overall health', 'Row 4 — yellowing or discolouration', 'Row 4 — drooping or wilting',
-    'Row 4 — pests observed', 'Row 4 — canopy management done', 'Row 4 — ready to harvest',
-    'Row 4 — harvested today', 'Row 4 — estimated harvest weight (kg)', 'Row 4 — notes',
-    'Row 5 — overall health', 'Row 5 — yellowing or discolouration', 'Row 5 — drooping or wilting',
-    'Row 5 — pests observed', 'Row 5 — canopy management done', 'Row 5 — ready to harvest',
-    'Row 5 — harvested today', 'Row 5 — estimated harvest weight (kg)', 'Row 5 — notes',
-    'Row 6 — overall health', 'Row 6 — yellowing or discolouration', 'Row 6 — drooping or wilting',
-    'Row 6 — pests observed', 'Row 6 — canopy management done', 'Row 6 — ready to harvest',
-    'Row 6 — harvested today', 'Row 6 — estimated harvest weight (kg)', 'Row 6 — notes',
-    'DWC Tank 1 — overall health', 'DWC Tank 1 — yellowing or discolouration', 'DWC Tank 1 — drooping or wilting',
-    'DWC Tank 1 — pests observed', 'DWC Tank 1 — lettuce taste check — any bitterness',
-    'DWC Tank 1 — trays ready to harvest', 'DWC Tank 1 — harvested today',
-    'DWC Tank 1 — estimated harvest weight (kg)', 'DWC Tank 1 — notes',
-    'DWC Tank 2 — overall health', 'DWC Tank 2 — yellowing or discolouration', 'DWC Tank 2 — drooping or wilting',
-    'DWC Tank 2 — pests observed', 'DWC Tank 2 — lettuce taste check — any bitterness',
-    'DWC Tank 2 — trays ready to harvest', 'DWC Tank 2 — harvested today',
-    'DWC Tank 2 — estimated harvest weight (kg)', 'DWC Tank 2 — notes',
-    'Fish active and feeding normally', 'Any fish listing, gasping or sitting on bottom',
-    'Any visible disease signs', 'Dead fish count', 'Dead fish removed and logged',
-    'Circulation pumps running', 'Sump water level normal', 'No leaks or overflows',
-    'System clean — no debris or buildup', 'Biowaste bin empty', 'Nutrient bins full',
-    'Water clear, no bad smell',
-    'DWC Tank 1 — air blower on', 'DWC Tank 1 — bubbles visible (equip)',
-    'DWC Tank 1 — water running in (equip)', 'DWC Tank 1 — boards not blocking outlets (equip)',
-    'DWC Tank 2 — air blower on', 'DWC Tank 2 — bubbles visible (equip)',
-    'DWC Tank 2 — water running in (equip)', 'DWC Tank 2 — boards not blocking outlets (equip)',
-    'Any issues or observations'
+    'Timestamp', 'Staff name', 'Date', 'pH', 'Nitrate (ppm)', 'Nitrite (ppm)',
+    'Row 1 — health', 'Row 1 — yellowing', 'Row 1 — wilting', 'Row 1 — pests',
+    'Row 1 — canopy mgmt', 'Row 1 — ready to harvest', 'Row 1 — harvested',
+    'Row 1 — harvest weight (kg)', 'Row 1 — notes',
+    'Row 2 — health', 'Row 2 — yellowing', 'Row 2 — wilting', 'Row 2 — pests',
+    'Row 2 — canopy mgmt', 'Row 2 — ready to harvest', 'Row 2 — harvested',
+    'Row 2 — harvest weight (kg)', 'Row 2 — notes',
+    'Row 3 — health', 'Row 3 — yellowing', 'Row 3 — wilting', 'Row 3 — pests',
+    'Row 3 — canopy mgmt', 'Row 3 — ready to harvest', 'Row 3 — harvested',
+    'Row 3 — harvest weight (kg)', 'Row 3 — notes',
+    'Row 4 — health', 'Row 4 — yellowing', 'Row 4 — wilting', 'Row 4 — pests',
+    'Row 4 — canopy mgmt', 'Row 4 — ready to harvest', 'Row 4 — harvested',
+    'Row 4 — harvest weight (kg)', 'Row 4 — notes',
+    'Row 5 — health', 'Row 5 — yellowing', 'Row 5 — wilting', 'Row 5 — pests',
+    'Row 5 — canopy mgmt', 'Row 5 — ready to harvest', 'Row 5 — harvested',
+    'Row 5 — harvest weight (kg)', 'Row 5 — notes',
+    'Row 6 — health', 'Row 6 — yellowing', 'Row 6 — wilting', 'Row 6 — pests',
+    'Row 6 — canopy mgmt', 'Row 6 — ready to harvest', 'Row 6 — harvested',
+    'Row 6 — harvest weight (kg)', 'Row 6 — notes',
+    'DWC 1 — health', 'DWC 1 — yellowing', 'DWC 1 — wilting', 'DWC 1 — pests',
+    'DWC 1 — bitterness', 'DWC 1 — ready to harvest', 'DWC 1 — harvested',
+    'DWC 1 — harvest weight (kg)', 'DWC 1 — notes',
+    'DWC 2 — health', 'DWC 2 — yellowing', 'DWC 2 — wilting', 'DWC 2 — pests',
+    'DWC 2 — bitterness', 'DWC 2 — ready to harvest', 'DWC 2 — harvested',
+    'DWC 2 — harvest weight (kg)', 'DWC 2 — notes',
+    'DWC 3 — health', 'DWC 3 — yellowing', 'DWC 3 — wilting', 'DWC 3 — pests',
+    'DWC 3 — bitterness', 'DWC 3 — ready to harvest', 'DWC 3 — harvested',
+    'DWC 3 — harvest weight (kg)', 'DWC 3 — notes',
+    'DWC 4 — health', 'DWC 4 — yellowing', 'DWC 4 — wilting', 'DWC 4 — pests',
+    'DWC 4 — bitterness', 'DWC 4 — ready to harvest', 'DWC 4 — harvested',
+    'DWC 4 — harvest weight (kg)', 'DWC 4 — notes',
+    'Fish — active and feeding', 'Fish — listing or gasping', 'Fish — disease signs',
+    'Fish — dead count', 'Fish — dead removed',
+    'Equip — pumps running', 'Equip — sump level', 'Equip — no leaks',
+    'Equip — system clean', 'Equip — biowaste bin', 'Equip — nutrient bins', 'Equip — water clarity',
+    'DWC 1 — blower on', 'DWC 1 — bubbles (equip)', 'DWC 1 — water running (equip)', 'DWC 1 — boards clear (equip)',
+    'DWC 2 — blower on', 'DWC 2 — bubbles (equip)', 'DWC 2 — water running (equip)', 'DWC 2 — boards clear (equip)',
+    'DWC 3 — blower on', 'DWC 3 — bubbles (equip)', 'DWC 3 — water running (equip)', 'DWC 3 — boards clear (equip)',
+    'DWC 4 — blower on', 'DWC 4 — bubbles (equip)', 'DWC 4 — water running (equip)', 'DWC 4 — boards clear (equip)',
+    'Notes'
   ],
   Form3_Weekly: [
     'Timestamp', 'Staff name', 'Week commencing date',
-    'Ammonia NH₃ (ppm)', 'Calcium Ca (ppm)',
-    'Magnesium Mg (ppm)', 'Potassium K (ppm)', 'Manganese Mn (ppm)', 'Iron Fe (ppm)',
-    'Number of fish sampled', 'Average fish weight (g)', 'Feed type', 'Daily feed quantity (g)',
+    'Ammonia NH₃ (ppm)', 'Calcium Ca (ppm)', 'Magnesium Mg (ppm)',
+    'Potassium K (ppm)', 'Manganese Mn (ppm)', 'Iron Fe (ppm)',
+    'Fish sampled (count)', 'Avg fish weight (g)', 'Feed type', 'Daily feed (g)',
     'Fish visual health', 'Health observations',
-    'Row 1 — expected harvest date', 'Row 2 — expected harvest date',
-    'Row 3 — expected harvest date', 'Row 4 — expected harvest date',
-    'Row 5 — expected harvest date', 'Row 6 — expected harvest date',
-    'DWC Tank 1 — expected harvest date', 'DWC Tank 2 — expected harvest date',
+    'Row 1 — current crop', 'Row 1 — harvest date',
+    'Row 2 — current crop', 'Row 2 — harvest date',
+    'Row 3 — current crop', 'Row 3 — harvest date',
+    'Row 4 — current crop', 'Row 4 — harvest date',
+    'Row 5 — current crop', 'Row 5 — harvest date',
+    'Row 6 — current crop', 'Row 6 — harvest date',
+    'DWC Tank 1 — current crop', 'DWC Tank 1 — harvest date',
+    'DWC Tank 2 — current crop', 'DWC Tank 2 — harvest date',
+    'DWC Tank 3 — current crop', 'DWC Tank 3 — harvest date',
+    'DWC Tank 4 — current crop', 'DWC Tank 4 — harvest date',
     'Total harvest this week (kg)', 'Any crop losses or beds replanted',
-    'Crop loss or replanting notes', 'Any issues or observations'
+    'Crop loss or replanting notes', 'Notes'
   ]
 };
 
 // ============================================================
-// SCRIPT PROPERTIES (auto-populated by setup)
+// SCRIPT PROPERTIES
 // ============================================================
 
-function getProps() {
-  return PropertiesService.getScriptProperties();
-}
-
-function getSsId() {
-  return getProps().getProperty('SPREADSHEET_ID') || CONFIG.SPREADSHEET_ID;
-}
-
-function getFormId(n) {
-  return getProps().getProperty('FORM' + n + '_ID') || '';
-}
+function getProps()      { return PropertiesService.getScriptProperties(); }
+function getSsId()       { return getProps().getProperty('SPREADSHEET_ID') || CONFIG.SPREADSHEET_ID; }
+function getFormId(n)    { return getProps().getProperty('FORM' + n + '_ID') || ''; }
 
 // ============================================================
-// SETUP — run this once
+// SETUP — run once on first install
 // ============================================================
 
 function setup() {
   const props = getProps();
 
   // 1. Spreadsheet
-  let ss;
-  let ssId = getSsId();
+  let ss, ssId = getSsId();
   if (ssId) {
     ss = SpreadsheetApp.openById(ssId);
     Logger.log('Using existing spreadsheet: ' + ss.getName());
@@ -265,19 +283,19 @@ function setup() {
     Logger.log('Update CONFIG.SPREADSHEET_ID = "' + ssId + '"');
   }
 
-  // 2. Sheet tabs 1–3 (create or reset headers; never touch 4–9)
+  // 2. Sheet tabs 1–3 (create if missing; never touch historical tabs 4–9)
   setupFormTabs(ss);
 
   // 3. Create forms
-  Logger.log('Creating Form 1 (3x daily round)…');
+  Logger.log('Creating Form 1 (3× daily round)…');
   const form1 = createForm1();
   props.setProperty('FORM1_ID', form1.getId());
 
-  Logger.log('Creating Form 2 (daily full check)…');
+  Logger.log('Creating Form 2 (daily full inspection)…');
   const form2 = createForm2();
   props.setProperty('FORM2_ID', form2.getId());
 
-  Logger.log('Creating Form 3 (weekly check)…');
+  Logger.log('Creating Form 3 (weekly summary)…');
   const form3 = createForm3();
   props.setProperty('FORM3_ID', form3.getId());
 
@@ -287,22 +305,80 @@ function setup() {
   // 5. Summary
   Logger.log('=== SETUP COMPLETE ===');
   Logger.log('Spreadsheet ID : ' + ssId);
-  Logger.log('Form 1 URL     : ' + form1.getPublishedUrl() + '  (edit: ' + form1.getEditUrl() + ')');
-  Logger.log('Form 2 URL     : ' + form2.getPublishedUrl() + '  (edit: ' + form2.getEditUrl() + ')');
-  Logger.log('Form 3 URL     : ' + form3.getPublishedUrl() + '  (edit: ' + form3.getEditUrl() + ')');
+  Logger.log('Form 1 URL     : ' + form1.getPublishedUrl());
+  Logger.log('Form 2 URL     : ' + form2.getPublishedUrl());
+  Logger.log('Form 3 URL     : ' + form3.getPublishedUrl());
   Logger.log('Next step: Deploy → New deployment → Web App (Execute as Me, Anyone can access)');
-  Logger.log('Then paste the Web App URL into the dashboard Settings modal.');
 }
 
-// Convenience function to log form URLs after setup
+// Convenience — log URLs after setup
 function listFormUrls() {
-  const ids = [getFormId(1), getFormId(2), getFormId(3)];
-  ids.forEach((id, i) => {
-    if (!id) { Logger.log('Form ' + (i+1) + ': not created yet — run setup() first'); return; }
+  [1, 2, 3].forEach(n => {
+    const id = getFormId(n);
+    if (!id) { Logger.log('Form ' + n + ': not created — run setup() first'); return; }
     const form = FormApp.openById(id);
-    Logger.log('Form ' + (i+1) + ' — ' + form.getTitle());
+    Logger.log('Form ' + n + ' — ' + form.getTitle());
     Logger.log('  Respondents: ' + form.getPublishedUrl());
     Logger.log('  Edit:        ' + form.getEditUrl());
+  });
+}
+
+// ============================================================
+// UPDATE EXISTING FORMS — run instead of setup() when updating
+// ============================================================
+
+function updateForms() {
+  const id1 = getFormId(1), id2 = getFormId(2), id3 = getFormId(3);
+  if (!id1 || !id2 || !id3) {
+    Logger.log('ERROR: Form IDs not found. If this is a new installation, run setup() instead.');
+    return;
+  }
+
+  Logger.log('Rebuilding Form 1 (3× daily round)…');
+  const f1 = FormApp.openById(id1);
+  clearForm(f1);
+  buildForm1(f1);
+
+  Logger.log('Rebuilding Form 2 (daily full inspection)…');
+  const f2 = FormApp.openById(id2);
+  clearForm(f2);
+  buildForm2(f2);
+
+  Logger.log('Rebuilding Form 3 (weekly summary)…');
+  const f3 = FormApp.openById(id3);
+  clearForm(f3);
+  buildForm3(f3);
+
+  // Update sheet headers
+  const ssId = getSsId();
+  if (ssId) {
+    updateSheetHeaders(SpreadsheetApp.openById(ssId));
+    Logger.log('Sheet headers updated.');
+  } else {
+    Logger.log('WARNING: No spreadsheet ID found — sheet headers not updated.');
+  }
+
+  Logger.log('=== UPDATE COMPLETE ===');
+  Logger.log('Form URLs are unchanged. Staff can continue using their existing links.');
+  Logger.log('Old rows in Form1/2/3 tabs have columns in the old order — this is normal.');
+  Logger.log('Historical tabs (Environmental_Data etc.) are untouched.');
+  Logger.log('Form 1: ' + f1.getPublishedUrl());
+  Logger.log('Form 2: ' + f2.getPublishedUrl());
+  Logger.log('Form 3: ' + f3.getPublishedUrl());
+  Logger.log('Next step: Redeploy the Web App (Deploy → Manage deployments → Edit → New version).');
+}
+
+function clearForm(form) {
+  form.getItems().forEach(item => { try { form.deleteItem(item); } catch(e) {} });
+}
+
+function updateSheetHeaders(ss) {
+  ['Form1_DailyRounds', 'Form2_DailyCheck', 'Form3_Weekly'].forEach(name => {
+    const sheet = ss.getSheetByName(name);
+    if (!sheet) return;
+    const hdrs = HEADERS[name];
+    sheet.getRange(1, 1, 1, hdrs.length).setValues([hdrs]).setFontWeight('bold');
+    sheet.setFrozenRows(1);
   });
 }
 
@@ -311,19 +387,13 @@ function listFormUrls() {
 // ============================================================
 
 function setupFormTabs(ss) {
-  const tabNames = ['Form1_DailyRounds', 'Form2_DailyCheck', 'Form3_Weekly'];
-  tabNames.forEach((name, i) => {
+  ['Form1_DailyRounds', 'Form2_DailyCheck', 'Form3_Weekly'].forEach((name, i) => {
     let sheet = ss.getSheetByName(name);
-    if (!sheet) {
-      // Insert at position i+1 so they appear first
-      sheet = ss.insertSheet(name, i);
-    }
-    // Only write headers if row 1 is empty
+    if (!sheet) sheet = ss.insertSheet(name, i);
     const firstCell = sheet.getRange(1, 1).getValue();
     if (!firstCell) {
       const hdrs = HEADERS[name];
-      sheet.getRange(1, 1, 1, hdrs.length).setValues([hdrs]);
-      sheet.getRange(1, 1, 1, hdrs.length).setFontWeight('bold');
+      sheet.getRange(1, 1, 1, hdrs.length).setValues([hdrs]).setFontWeight('bold');
       sheet.setFrozenRows(1);
       Logger.log('Headers written to ' + name);
     } else {
@@ -337,282 +407,449 @@ function setupFormTabs(ss) {
 // ============================================================
 
 function createForm1() {
-  const form = FormApp.create('Delta Aquaponics — Daily Round');
-  form.setDescription('Complete this form each morning, midday and evening. Takes around 5 minutes.');
+  const form = FormApp.create('Delta Aquaponics — 3× Daily Check');
+  form.setDescription(
+    'Fill this in THREE TIMES per day:\n' +
+    '  • Morning (before 8 am)\n' +
+    '  • Midday (around 12 pm)\n' +
+    '  • Evening (after 5 pm)\n\n' +
+    'Takes about 5 minutes each time.'
+  );
   form.setCollectEmail(false);
   form.setProgressBar(false);
+  buildForm1(form);
+  return form;
+}
 
-  // Staff name
+function buildForm1(form) {
   form.addTextItem().setTitle('Staff name').setRequired(true);
 
-  // ── Temperatures ──────────────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Temperatures');
+  // Temperatures
+  const tempHeader = form.addSectionHeaderItem().setTitle('Temperatures');
+  if (tempHeader.setHelpText) tempHeader.setHelpText('Read the thermometers and write down the numbers you see.');
 
-  numItem(form, 'Air temp — inside greenhouse (°C)', true);
-  numItem(form, 'Air temp — outside greenhouse (°C)', true);
-  numItem(form, 'Water temp — fish tank (°C)', true);
+  numItem(form, 'Temperature inside the greenhouse (°C)', true,
+    'Read the thermometer hanging inside the greenhouse.');
+  numItem(form, 'Temperature outside the greenhouse (°C)', true,
+    'Read the thermometer outside the greenhouse.');
+  numItem(form, 'Water temperature — fish tank (°C)', true,
+    'Use the thermometer in the fish tank water.');
 
   form.addListItem()
-    .setTitle('Weather conditions')
-    .setChoiceValues(['Sunny', 'Partly Sunny', 'Cloudy', 'Light Rain', 'Overcast', 'Hot', 'Cold'])
+    .setTitle('Weather conditions outside today')
+    .setChoiceValues(['Sunny', 'Partly sunny', 'Cloudy', 'Light rain', 'Heavy rain', 'Very hot', 'Cold', 'Windy'])
     .setRequired(true);
 
   form.addListItem()
-    .setTitle('Greenhouse fan')
+    .setTitle('Is the greenhouse fan running?')
     .setChoiceValues(['On', 'Off'])
     .setRequired(true);
 
-  // ── Fish feeding ──────────────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Fish feeding');
+  // Fish feeding
+  const feedHeader = form.addSectionHeaderItem().setTitle('Fish feeding');
+  if (feedHeader.setHelpText) feedHeader.setHelpText('Record the fish feeding for this round.');
 
-  yesNo(form, 'Fish fed this round', true);
-  numItem(form, 'Feed amount given (g)', false);
-  form.addTimeItem().setTitle('Feeding time').setRequired(true);
+  yesNo(form, 'Did you feed the fish this round?', true);
+  numItem(form, 'How much feed did you give? (grams)', false,
+    'Leave blank if you did not feed this round.');
+  form.addTimeItem()
+    .setTitle('What time did you feed the fish?')
+    .setRequired(false);
 
-  // ── Gravel beds — autosyphon cycles ──────────────────────
-  form.addSectionHeaderItem().setTitle('Gravel beds — autosyphon cycles');
+  // Gravel beds — drain cycle
+  const drainHeader = form.addSectionHeaderItem().setTitle('Gravel beds — drain cycle time');
+  if (drainHeader.setHelpText) drainHeader.setHelpText(
+    'For each gravel bed, time how long the water takes to fully drain and then refill.\n' +
+    'Write the number of minutes.\n' +
+    'Normal range: 15–18 minutes. Alert the manager if above 20 minutes or below 12 minutes.'
+  );
 
   for (let i = 1; i <= 6; i++) {
-    numItem(form, 'Gravel bed row ' + i + ' cycle time (mins)', true);
+    numItem(form, 'Row ' + i + ' — drain cycle time (minutes)', true,
+      'Start timing when the water begins to drain. Stop when it has fully refilled.');
   }
 
   form.addMultipleChoiceItem()
-    .setTitle('Dry zone present on all rows (top 50–75 mm dry)')
+    .setTitle('Is the top layer of gravel dry on all beds? (the top 5–7 cm should be dry between floods)')
     .setChoiceValues(['Yes', 'No'])
     .setRequired(true);
 
   form.addMultipleChoiceItem()
-    .setTitle('Algae visible on gravel surface')
-    .setChoiceValues(['Yes', 'No', 'Some'])
+    .setTitle('Is green algae (slime) visible on the gravel surface?')
+    .setChoiceValues(['Yes — on most beds', 'Yes — on some beds', 'No'])
     .setRequired(true);
 
-  // ── DWC tanks — floating trays ────────────────────────────
-  form.addSectionHeaderItem().setTitle('DWC tanks — floating trays');
+  // DWC Tanks — quick visual check
+  const dwcHeader = form.addSectionHeaderItem().setTitle('DWC Tanks — quick check');
+  if (dwcHeader.setHelpText) dwcHeader.setHelpText(
+    'Check each DWC Tank quickly. Look for bubbles, listen for water flow, ' +
+    'and check that the growing boards are not blocking the water outlets at the bottom.'
+  );
 
-  ['DWC Tank 1', 'DWC Tank 2'].forEach(tank => {
-    yesNo(form, tank + ' — bubbles visible', true);
-    yesNo(form, tank + ' — water running in', true);
-    yesNo(form, tank + ' — boards not blocking outlets', true);
-  });
+  for (let t = 1; t <= 4; t++) {
+    yesNo(form, 'DWC Tank ' + t + ' — are bubbles visible on the water surface?', true);
+    yesNo(form, 'DWC Tank ' + t + ' — is water flowing into the tank?', true);
+    yesNo(form, 'DWC Tank ' + t + ' — are the growing boards clear of the water outlets?', true,
+      'Make sure the boards are not pushed down and blocking the outlets at the bottom of the tank.');
+  }
 
-  // ── Notes ─────────────────────────────────────────────────
+  // Notes
   form.addSectionHeaderItem().setTitle('Notes');
-  form.addParagraphTextItem().setTitle('Any issues or observations').setRequired(false);
-
-  return form;
+  form.addParagraphTextItem()
+    .setTitle('Any issues or observations this round? (optional)')
+    .setRequired(false);
 }
 
 // ============================================================
-// FORM 2 — DAILY FULL SYSTEM CHECK
+// FORM 2 — DAILY FULL INSPECTION (with page breaks per section)
 // ============================================================
 
 function createForm2() {
-  const form = FormApp.create('Delta Aquaponics — Daily Check');
-  form.setDescription('Full system check. Submit once per day, ideally before midday.');
+  const form = FormApp.create('Delta Aquaponics — Daily Full Inspection');
+  form.setDescription(
+    'Fill this in ONCE per day — best done in the morning or before midday.\n\n' +
+    'This form checks each growing row, each DWC tank, the fish, and the equipment.\n' +
+    'Take your time and check carefully. Takes about 20–30 minutes.\n\n' +
+    'Use the Next button at the bottom to move through each section.'
+  );
   form.setCollectEmail(false);
-
-  form.addTextItem().setTitle('Staff name').setRequired(true);
-  form.addDateItem().setTitle('Date').setRequired(true);
-
-  // ── Water chemistry ───────────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Water chemistry');
-  numItem(form, 'pH', true);
-  numItem(form, 'Nitrate NO₃ (ppm)', true);
-  numItem(form, 'Nitrite NO₂ (ppm)', true);
-
-  // ── Gravel rows (6 × 9 fields) ───────────────────────────
-  for (let row = 1; row <= 6; row++) {
-    form.addSectionHeaderItem().setTitle('Row ' + row + ' — plant inspection');
-    addBedInspectionBlock(form, 'Row ' + row, false);
-  }
-
-  // ── DWC tanks (2 × 9 fields) ─────────────────────────────
-  for (let tank = 1; tank <= 2; tank++) {
-    form.addSectionHeaderItem().setTitle('DWC Tank ' + tank + ' — inspection');
-    addBedInspectionBlock(form, 'DWC Tank ' + tank, true);
-  }
-
-  // ── Fish check ────────────────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Fish check');
-
-  yesNo(form, 'Fish active and feeding normally', true);
-  yesNo(form, 'Any fish listing, gasping or sitting on bottom', true);
-  yesNo(form, 'Any visible disease signs', true);
-  numItem(form, 'Dead fish count', true);
-
-  form.addMultipleChoiceItem()
-    .setTitle('Dead fish removed and logged')
-    .setChoiceValues(['Yes', 'No', 'None to remove'])
-    .setRequired(true);
-
-  // ── Equipment checklist ───────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Equipment checklist');
-
-  const equipItems = [
-    'Circulation pumps running',
-    'Sump water level normal',
-    'No leaks or overflows',
-    'System clean — no debris or buildup',
-    'Biowaste bin empty',
-    'Nutrient bins full',
-    'Water clear, no bad smell',
-    'DWC Tank 1 — air blower on',
-    'DWC Tank 1 — bubbles visible',
-    'DWC Tank 1 — water running in',
-    'DWC Tank 1 — boards not blocking outlets',
-    'DWC Tank 2 — air blower on',
-    'DWC Tank 2 — bubbles visible',
-    'DWC Tank 2 — water running in',
-    'DWC Tank 2 — boards not blocking outlets',
-  ];
-  equipItems.forEach(title => {
-    form.addMultipleChoiceItem()
-      .setTitle(title)
-      .setChoiceValues(['OK', 'Issue', 'Not checked'])
-      .setRequired(true);
-  });
-
-  // ── Notes ─────────────────────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Notes');
-  form.addParagraphTextItem().setTitle('Any issues or observations').setRequired(false);
-
+  form.setProgressBar(true);
+  buildForm2(form);
   return form;
 }
 
-// Adds 9 inspection fields for a gravel row or DWC tank.
-// isDWC = true → 4th field is "bitterness" instead of "canopy management"
-function addBedInspectionBlock(form, prefix, isDWC) {
+function buildForm2(form) {
+  form.addTextItem().setTitle('Staff name').setRequired(true);
+  form.addDateItem().setTitle('Date').setRequired(true);
+
+  // Water chemistry (first page — no page break before it)
+  form.addSectionHeaderItem().setTitle('Water chemistry')
+    .setHelpText(
+      'Use your water test kit and write the results below.\n' +
+      'If you are unsure how to use the test kit, ask the manager to show you.'
+    );
+
+  numItem(form, 'pH reading', true,
+    'Target range: 6.8 to 7.2. Below 6.5 or above 7.5 — alert the manager.');
+  numItem(form, 'Nitrate reading (ppm) — NO₃', true,
+    'This is usually the higher number. Target: 5 to 80 ppm. Above 160 ppm — alert the manager.');
+  numItem(form, 'Nitrite reading (ppm) — NO₂', true,
+    'This should be close to 0. If it is above 0.5 ppm — alert the manager immediately.');
+
+  // Gravel rows — one page break per row
+  for (let row = 1; row <= 6; row++) {
+    form.addPageBreakItem()
+      .setTitle('ROW ' + row + ' — Plant Inspection')
+      .setHelpText('Walk to Row ' + row + '. Look at the plants carefully before answering.');
+    addBedInspectionBlock(form, 'Row ' + row, false);
+  }
+
+  // DWC Tanks — one page break per tank
+  for (let t = 1; t <= 4; t++) {
+    form.addPageBreakItem()
+      .setTitle('DWC TANK ' + t + ' — Plant Inspection')
+      .setHelpText('Move to DWC Tank ' + t + '. Check the plants in the floating trays carefully.');
+    addBedInspectionBlock(form, 'DWC Tank ' + t, true);
+  }
+
+  // Fish check
+  form.addPageBreakItem()
+    .setTitle('Fish Check')
+    .setHelpText(
+      'Look into the fish tank carefully. Watch the fish for a minute before answering.\n' +
+      'Healthy fish swim actively and come to the surface when you approach.'
+    );
+
+  yesNo(form, 'Are the fish active and feeding normally?', true,
+    'If most fish are hiding, not moving, or not interested in food — choose No.');
+  yesNo(form, 'Are any fish listing (leaning to one side), gasping at the surface, or sitting on the bottom?', true,
+    'Any of these signs can mean low oxygen or illness. If yes — alert the manager immediately.');
+  yesNo(form, 'Can you see any signs of disease? (white spots, unusual marks, pale patches, frayed fins)', true,
+    'If yes — alert the manager and do not add any chemicals without instruction.');
+  numItem(form, 'How many dead fish did you count today?', true,
+    'Write 0 (zero) if there are none. Count carefully — check corners and under equipment.');
+
   form.addMultipleChoiceItem()
-    .setTitle(prefix + ' — overall health')
-    .setChoiceValues(['Good', 'Concerns', 'Problem'])
+    .setTitle('Were dead fish removed from the tank and recorded in the log book?')
+    .setChoiceValues(['Yes', 'No — there were none to remove', 'No — I found dead fish but did not remove them'])
     .setRequired(true);
 
-  yesNo(form, prefix + ' — yellowing or discolouration', true);
-  yesNo(form, prefix + ' — drooping or wilting', true);
+  // Equipment checklist
+  form.addPageBreakItem()
+    .setTitle('Equipment Checklist')
+    .setHelpText(
+      'Walk through the system and check each item carefully.\n' +
+      'Choose OK if everything is working, Issue if there is a problem, or Not checked if you could not check it.'
+    );
+
+  form.addSectionHeaderItem().setTitle('General system checks');
+
+  const sysItems = [
+    ['Are all circulation pumps running?',
+     'Listen and look — you should hear the pumps and see water moving through the pipes.'],
+    ['Is the sump water level normal? (not very low or overflowing)',
+     'The sump is the large collection tank. It should be roughly at the normal water line.'],
+    ['Are there any leaks or overflows anywhere?',
+     'Check pipes, joints, filter boxes, and the edges of all tanks.'],
+    ['Is the system clean? (no dead leaves, debris, or algae build-up)',
+     'Remove any dead plant material or rubbish you find.'],
+    ['Is the fish waste (biowaste) bin empty or has it been emptied today?', ''],
+    ['Are the nutrient solution bins full enough?',
+     'Check both Nutrient A and Nutrient B containers.'],
+    ['Is the water clear with no bad smell?',
+     'Healthy system water is slightly green-tinted. Cloudy water or a bad smell is a sign of problems — alert the manager.'],
+  ];
+  sysItems.forEach(([title, help]) => {
+    const item = form.addMultipleChoiceItem()
+      .setTitle(title)
+      .setChoiceValues(['OK', 'Issue', 'Not checked'])
+      .setRequired(true);
+    if (help) item.setHelpText(help);
+  });
+
+  form.addSectionHeaderItem().setTitle('DWC Tank air and water systems');
+
+  for (let t = 1; t <= 4; t++) {
+    const dwcEquip = [
+      ['DWC Tank ' + t + ' — is the air blower / air pump on?',
+       'You should be able to hear it running and see bubbles in the tank.'],
+      ['DWC Tank ' + t + ' — are bubbles visible in the water?', ''],
+      ['DWC Tank ' + t + ' — is water running into the tank through the inlet?', ''],
+      ['DWC Tank ' + t + ' — are the growing boards clear of the water outlets at the bottom?',
+       'The boards should not be pushed down and blocking the outlets.'],
+    ];
+    dwcEquip.forEach(([title, help]) => {
+      const item = form.addMultipleChoiceItem()
+        .setTitle(title)
+        .setChoiceValues(['OK', 'Issue', 'Not checked'])
+        .setRequired(true);
+      if (help) item.setHelpText(help);
+    });
+  }
+
+  form.addSectionHeaderItem().setTitle('Notes');
+  form.addParagraphTextItem()
+    .setTitle('Any other issues or observations today? (optional)')
+    .setRequired(false);
+}
+
+// Adds 9 inspection questions for one growing row or DWC tank.
+// isDWC = true → field 5 is bitterness instead of canopy management
+function addBedInspectionBlock(form, bedLabel, isDWC) {
+  const zone = isDWC ? 'this tank' : 'this row';
 
   form.addMultipleChoiceItem()
-    .setTitle(prefix + ' — pests observed')
-    .setChoiceValues(['Yes', 'No', 'Possible'])
+    .setTitle('Overall plant health in ' + zone + '?')
+    .setChoiceValues(['Good', 'Some concerns', 'Serious problem'])
+    .setRequired(true);
+
+  yesNo(form, 'Are any leaves turning yellow or discoloured?', true);
+  yesNo(form, 'Are any plants drooping or wilting?', true);
+
+  form.addMultipleChoiceItem()
+    .setTitle('Can you see any insects, bugs, or pests on the plants?')
+    .setChoiceValues(['Yes', 'No', 'Possible — not sure'])
     .setRequired(true);
 
   if (isDWC) {
     form.addMultipleChoiceItem()
-      .setTitle(prefix + ' — lettuce taste check — any bitterness')
+      .setTitle('Taste test: does the lettuce in this tank taste bitter?')
+      .setHelpText('Pick one small outer leaf and taste it. Bitterness usually means the plants are stressed or ready to harvest.')
       .setChoiceValues(['Yes', 'No', 'Not checked'])
       .setRequired(true);
 
     form.addMultipleChoiceItem()
-      .setTitle(prefix + ' — trays ready to harvest')
-      .setChoiceValues(['Yes', 'No', 'Some'])
+      .setTitle('Are the trays in this tank ready to harvest?')
+      .setChoiceValues(['Yes — fully ready', 'No', 'Some trays are ready'])
       .setRequired(true);
   } else {
     form.addMultipleChoiceItem()
-      .setTitle(prefix + ' — canopy management done')
-      .setChoiceValues(['Yes', 'No', 'Not needed'])
+      .setTitle('Did you trim or thin out overgrown leaves today? (canopy management)')
+      .setHelpText('Remove any leaves that are blocking light or overlapping heavily with other plants.')
+      .setChoiceValues(['Yes', 'No', 'Not needed today'])
       .setRequired(true);
 
     form.addMultipleChoiceItem()
-      .setTitle(prefix + ' — ready to harvest')
-      .setChoiceValues(['Yes', 'No', 'Partial'])
+      .setTitle('Is this row ready to harvest?')
+      .setChoiceValues(['Yes — ready now', 'No', 'Some plants are ready'])
       .setRequired(true);
   }
 
-  yesNo(form, prefix + ' — harvested today', true);
-  numItem(form, prefix + ' — estimated harvest weight (kg)', false);
-  form.addTextItem().setTitle(prefix + ' — notes').setRequired(false);
+  yesNo(form, 'Did you harvest from here today?', true);
+  numItem(form, 'If you harvested: how much? (kg)', false,
+    'Leave blank if you did not harvest today.');
+  form.addTextItem()
+    .setTitle('Any other observations for ' + zone + '? (optional)')
+    .setRequired(false);
 }
 
 // ============================================================
-// FORM 3 — WEEKLY CHECK
+// FORM 3 — WEEKLY SUMMARY
 // ============================================================
 
 function createForm3() {
-  const form = FormApp.create('Delta Aquaponics — Weekly Check');
-  form.setDescription('Full weekly check. Submit once per week.');
+  const form = FormApp.create('Delta Aquaponics — Weekly Summary');
+  form.setDescription(
+    'Fill this in ONCE per week, on the same day each week.\n\n' +
+    'This form records water chemistry, fish health, what crops are planted, ' +
+    'and the weekly harvest summary.\n\n' +
+    'Take your time — this information is used for planning. Takes about 15–20 minutes.'
+  );
   form.setCollectEmail(false);
-
-  form.addTextItem().setTitle('Staff name').setRequired(true);
-  form.addDateItem().setTitle('Week commencing date').setRequired(true);
-
-  // ── Full water chemistry ──────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Full water chemistry');
-
-  numItem(form, 'Ammonia NH₃ (ppm)', true);
-  numItem(form, 'Calcium Ca (ppm)', true);
-  numItem(form, 'Magnesium Mg (ppm)', true);
-  numItem(form, 'Potassium K (ppm)', true);
-  numItem(form, 'Manganese Mn (ppm)', true);
-  numItem(form, 'Iron Fe (ppm)', true);
-
-  // ── Fish weight and feeding ───────────────────────────────
-  form.addSectionHeaderItem().setTitle('Fish weight and feeding');
-
-  numItem(form, 'Number of fish sampled', true);
-  numItem(form, 'Average fish weight (g)', true);
-
-  form.addListItem()
-    .setTitle('Feed type')
-    .setChoiceValues(['Starter', 'Grower'])
-    .setRequired(true);
-
-  numItem(form, 'Daily feed quantity (g)', true);
-
-  form.addListItem()
-    .setTitle('Fish visual health')
-    .setChoiceValues(['Good', 'Concerns', 'Problem'])
-    .setRequired(true);
-
-  form.addParagraphTextItem().setTitle('Health observations').setRequired(false);
-
-  // ── Expected harvest dates ────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Expected harvest dates');
-
-  for (let i = 1; i <= 6; i++) {
-    form.addDateItem().setTitle('Row ' + i + ' — expected harvest date').setRequired(false);
-  }
-  form.addDateItem().setTitle('DWC Tank 1 — expected harvest date').setRequired(false);
-  form.addDateItem().setTitle('DWC Tank 2 — expected harvest date').setRequired(false);
-
-  // ── Weekly harvest summary ────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Weekly harvest summary');
-
-  numItem(form, 'Total harvest this week (kg)', true);
-
-  form.addMultipleChoiceItem()
-    .setTitle('Any crop losses or beds replanted')
-    .setChoiceValues(['Yes', 'No'])
-    .setRequired(true);
-
-  form.addParagraphTextItem().setTitle('Crop loss or replanting notes').setRequired(false);
-
-  // ── Notes ─────────────────────────────────────────────────
-  form.addSectionHeaderItem().setTitle('Notes');
-  form.addParagraphTextItem().setTitle('Any issues or observations').setRequired(false);
-
+  form.setProgressBar(true);
+  buildForm3(form);
   return form;
 }
 
+const CROP_LIST = [
+  'Butterhead Lettuce', 'Lollo Rossa Lettuce', 'Romaine Lettuce', 'Baby Leaf Lettuce', 'Oak Leaf Lettuce',
+  'Spinach', 'Basil', 'Swiss Chard', 'Kale', 'Pak Choi / Bok Choy',
+  'Coriander (Cilantro)', 'Parsley', 'Celery', 'Spring Onion', 'Mint',
+  'Empty — nothing planted', 'Other'
+];
+
+function buildForm3(form) {
+  form.addTextItem().setTitle('Staff name').setRequired(true);
+  form.addDateItem()
+    .setTitle('Week commencing date')
+    .setRequired(true)
+    .setHelpText('Enter the date of Monday this week.');
+
+  // Water chemistry
+  form.addPageBreakItem()
+    .setTitle('Water Chemistry Test')
+    .setHelpText(
+      'Use the full water test kit for these measurements.\n' +
+      'Write the number from each test result. If a test kit is missing or broken, write 0 and report it.'
+    );
+
+  numItem(form, 'Ammonia reading (ppm) — NH₃', true,
+    'Good range: 0 to 0.5 ppm. Above 2 ppm — alert the manager immediately.');
+  numItem(form, 'Calcium reading (ppm) — Ca', true,
+    'Good range: 30 to 100 ppm.');
+  numItem(form, 'Magnesium reading (ppm) — Mg', true,
+    'Good range: 10 to 50 ppm.');
+  numItem(form, 'Potassium reading (ppm) — K', true,
+    'Good range: 15 to 50 ppm.');
+  numItem(form, 'Manganese reading (ppm) — Mn', true,
+    'Good range: 0.5 to 5 ppm.');
+  numItem(form, 'Iron reading (ppm) — Fe', true,
+    'Good range: 1 to 5 ppm. Below 1 ppm often causes yellow leaves on plants.');
+
+  // Fish weighing and feeding
+  form.addPageBreakItem()
+    .setTitle('Fish: Weighing and Feeding')
+    .setHelpText(
+      'Net out 10 to 20 fish and weigh them all together.\n' +
+      'Divide the total weight by the number of fish to get the average weight per fish.\n' +
+      'Then record the current feeding information.'
+    );
+
+  numItem(form, 'How many fish did you weigh this week?', true,
+    'Usually 10 to 20 fish. Always use the same number each week if possible.');
+  numItem(form, 'What is the average fish weight? (grams)', true,
+    'Total weight (grams) ÷ number of fish weighed.');
+
+  form.addListItem()
+    .setTitle('What type of feed are you currently using?')
+    .setChoiceValues(['Starter pellets (small)', 'Grower pellets (large)'])
+    .setRequired(true);
+
+  numItem(form, 'How much feed are you giving per day in total? (grams)', true,
+    'Add up all feed given across the day.');
+
+  form.addListItem()
+    .setTitle('How do the fish look overall this week?')
+    .setChoiceValues(['Good — active and healthy', 'Some concerns', 'Serious problem'])
+    .setRequired(true);
+
+  form.addParagraphTextItem()
+    .setTitle('Any observations about the fish this week? (optional)')
+    .setRequired(false);
+
+  // Crop status — gravel rows
+  form.addPageBreakItem()
+    .setTitle('Crop Status — Gravel Beds (Rows 1–6)')
+    .setHelpText(
+      'For each gravel row, select what crop is currently planted.\n' +
+      'Then enter the date you expect to harvest it (if you know).\n' +
+      'If the row is empty or you are not sure, leave it blank.'
+    );
+
+  for (let i = 1; i <= 6; i++) {
+    form.addListItem()
+      .setTitle('Row ' + i + ' — what crop is currently planted?')
+      .setChoiceValues(CROP_LIST)
+      .setRequired(false);
+    form.addDateItem()
+      .setTitle('Row ' + i + ' — expected harvest date (leave blank if unsure)')
+      .setRequired(false);
+  }
+
+  // Crop status — DWC tanks
+  form.addPageBreakItem()
+    .setTitle('Crop Status — DWC Tanks (Tanks 1–4)')
+    .setHelpText(
+      'For each DWC Tank, select what crop is currently growing.\n' +
+      'Then enter the expected harvest date if you know it.'
+    );
+
+  for (let t = 1; t <= 4; t++) {
+    form.addListItem()
+      .setTitle('DWC Tank ' + t + ' — what crop is currently planted?')
+      .setChoiceValues(CROP_LIST)
+      .setRequired(false);
+    form.addDateItem()
+      .setTitle('DWC Tank ' + t + ' — expected harvest date (leave blank if unsure)')
+      .setRequired(false);
+  }
+
+  // Weekly harvest summary
+  form.addPageBreakItem()
+    .setTitle('Weekly Harvest Summary')
+    .setHelpText('Record the total amount harvested this week and any crop losses.');
+
+  numItem(form, 'Total harvest weight this week across all rows and tanks (kg)', true,
+    'Add up all harvests from every row and tank this week.');
+
+  form.addMultipleChoiceItem()
+    .setTitle('Were any crops lost or any beds replanted this week?')
+    .setChoiceValues(['Yes', 'No'])
+    .setRequired(true);
+
+  form.addParagraphTextItem()
+    .setTitle('If yes — what was lost or replanted? Describe what happened. (optional)')
+    .setRequired(false);
+
+  form.addParagraphTextItem()
+    .setTitle('Any other observations or issues this week? (optional)')
+    .setRequired(false);
+}
+
 // ============================================================
-// HELPERS FOR FORM CREATION
+// FORM ITEM HELPERS
 // ============================================================
 
-// Number field (text item with number validation)
-function numItem(form, title, required) {
+// Number field with optional help text
+function numItem(form, title, required, helpText) {
   const item = form.addTextItem().setTitle(title).setRequired(required);
+  if (helpText) item.setHelpText(helpText);
   try {
     item.setValidation(FormApp.createTextValidation().requireNumber().build());
   } catch(e) {
-    // Validation may not be available in all Apps Script environments
+    // Validation may not be available in all environments
   }
   return item;
 }
 
-// Yes / No radio
-function yesNo(form, title, required) {
-  return form.addMultipleChoiceItem()
+// Yes / No radio button with optional help text
+function yesNo(form, title, required, helpText) {
+  const item = form.addMultipleChoiceItem()
     .setTitle(title)
     .setChoiceValues(['Yes', 'No'])
     .setRequired(required);
+  if (helpText) item.setHelpText(helpText);
+  return item;
 }
 
 // ============================================================
@@ -620,10 +857,9 @@ function yesNo(form, title, required) {
 // ============================================================
 
 function setupTriggers(form1Id, form2Id, form3Id) {
-  // Delete any existing triggers for these forms first to avoid duplicates
+  // Remove existing triggers first to avoid duplicates
   ScriptApp.getProjectTriggers().forEach(t => {
-    const fn = t.getHandlerFunction();
-    if (['onForm1Submit','onForm2Submit','onForm3Submit'].includes(fn)) {
+    if (['onForm1Submit', 'onForm2Submit', 'onForm3Submit'].includes(t.getHandlerFunction())) {
       ScriptApp.deleteTrigger(t);
     }
   });
@@ -635,20 +871,18 @@ function setupTriggers(form1Id, form2Id, form3Id) {
   Logger.log('Triggers created for all 3 forms.');
 }
 
-// ── Generic trigger handler ───────────────────────────────────
-// Iterates all question items on the form in order and maps each
-// response by item ID so optional fields always land in the
-// correct column even if they were left blank.
+// Generic handler — maps responses by item ID so optional fields
+// always land in the correct column even if left blank.
 function handleFormSubmit_(e, formId, sheetName) {
   const ssId = getSsId();
-  if (!ssId) { Logger.log('ERROR: No spreadsheet ID.  Run setup() first.'); return; }
+  if (!ssId) { Logger.log('ERROR: No spreadsheet ID. Run setup() first.'); return; }
 
   const form = FormApp.openById(formId);
-  const ss = SpreadsheetApp.openById(ssId);
+  const ss   = SpreadsheetApp.openById(ssId);
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) { Logger.log('ERROR: Sheet not found: ' + sheetName); return; }
 
-  // Question item types that produce responses
+  // Question types that produce a response column
   const Q_TYPES = new Set([
     FormApp.ItemType.TEXT, FormApp.ItemType.PARAGRAPH_TEXT,
     FormApp.ItemType.MULTIPLE_CHOICE, FormApp.ItemType.CHECKBOX,
@@ -664,7 +898,7 @@ function handleFormSubmit_(e, formId, sheetName) {
     responseMap[ir.getItem().getId()] = Array.isArray(v) ? v.join(', ') : v;
   });
 
-  // Build row: timestamp + one cell per question, in form order
+  // Build row: timestamp + one cell per question item, in form order
   const row = [e.response.getTimestamp()];
   form.getItems()
     .filter(item => Q_TYPES.has(item.getType()))
@@ -693,10 +927,10 @@ function onForm3Submit(e) {
 // ============================================================
 // Deploy as Web App: Execute as Me, Anyone can access.
 // The dashboard fetches:
-//   ?tab=all                   → all operational tabs as one JSON object
-//   ?tab=Form1_DailyRounds     → single tab {headers, rows}
+//   ?tab=all               → all operational tabs as one JSON object
+//   ?tab=Form1_DailyRounds → single tab {headers, rows}
 //
-// Financial_Records is never included in any response.
+// Financial_Records is NEVER included in any response.
 // ============================================================
 
 const ALLOWED_TABS = [
@@ -717,11 +951,10 @@ function doGet(e) {
 
   try {
     const ssId = getSsId();
-    if (!ssId) throw new Error('Spreadsheet not configured.  Run setup() in the Apps Script editor.');
+    if (!ssId) throw new Error('Spreadsheet not configured. Run setup() in the Apps Script editor.');
 
-    const ss = SpreadsheetApp.openById(ssId);
+    const ss  = SpreadsheetApp.openById(ssId);
     const tab = (e && e.parameter && e.parameter.tab) ? e.parameter.tab : 'all';
-
     let result;
 
     if (tab === 'all') {
@@ -752,8 +985,7 @@ function doGet(e) {
 }
 
 // Returns { headers: [...], rows: [[...], ...] } for a sheet.
-// Dates and times are converted to ISO strings so JSON.parse
-// on the dashboard produces consistent string values.
+// Dates and times are converted to ISO strings for consistent JSON parsing.
 function getSheetJson_(sheet) {
   const data = sheet.getDataRange().getValues();
   if (data.length === 0) return { headers: [], rows: [] };
@@ -772,9 +1004,9 @@ function getSheetJson_(sheet) {
 
 // ============================================================
 // SEED DEMO DATA
-// Run this once after setup() to populate the historical tabs
-// with realistic demo data so the dashboard looks complete.
-// Only writes to tabs that are empty — safe to run after setup.
+// Run once after setup() to populate historical tabs with
+// realistic data so the dashboard looks complete.
+// Safe to run — only writes to tabs that are empty.
 // ============================================================
 
 function seedDemoData() {
@@ -783,15 +1015,12 @@ function seedDemoData() {
   const ss = SpreadsheetApp.openById(ssId);
 
   // ── Plant_Records ─────────────────────────────────────────
-  // Date | Crop / Bed | Activity | Growth notes | Pests | Expected harvest date | Notes
   const plantSheet = ss.getSheetByName('Plant_Records');
   if (plantSheet && plantSheet.getLastRow() <= 1) {
-    const today = new Date();
     const d = (y,m,day) => new Date(y,m-1,day);
     plantSheet.getRange(1,1,1,7).setValues([
       ['Date','Crop / Bed','Activity','Growth notes','Pests observed','Expected harvest date','Notes']
-    ]);
-    plantSheet.getRange(1,1,1,7).setFontWeight('bold');
+    ]).setFontWeight('bold');
     plantSheet.setFrozenRows(1);
     const plantData = [
       [d(2026,4,28), 'Lettuce (Lollo Rossa)',         'Transplanted', 'Strong germination, 6 trays transplanted into Row 1', 'None',     d(2026,6,25), ''],
@@ -800,7 +1029,7 @@ function seedDemoData() {
       [d(2026,5,5),  'Lettuce (Oak Leaf)',             'Transplanted', 'Healthy and growing well',                             'None',     d(2026,6,28), ''],
       [d(2026,5,15), 'Basil (Genovese)',               'Transplanted', 'Fast growth, strong aroma, pinched tops',              'None',     d(2026,7,10), ''],
       [d(2026,5,20), 'Swiss Chard (Bright Lights)',    'Transplanted', 'Good colour, stems developing well',                   'None',     d(2026,7,15), ''],
-      [d(2026,5,1),  'Lettuce (Baby Leaf) — Tank 1',  'Transplanted', 'Excellent growth, canopy nearly full coverage',         'None',     d(2026,6,20), 'DWC performing well'],
+      [d(2026,5,1),  'Lettuce (Baby Leaf) — Tank 1',  'Transplanted', 'Excellent growth, canopy nearly full coverage',         'None',     d(2026,6,20), 'DWC Tank 1'],
       [d(2026,5,8),  'Lettuce (Romaine) — Tank 2',    'Transplanted', 'Upright growth, heads forming nicely',                  'None',     d(2026,6,24), 'DWC Tank 2'],
     ];
     plantSheet.getRange(2,1,plantData.length,7).setValues(plantData);
@@ -810,11 +1039,9 @@ function seedDemoData() {
   }
 
   // ── Environmental_Data ────────────────────────────────────
-  // Date | Time | Air temp inside | Air temp outside | Weather
   const envSheet = ss.getSheetByName('Environmental_Data');
   if (envSheet && envSheet.getLastRow() <= 1) {
-    envSheet.getRange(1,1,1,5).setValues([['Date','Time','Air temp inside (°C)','Air temp outside (°C)','Weather']]);
-    envSheet.getRange(1,1,1,5).setFontWeight('bold');
+    envSheet.getRange(1,1,1,5).setValues([['Date','Time','Air temp inside (°C)','Air temp outside (°C)','Weather']]).setFontWeight('bold');
     envSheet.setFrozenRows(1);
     const envData = [];
     const times = ['Morning','Midday','Evening'];
@@ -834,20 +1061,18 @@ function seedDemoData() {
   }
 
   // ── Water_Quality ─────────────────────────────────────────
-  // Date | Time | Water temp (°C) | pH | Notes
   const wqSheet = ss.getSheetByName('Water_Quality');
   if (wqSheet && wqSheet.getLastRow() <= 1) {
-    wqSheet.getRange(1,1,1,5).setValues([['Date','Time','Water temp (°C)','pH','Notes']]);
-    wqSheet.getRange(1,1,1,5).setFontWeight('bold');
+    wqSheet.getRange(1,1,1,5).setValues([['Date','Time','Water temp (°C)','pH','Notes']]).setFontWeight('bold');
     wqSheet.setFrozenRows(1);
     const wqData = [];
     const pHs = [7.2, 7.1, 7.3, 7.0, 7.2];
     const wTemps = [26.5, 27.0, 26.0, 27.5, 26.5];
     for (let w = 4; w >= 0; w--) {
       const dt = new Date(); dt.setDate(dt.getDate() - w);
-      wqData.push([dt, 'Morning', wTemps[4-w], pHs[4-w], '']);
-      wqData.push([dt, 'Midday',  wTemps[4-w]+0.5, pHs[4-w]+0.1, '']);
-      wqData.push([dt, 'Evening', wTemps[4-w]+0.3, pHs[4-w], '']);
+      ['Morning','Midday','Evening'].forEach((t, ti) => {
+        wqData.push([dt, t, wTemps[4-w] + ti*0.3, pHs[4-w] + (ti===1?0.1:0), '']);
+      });
     }
     wqSheet.getRange(2,1,wqData.length,5).setValues(wqData);
     Logger.log('Water_Quality seeded with ' + wqData.length + ' rows.');
@@ -856,18 +1081,15 @@ function seedDemoData() {
   }
 
   // ── Siphons_Drain_Cycle ───────────────────────────────────
-  // Date | Time | Row1 | Row2 | Row3 | Row4 | Row5 | Row6
   const siphSheet = ss.getSheetByName('Siphons_Drain_Cycle');
   if (siphSheet && siphSheet.getLastRow() <= 1) {
-    siphSheet.getRange(1,1,1,8).setValues([['Date','Time','Row 1 (mins)','Row 2 (mins)','Row 3 (mins)','Row 4 (mins)','Row 5 (mins)','Row 6 (mins)']]);
-    siphSheet.getRange(1,1,1,8).setFontWeight('bold');
+    siphSheet.getRange(1,1,1,8).setValues([['Date','Time','Row 1 (mins)','Row 2 (mins)','Row 3 (mins)','Row 4 (mins)','Row 5 (mins)','Row 6 (mins)']]).setFontWeight('bold');
     siphSheet.setFrozenRows(1);
     const siphData = [];
-    const base = [16, 17, 15, 18, 16, 17]; // benchmark Row 6 = 17
-    const times = ['Morning','Midday','Evening'];
+    const base = [16, 17, 15, 18, 16, 17];
     for (let w = 6; w >= 0; w--) {
       const dt = new Date(); dt.setDate(dt.getDate() - w);
-      times.forEach(t => {
+      ['Morning','Midday','Evening'].forEach(t => {
         siphData.push([dt, t, ...base.map(v => v + Math.round((Math.random()-0.5)*2))]);
       });
     }
@@ -878,22 +1100,20 @@ function seedDemoData() {
   }
 
   // ── Fish_Records ──────────────────────────────────────────
-  // Date | Species | Initial stock | Deaths | Cause | Health notes | Running total
   const fishSheet = ss.getSheetByName('Fish_Records');
   if (fishSheet && fishSheet.getLastRow() <= 1) {
-    fishSheet.getRange(1,1,1,7).setValues([['Date','Species','Initial stock','Deaths','Cause','Health notes','Running total']]);
-    fishSheet.getRange(1,1,1,7).setFontWeight('bold');
+    fishSheet.getRange(1,1,1,7).setValues([['Date','Species','Initial stock','Deaths','Cause','Health notes','Running total']]).setFontWeight('bold');
     fishSheet.setFrozenRows(1);
     const fishData = [
-      [new Date(2024,9,1),  'Three-spotted tilapia', 1295, 0,  '',                    'Stocked. All fish healthy and active.',         1295],
-      [new Date(2024,11,15),'Three-spotted tilapia', 1295, 12, 'Unknown',              'Minor losses. Fish otherwise behaving normally.', 1283],
+      [new Date(2024,9,1),  'Three-spotted tilapia', 1295, 0,  '',                    'Stocked. All fish healthy and active.',            1295],
+      [new Date(2024,11,15),'Three-spotted tilapia', 1295, 12, 'Unknown',              'Minor losses. Fish otherwise behaving normally.',  1283],
       [new Date(2025,0,15), 'Three-spotted tilapia', 1295, 247,'Ventilation failure',  'Mass die-off during overnight ventilation fault. Corrected.', 1036],
-      [new Date(2025,1,20), 'Three-spotted tilapia', 1295, 8,  'Unknown',              'Healthy overall. Small losses noted.',           1028],
-      [new Date(2025,3,10), 'Three-spotted tilapia', 1295, 15, 'Unknown',              'Fish active and feeding well.',                  1013],
-      [new Date(2025,5,1),  'Three-spotted tilapia', 1295, 45, 'Unknown',              'Batch losses — cause unclear.',                  968],
-      [new Date(2025,7,20), 'Three-spotted tilapia', 1295, 22, 'Unknown',              'Healthy. Feeding well.',                          946],
-      [new Date(2025,10,5), 'Three-spotted tilapia', 1295, 38, 'Unknown',              'Some listless behaviour observed, passed.',       908],
-      [new Date(2026,0,15), 'Three-spotted tilapia', 1295, 15, 'Unknown',              'Healthy. Feeding well.',                          893],
+      [new Date(2025,1,20), 'Three-spotted tilapia', 1295, 8,  'Unknown',              'Healthy overall. Small losses noted.',              1028],
+      [new Date(2025,3,10), 'Three-spotted tilapia', 1295, 15, 'Unknown',              'Fish active and feeding well.',                    1013],
+      [new Date(2025,5,1),  'Three-spotted tilapia', 1295, 45, 'Unknown',              'Batch losses — cause unclear.',                     968],
+      [new Date(2025,8,1),  'Three-spotted tilapia', 1295, 22, 'Unknown',              'Small losses, fish otherwise healthy.',              946],
+      [new Date(2025,11,1), 'Three-spotted tilapia', 1295, 18, 'Unknown',              'Year-end stock count. Fish healthy.',                928],
+      [new Date(2026,2,15), 'Three-spotted tilapia', 1295, 31, 'Unknown',              'Losses over winter period.',                        897],
     ];
     fishSheet.getRange(2,1,fishData.length,7).setValues(fishData);
     Logger.log('Fish_Records seeded with ' + fishData.length + ' rows.');
@@ -901,6 +1121,22 @@ function seedDemoData() {
     Logger.log('Fish_Records already has data — skipped.');
   }
 
-  Logger.log('=== seedDemoData complete ===');
-  Logger.log('Refresh the dashboard and re-sync to see all data.');
+  // ── System_Maintenance ────────────────────────────────────
+  const maintSheet = ss.getSheetByName('System_Maintenance');
+  if (maintSheet && maintSheet.getLastRow() <= 1) {
+    maintSheet.getRange(1,1,1,6).setValues([['Date','Component','Type','Details','Performed by','Notes']]).setFontWeight('bold');
+    maintSheet.setFrozenRows(1);
+    const maintData = [
+      [new Date(2026,2,1),  'Air blower',     'Repair',     'Replaced diaphragm on DWC Tank 1 blower', 'James', 'Sourced from local supplier'],
+      [new Date(2026,3,15), 'Sump pump',      'Inspection', 'Cleaned impeller and housing',            'James', ''],
+      [new Date(2026,4,1),  'Greenhouse fan', 'Repair',     'Replaced fan belt',                       'James', 'Fan running quietly after repair'],
+      [new Date(2026,5,1),  'Water lines',    'Inspection', 'Checked all pipe joints for leaks',       'James', 'No leaks found'],
+    ];
+    maintSheet.getRange(2,1,maintData.length,6).setValues(maintData);
+    Logger.log('System_Maintenance seeded with ' + maintData.length + ' rows.');
+  } else {
+    Logger.log('System_Maintenance already has data — skipped.');
+  }
+
+  Logger.log('=== SEED DEMO DATA COMPLETE ===');
 }

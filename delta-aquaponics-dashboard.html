@@ -828,7 +828,7 @@ function parseWebAppData(allData) {
 
     // Water temp (col 4) — partial WQ row (no pH here, pH comes from Form 2)
     const wt = fv(r[4]);
-    if (wt !== null) wq_rows.push([dt, tm, wt, null, sv(r[24])]);
+    if (wt !== null) wq_rows.push([dt, tm, wt, null, sv(r[30])]);  // notes now at col 30 (DWC 3&4 added before it)
   });
 
   // ── Form 2 — daily full check ─────────────────────────────────────────────
@@ -862,21 +862,23 @@ function parseWebAppData(allData) {
           wq_rows.push([dt, 'Form2', null, ph, note || null, no3, no2]);
         }
 
-        // Fish deaths (col 81)
-        const deaths = Math.max(0, fv(r[81]) || 0);
+        // Fish deaths (col 99 — was 81, shifted +18 by DWC 3&4 plant blocks)
+        const deaths = Math.max(0, fv(r[99]) || 0);
         runningStock -= deaths;
-        const fishOk = sv(r[78]) !== 'No';
-        const gasping = sv(r[79]) === 'Yes';
-        const disease = sv(r[80]) === 'Yes';
+        const fishOk = sv(r[96]) !== 'No';
+        const gasping = sv(r[97]) === 'Yes';
+        const disease = sv(r[98]) === 'Yes';
         const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
-        fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, sv(r[98]) || '', healthNote, Math.round(runningStock)]);
+        fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, sv(r[124]) || '', healthNote, Math.round(runningStock)]);
 
-        // Equipment checklist (cols 83–89 = system checks, 90–93 = DWC1, 94–97 = DWC2)
+        // Equipment checklist (cols 101–107 = system, 108–111 = DWC1, 112–115 = DWC2, 116–119 = DWC3, 120–123 = DWC4)
         equip_rows.push([dt, {
-          pump:     sv(r[83]), level:    sv(r[84]), leaks:    sv(r[85]),
-          clean:    sv(r[86]), biowaste: sv(r[87]), nutrients:sv(r[88]),
-          clarity:  sv(r[89]), blower1:  sv(r[90]), blower2:  sv(r[94]),
-          bubbles1: sv(r[91]), bubbles2: sv(r[95])
+          pump:     sv(r[101]), level:    sv(r[102]), leaks:    sv(r[103]),
+          clean:    sv(r[104]), biowaste: sv(r[105]), nutrients:sv(r[106]),
+          clarity:  sv(r[107]), blower1:  sv(r[108]), blower2:  sv(r[112]),
+          bubbles1: sv(r[109]), bubbles2: sv(r[113]),
+          blower3:  sv(r[116]), blower4:  sv(r[120]),
+          bubbles3: sv(r[117]), bubbles4: sv(r[121])
         }]);
 
         // Plant health per gravel row (rows 1–6 → cols 6–59, 9 fields each)
@@ -900,9 +902,9 @@ function parseWebAppData(allData) {
           ]);
         }
 
-        // Plant health per DWC tank (tank 1 = cols 60–68, tank 2 = 69–77)
+        // Plant health per DWC tank (tank 1 = cols 60–68, tank 2 = 69–77, tank 3 = 78–86, tank 4 = 87–95)
         // r[7]=yellowing, r[8]=wilting, r[9]=bitterness
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < 4; i++) {
           const b = 60 + i * 9;
           const health = sv(r[b]);
           if (!health) continue;
@@ -916,9 +918,10 @@ function parseWebAppData(allData) {
             sv(r[b+3]),  // pests
             null,
             [sv(r[b+8]), wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
-            sv(r[b+1]),  // r[7] yellowing
-            sv(r[b+2]),  // r[8] wilting
-            bitter||null // r[9] bitterness
+            sv(r[b+1]),  // yellowing
+            sv(r[b+2]),  // wilting
+            bitter||null, // bitterness
+            null          // crop name (comes from Form 3, not Form 2)
           ]);
         }
       });
@@ -932,11 +935,19 @@ function parseWebAppData(allData) {
     const dt = cleanDate(String(r[2] || r[0])); // week commencing date (col 2) or timestamp
     if (!dt) return;
 
-    // Harvest dates: cols 15–22  (Row1…Row6, DWC1, DWC2) — EC removed, cols shifted
-    const bedNames = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6','DWC Tank 1','DWC Tank 2'];
+    // Crop names + harvest dates: cols 15–34, interleaved (crop at 15+i*2, harvest at 16+i*2)
+    // Includes DWC Tanks 3 & 4 (newly added to Form 3)
+    const bedNames = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6','DWC Tank 1','DWC Tank 2','DWC Tank 3','DWC Tank 4'];
     bedNames.forEach((name, i) => {
-      const hd = cleanDate(String(r[15+i] || ''));
-      if (hd) plant_rows.push([dt, name, 'Harvest date update', '', null, hd, null]);
+      const cropVal = sv(r[15 + i*2]) || null;
+      const cropName = (cropVal && cropVal !== 'Empty — nothing planted') ? cropVal : null;
+      const hd = cleanDate(String(r[16 + i*2] || ''));
+      if (cropName) {
+        // Push a "Planted" record carrying the crop name in r[10]
+        plant_rows.push([dt, name, 'Planted', cropName, null, hd||null, null, null, null, null, cropName]);
+      } else if (hd) {
+        plant_rows.push([dt, name, 'Harvest date update', '', null, hd, null, null, null, null, null]);
+      }
     });
 
     // Weekly chemistry: cols 3–8 (NH₃, Ca, Mg, K, Mn, Fe)
@@ -1610,7 +1621,7 @@ function renderHealthRow(){
 
   // Equipment — latest Form2 checklist
   const eq = s.latest_equip || {};
-  const eqDot = v => v==null?'neutral':v==='Yes'?'good':'bad';
+  const eqDot = v => v==null?'neutral':v==='OK'||v==='Yes'?'good':v==='Issue'?'bad':'neutral';
   const eqVal = v => v==null?'—':v;
 
   // Daily rounds — from compliance data
@@ -1696,7 +1707,9 @@ function renderHealthRow(){
       mr(eqDot(eq.nutrients), 'Nutrient bins',      eqVal(eq.nutrients)) +
       mr(eqDot(eq.clarity),   'Water clarity',      eqVal(eq.clarity)) +
       mr(eqDot(eq.blower1),   'DWC1 blower',        eqVal(eq.blower1)) +
-      mr(eqDot(eq.blower2),   'DWC2 blower',        eqVal(eq.blower2));
+      mr(eqDot(eq.blower2),   'DWC2 blower',        eqVal(eq.blower2)) +
+      mr(eqDot(eq.blower3),   'DWC3 blower',        eqVal(eq.blower3)) +
+      mr(eqDot(eq.blower4),   'DWC4 blower',        eqVal(eq.blower4));
 
   // Card 6: Daily rounds — Form1 submission times
   const checkRows =
@@ -1758,12 +1771,20 @@ function renderCropGrid(){
     if(!lastBedDate[p[1]] || p[0] > lastBedDate[p[1]]) lastBedDate[p[1]] = p[0];
   });
 
+  // Latest crop name per bed from Form 3 weekly records (stored in r[10])
+  const bedCrop = {};
+  D.plants.forEach(p => {
+    if(!p[1]||!p[10]) return;
+    if(!bedCrop[p[1]] || p[0] > (bedCrop[p[1]].date||'')) bedCrop[p[1]] = {name:p[10], date:p[0]};
+  });
+
   // Render one bed card (gravel or DWC)
   const bedCard = (label, isDwc, r, rowIdx) => {
     // r may be null (empty slot)
     const name = r ? r[1] : '';
     const nameLower = name.toLowerCase();
-    const headerLabel = r ? `${label} — ${name}` : `${label} — Empty`;
+    const cropDisplay = bedCrop[label] ? bedCrop[label].name : null;
+    const headerLabel = cropDisplay ? `${label} — ${cropDisplay}` : `${label} — Empty`;
 
     // New health fields from Form 2
     const yellowing  = r ? (r[7]||null) : null;
@@ -1817,7 +1838,7 @@ function renderCropGrid(){
       const siphMark = siphOk?'<i class="ti ti-check" style="font-size:11px;color:var(--c-good)"></i>':'<i class="ti ti-alert-triangle" style="font-size:11px;color:var(--c-warn)"></i>';
       footer = `<span style="color:var(--muted)"><span class="dot dot-${siphDot}" style="margin-right:4px;display:inline-block"></span>S${rowIdx+1}: ${avgSiph!=null?avgSiph+'m ':' — '}${avgSiph!=null?siphMark:''}</span>`;
     } else {
-      const bubVal = rowIdx===0?eq.bubbles1:rowIdx===1?eq.bubbles2:null;
+      const bubVal = rowIdx===0?eq.bubbles1:rowIdx===1?eq.bubbles2:rowIdx===2?eq.bubbles3:rowIdx===3?eq.bubbles4:null;
       const bubDot = bubVal==='Yes'?'good':bubVal==='No'?'bad':'neutral';
       footer = `<span style="color:var(--muted)"><span class="dot dot-${bubDot}" style="margin-right:4px;display:inline-block"></span>Bubbles: ${bubVal||'—'}</span>`;
     }
