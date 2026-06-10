@@ -130,6 +130,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ov-hd-beds{background:rgba(74,222,128,.1);color:#4ade80;border-left:3px solid #22c55e}
 .ov-hd-dwc{background:rgba(251,191,36,.1);color:#fcd34d;border-left:3px solid #f59e0b}
 
+/* ── JOURNAL DRILL-DOWN ── */
+.journal-search{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--surface-2);color:var(--text);outline:none;transition:border .15s;box-sizing:border-box;margin-bottom:14px}
+.journal-search:focus{border-color:var(--c-good)}
+.journal-week{border:0.5px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
+.journal-week-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer;background:var(--surface);user-select:none}
+.journal-week-hd:hover{background:var(--surface-2)}
+.journal-week-label{font-size:13px;font-weight:500;color:var(--text)}
+.journal-week-meta{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.journal-week-count{font-size:11px;color:var(--muted)}
+.journal-week-arrow{font-size:10px;color:var(--muted);transition:transform .2s;display:inline-block}
+.journal-week.open .journal-week-arrow{transform:rotate(90deg)}
+.journal-week-body{display:none;border-top:0.5px solid var(--border)}
+.journal-week.open .journal-week-body{display:block}
+.journal-day{padding:10px 14px}
+.journal-day:not(:last-child){border-bottom:0.5px solid var(--border)}
+.journal-day-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+.journal-entry{padding:7px 0}
+.journal-entry:not(:last-child){border-bottom:0.5px solid var(--border)}
+.journal-entry-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.journal-tag{font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px}
+.journal-entry-cat{font-size:11px;color:var(--muted)}
+.journal-entry-text{font-size:13px;color:var(--text);line-height:1.5}
+.journal-entry-text mark{background:rgba(251,191,36,.3);color:inherit;border-radius:2px;padding:0 1px}
+.journal-empty{padding:32px 16px;text-align:center;color:var(--muted);font-size:13px}
+.journal-search-count{font-size:11px;color:var(--muted);margin-bottom:10px}
+
 /* ── PERIOD SELECTOR ── */
 .period-row{display:flex;gap:8px;margin-bottom:4px}
 .period-btn{flex:1;padding:9px 6px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r-sm);font-size:12px;font-weight:400;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center}
@@ -769,7 +795,11 @@ async function fetchWebAppData(webAppUrl) {
 // The Web App returns { tabName: { headers:[...], rows:[[...], ...] }, … }
 // We map each tab to the arrays that buildMergedData() expects.
 function parseWebAppData(allData) {
-  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [], equip_rows = [];
+  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [], equip_rows = [], journal_rows = [];
+  const jNote = (date, time, src, cat, text) => {
+    if (!text || text.length < 3 || /^(ok|n\/a|none|na|-|yes|no|good|normal)$/i.test(text.trim())) return;
+    journal_rows.push([date, time, src, cat, text.trim()]);
+  };
   // compliance_map: date → {f1_morn, f1_mid, f1_eve, f2}
   const comp_map = {};
 
@@ -844,6 +874,7 @@ function parseWebAppData(allData) {
     // Water temp (col 4) — partial WQ row (no pH here, pH comes from Form 2)
     const wt = fv(r[4]);
     if (wt !== null) wq_rows.push([dt, tm, wt, null, sv(r[30])]);  // notes now at col 30 (DWC 3&4 added before it)
+    jNote(dt, tm, 'Daily Rounds', 'General', sv(r[30]));
   });
 
   // ── Form 2 — daily full check ─────────────────────────────────────────────
@@ -885,6 +916,8 @@ function parseWebAppData(allData) {
         const disease = sv(r[98]) === 'Yes';
         const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
         fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, sv(r[124]) || '', healthNote, Math.round(runningStock)]);
+        jNote(dt, null, 'Daily Check', 'General', sv(r[124]));
+        if (healthNote !== 'OK') jNote(dt, null, 'Daily Check', 'Fish health', healthNote);
 
         // Equipment checklist (cols 101–107 = system, 108–111 = DWC1, 112–115 = DWC2, 116–119 = DWC3, 120–123 = DWC4)
         equip_rows.push([dt, {
@@ -904,17 +937,21 @@ function parseWebAppData(allData) {
           if (!health) continue;
           const harvested = sv(r[b+6]) === 'Yes';
           const wt = fv(r[b+7]);
+          const bedNote = sv(r[b+8]);
+          const bedPests = sv(r[b+3]);
           plant_rows.push([
             dt, `Row ${i+1}`,
             harvested ? 'Harvest' : 'Inspection',
             `Health: ${health}`,
-            sv(r[b+3]),  // pests
+            bedPests,
             null,        // no harvest date in Form2
-            [sv(r[b+8]), wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
+            [bedNote, wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
             sv(r[b+1]),  // r[7] yellowing
             sv(r[b+2]),  // r[8] wilting
             null         // r[9] bitterness (gravel n/a)
           ]);
+          jNote(dt, null, 'Daily Check', `Row ${i+1}`, bedNote);
+          jNote(dt, null, 'Daily Check', `Row ${i+1} — pests`, bedPests);
         }
 
         // Plant health per DWC tank (tank 1 = cols 60–68, tank 2 = 69–77, tank 3 = 78–86, tank 4 = 87–95)
@@ -926,18 +963,22 @@ function parseWebAppData(allData) {
           const harvested = sv(r[b+6]) === 'Yes';
           const wt = fv(r[b+7]);
           const bitter = sv(r[b+4]);
+          const dwcNote = sv(r[b+8]);
+          const dwcPests = sv(r[b+3]);
           plant_rows.push([
             dt, `DWC Tank ${i+1}`,
             harvested ? 'Harvest' : 'Inspection',
             `Health: ${health}`,
-            sv(r[b+3]),  // pests
+            dwcPests,
             null,
-            [sv(r[b+8]), wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
+            [dwcNote, wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
             sv(r[b+1]),  // yellowing
             sv(r[b+2]),  // wilting
             bitter||null, // bitterness
             null          // crop name (comes from Form 3, not Form 2)
           ]);
+          jNote(dt, null, 'Daily Check', `DWC Tank ${i+1}`, dwcNote);
+          jNote(dt, null, 'Daily Check', `DWC Tank ${i+1} — pests`, dwcPests);
         }
       });
     }
@@ -974,17 +1015,18 @@ function parseWebAppData(allData) {
     if (fishHealth && fishHealth !== 'Good') {
       const wt = fv(r[10]), n = fv(r[9]);
       const note = [fishHealth, wt !== null ? `avg ${wt}g` : '', n !== null ? `n=${n}` : ''].filter(Boolean).join(' · ');
-      // Push as a maintenance entry so it appears in the system health feed
       maint_rows.push([dt, 'Fish', 'Weekly weigh', note, sv(r[1]) || 'Staff', sv(r[14])]);
+      jNote(dt, null, 'Weekly Check', 'Fish health', note);
     }
+    jNote(dt, null, 'Weekly Check', 'General', sv(r[14]));
   });
 
   // Convert comp_map → sorted array [{date, f1_morn, f1_mid, f1_eve, f2}]
   const comp_rows = Object.entries(comp_map).sort().map(([date, v]) => ({date, ...v}));
-  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows, equip_rows);
+  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows, equip_rows, journal_rows);
 }
 
-function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[], equip_new=[]) {
+function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[], equip_new=[], journal_new=[]) {
   function mergeByKey(hist, newRows, keyFn) {
     const map = new Map();
     [...hist, ...newRows].forEach(r => map.set(keyFn(r), r));
@@ -1032,9 +1074,10 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   const latest_equip_date = equip_sorted.length ? equip_sorted[equip_sorted.length-1][0] : null;
 
   const monday = monday_new.sort((a,b)=>a.date>b.date?-1:1);
+  const journal = [...journal_new].sort((a,b)=>a[0]>b[0]?1:-1);
   return { wq, wq_chart, env, env_chart_morning:makeEnvByTime('Morning'), env_chart_midday:makeEnvByTime('Midday'), env_chart_evening:makeEnvByTime('Evening'),
     fish, stock_chart, cause_data, plants, siphons:siph, siph_avgs, siph_latest, siph_chart_data,
-    compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem,
+    compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem, journal,
     stats:{ current_stock:cur_stock, stocked:1295, total_mortality:1295-cur_stock, survival_pct:Math.round(cur_stock/1295*1000)/10,
       latest_ph:latest_wq[3]??null, latest_wtemp:latest_wq[2]??null, latest_env_morn:latest_env[2]??null,
       latest_env_morn_out, latest_equip, latest_equip_date,
@@ -1173,6 +1216,106 @@ function openDrillDown(type) {
 function closeDrillDown(){
   document.getElementById('drill-modal').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+// ─── JOURNAL DRILL-DOWN ──────────────────────────────────────────────────────
+function openJournalDrillDown() {
+  const all = [...(D.journal||[])].sort((a,b)=>b[0]>a[0]?-1:1); // newest first
+
+  document.getElementById('drill-title').textContent = 'Farm Journal';
+  const bodyEl = document.getElementById('drill-body');
+  bodyEl.innerHTML = `
+    <input type="search" class="journal-search" id="journal-search" placeholder="Search notes… e.g. 'rat', 'pump', 'pH'" autocomplete="off"/>
+    <div id="journal-search-count" class="journal-search-count" style="display:none"></div>
+    <div id="journal-content"></div>`;
+
+  function weekKey(dateStr) {
+    const d = new Date(dateStr+'T12:00:00'), day=d.getDay();
+    const mon=new Date(d); mon.setDate(d.getDate()-(day===0?6:day-1));
+    return mon.toISOString().slice(0,10);
+  }
+  function weekLabel(dateStr) {
+    const d=new Date(dateStr+'T12:00:00'), day=d.getDay();
+    const mon=new Date(d); mon.setDate(d.getDate()-(day===0?6:day-1));
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+    const f=dt=>dt.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+    return `${f(mon)} – ${f(sun)}`;
+  }
+  function dayLabel(dateStr) {
+    try { return new Date(dateStr+'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+    catch(e){return dateStr;}
+  }
+  function tagStyle(src) {
+    if(src==='Daily Rounds') return 'background:rgba(99,102,241,.2);color:#a5b4fc';
+    if(src==='Daily Check')  return 'background:rgba(20,184,166,.2);color:#5eead4';
+    if(src==='Weekly Check') return 'background:rgba(251,191,36,.2);color:#fcd34d';
+    return 'background:rgba(255,255,255,.08);color:var(--muted)';
+  }
+  function entryHtml(e, hl='') {
+    const [date,time,src,cat,text]=e;
+    let t=text;
+    if(hl){const re=new RegExp('('+hl.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');t=text.replace(re,'<mark>$1</mark>');}
+    return `<div class="journal-entry">
+      <div class="journal-entry-meta">
+        <span class="journal-tag" style="${tagStyle(src)}">${src}</span>
+        ${time?`<span class="journal-entry-cat">${time} ·</span>`:''}
+        <span class="journal-entry-cat">${cat}</span>
+      </div>
+      <div class="journal-entry-text">${t}</div>
+    </div>`;
+  }
+
+  function renderContent(query) {
+    const q=query.trim();
+    const countEl=document.getElementById('journal-search-count');
+
+    if(q) {
+      const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
+      const hits=all.filter(e=>re.test(e[4]));
+      countEl.style.display='block';
+      countEl.textContent=hits.length?`${hits.length} result${hits.length!==1?'s':''} for "${q}"`:`No results for "${q}"`;
+      if(!hits.length){document.getElementById('journal-content').innerHTML=`<div class="journal-empty">No notes match "<strong>${q}</strong>"<br><span style="font-size:11px">Try a different word</span></div>`;return;}
+      // Flat list grouped by date
+      const byDate={};
+      hits.forEach(e=>{if(!byDate[e[0]])byDate[e[0]]=[];byDate[e[0]].push(e);});
+      document.getElementById('journal-content').innerHTML=Object.entries(byDate)
+        .sort((a,b)=>b[0]>a[0]?-1:1)
+        .map(([d,es])=>`<div class="journal-week"><div class="journal-week-body" style="display:block"><div class="journal-day"><div class="journal-day-label">${dayLabel(d)}</div>${es.map(e=>entryHtml(e,q)).join('')}</div></div></div>`)
+        .join('');
+      return;
+    }
+
+    countEl.style.display='none';
+    if(!all.length){document.getElementById('journal-content').innerHTML=`<div class="journal-empty">No notes written yet.<br><span style="font-size:11px">Notes come from the optional fields in Forms 1, 2 and 3.</span></div>`;return;}
+
+    // Week accordion
+    const byWeek={};
+    all.forEach(e=>{const wk=weekKey(e[0]);if(!byWeek[wk]){byWeek[wk]={label:weekLabel(e[0]),entries:[]};}byWeek[wk].entries.push(e);});
+    document.getElementById('journal-content').innerHTML=Object.entries(byWeek)
+      .sort((a,b)=>b[0]>a[0]?-1:1)
+      .map(([wk,{label,entries:wkEs}],idx)=>{
+        const byDay={};
+        wkEs.forEach(e=>{if(!byDay[e[0]])byDay[e[0]]=[];byDay[e[0]].push(e);});
+        const daysHtml=Object.entries(byDay).sort((a,b)=>b[0]>a[0]?-1:1)
+          .map(([d,es])=>`<div class="journal-day"><div class="journal-day-label">${dayLabel(d)}</div>${es.map(e=>entryHtml(e)).join('')}</div>`).join('');
+        return `<div class="journal-week${idx===0?' open':''}" data-wk="${wk}">
+          <div class="journal-week-hd" onclick="this.parentElement.classList.toggle('open')">
+            <div class="journal-week-label">📅 ${label}</div>
+            <div class="journal-week-meta"><span class="journal-week-count">${wkEs.length} note${wkEs.length!==1?'s':''}</span><span class="journal-week-arrow">▶</span></div>
+          </div>
+          <div class="journal-week-body">${daysHtml}</div>
+        </div>`;
+      }).join('');
+  }
+
+  renderContent('');
+  setTimeout(()=>{
+    const inp=document.getElementById('journal-search');
+    if(inp) inp.addEventListener('input',e=>renderContent(e.target.value));
+  },30);
+
+  document.getElementById('drill-modal').classList.add('open');
+  document.body.style.overflow='hidden';
 }
 
 // ─── BED DRILL-DOWN ──────────────────────────────────────────────────────────
@@ -1522,8 +1665,15 @@ function renderScorecards(){
   });
   // If no form submissions exist yet, show neutral rather than 0%
   const compPct = totalSlots>0 ? Math.round(filledSlots/totalSlots*100) : null;
-  const compRAG = compPct==null?'neutral':compPct>=90?'good':compPct>=70?'warn':'bad';
-  const compLabel = {good:'On track',warn:'Slipping',bad:'Behind',neutral:'No data'}[compRAG];
+  // Journal scorecard
+  const journalPeriod = (D.journal||[]).filter(j => j[0] >= cutoff);
+  const journalCount = journalPeriod.length;
+  const journalRAG = journalCount > 0 ? 'good' : 'neutral';
+  const journalLabel = journalCount > 0 ? (journalCount === 1 ? '1 entry' : journalCount + ' entries') : 'Nothing logged';
+  const latestJEntry = journalPeriod.slice(-1)[0];
+  const journalSub = latestJEntry
+    ? `"${latestJEntry[4].substring(0,55)}${latestJEntry[4].length>55?'…':''}"`
+    : 'No notes written in this period';
   const compSub = compPct==null
     ? ((D.compliance||[]).length===0 ? 'No form submissions yet' : 'No submissions in period')
     : missedRounds>0 && missedChecks>0 ? missedRounds+' round'+(missedRounds>1?'s':'')+' + '+missedChecks+' check'+(missedChecks>1?'s':'')+' missed'
@@ -1598,20 +1748,19 @@ function renderScorecards(){
       ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses in period'
       : 'Started '+stockAtStart.toLocaleString()+' · Lost '+deaths+' · '+stock.toLocaleString()+' remaining';
 
-  const sc = (rag, icon, lbl, val, badge, sub, sec, extra='') =>
-    `<div class="sc-card" onclick="navTo('${sec}')">
+  const sc = (rag, icon, lbl, val, badge, sub, onclick) =>
+    `<div class="sc-card" onclick="${onclick}">
       <div class="sc-label"><i class="ti ti-${icon}" style="font-size:13px;margin-right:4px"></i>${lbl}</div>
-      <div class="sc-value" style="color:${ragColor(rag)}">${val}${extra}</div>
+      <div class="sc-value" style="color:${ragColor(rag)}">${val}</div>
       <span class="badge ${badgeCls(rag)}">${badge}</span>
       <div class="sc-sub">${sub}</div>
     </div>`;
 
   document.getElementById('scorecard-row').innerHTML =
-    sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, 'water') +
-    sc(compRAG, 'check', 'Check rounds', compPct!=null?compPct+'%':'—', compLabel, compSub, 'maintenance') +
-    sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, 'plants') +
-    sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':''), fishLabel, fishSub, 'fish',
-       `<span style="font-size:16px;font-weight:400;margin-left:4px;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`);
+    sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `navTo('water')`) +
+    sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalDrillDown()') +
+    sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, `navTo('plants')`) +
+    sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':'')+(deaths>0?` <span style="font-size:16px;font-weight:400;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`:''), fishLabel, fishSub, `navTo('fish')`);
 }
 
 // ─── SYSTEM HEALTH GRID ──────────────────────────────────────────────────────
