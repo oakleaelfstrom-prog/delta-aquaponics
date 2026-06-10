@@ -871,14 +871,16 @@ function parseWebAppData(allData) {
         const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
         fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, sv(r[98]) || '', healthNote, Math.round(runningStock)]);
 
-        // Equipment checklist (cols 83–89 = system checks, 90 = DWC1 blower, 94 = DWC2 blower)
+        // Equipment checklist (cols 83–89 = system checks, 90–93 = DWC1, 94–97 = DWC2)
         equip_rows.push([dt, {
           pump:     sv(r[83]), level:    sv(r[84]), leaks:    sv(r[85]),
           clean:    sv(r[86]), biowaste: sv(r[87]), nutrients:sv(r[88]),
-          clarity:  sv(r[89]), blower1:  sv(r[90]), blower2:  sv(r[94])
+          clarity:  sv(r[89]), blower1:  sv(r[90]), blower2:  sv(r[94]),
+          bubbles1: sv(r[91]), bubbles2: sv(r[95])
         }]);
 
         // Plant health per gravel row (rows 1–6 → cols 6–59, 9 fields each)
+        // r[7]=yellowing, r[8]=wilting added at indices 7–8
         for (let i = 0; i < 6; i++) {
           const b = 6 + i * 9;
           const health = sv(r[b]);
@@ -891,11 +893,15 @@ function parseWebAppData(allData) {
             `Health: ${health}`,
             sv(r[b+3]),  // pests
             null,        // no harvest date in Form2
-            [sv(r[b+8]), wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null
+            [sv(r[b+8]), wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
+            sv(r[b+1]),  // r[7] yellowing
+            sv(r[b+2]),  // r[8] wilting
+            null         // r[9] bitterness (gravel n/a)
           ]);
         }
 
         // Plant health per DWC tank (tank 1 = cols 60–68, tank 2 = 69–77)
+        // r[7]=yellowing, r[8]=wilting, r[9]=bitterness
         for (let i = 0; i < 2; i++) {
           const b = 60 + i * 9;
           const health = sv(r[b]);
@@ -909,7 +915,10 @@ function parseWebAppData(allData) {
             `Health: ${health}`,
             sv(r[b+3]),  // pests
             null,
-            [sv(r[b+8]), bitter ? `Bitterness: ${bitter}` : '', wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null
+            [sv(r[b+8]), wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
+            sv(r[b+1]),  // r[7] yellowing
+            sv(r[b+2]),  // r[8] wilting
+            bitter||null // r[9] bitterness
           ]);
         }
       });
@@ -1716,7 +1725,7 @@ function renderCropGrid(){
   const byType = {};
   [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r=>{
     if(!r[1]) return;
-    const k = r[1].toLowerCase().split(' ').slice(0,2).join(' ');
+    const k = r[1].toLowerCase().split(' ').slice(0,3).join(' '); // 3 words: fixes DWC Tank 1 vs 2 collision
     if(!byType[k]) byType[k] = r; // keep latest
   });
   // Active crops sorted by harvest urgency
@@ -1736,12 +1745,23 @@ function renderCropGrid(){
   const gravelCrops = activeSorted.filter(r=>!isDWC(r));
   const dwcCrops    = activeSorted.filter(r=>isDWC(r));
 
-  // Always render 8 fixed slots: 6 gravel rows + 2 DWC tanks
+  // Helpers shared across all bed cards
+  const yn = v => v==='Yes'?'bad':v==='No'?'good':'neutral'; // Yes=bad(problem), No=good, null=neutral
+  const healthDot = h => h==='Good'?'good':h==='Fair'?'warn':h?'bad':'neutral';
+  const eq = (D.stats&&D.stats.latest_equip)||{};
+
+  // Render one bed card (gravel or DWC)
   const bedCard = (label, isDwc, r, rowIdx) => {
     // r may be null (empty slot)
     const name = r ? r[1] : '';
     const nameLower = name.toLowerCase();
     const headerLabel = r ? `${label} — ${name}` : `${label} — Empty`;
+
+    // New health fields from Form 2
+    const yellowing  = r ? (r[7]||null) : null;
+    const wilting    = r ? (r[8]||null) : null;
+    const bitterness = r ? (r[9]||null) : null;
+    const healthRaw  = r ? (r[3]||'').replace(/^Health:\s*/i,'').trim()||null : null;
 
     // Harvest
     let harvestText = '—', harvestColor = 'var(--muted)', bdgCls = 'badge-neutral', bdgLabel = r ? 'Growing' : 'Empty';
@@ -1777,7 +1797,7 @@ function renderCropGrid(){
       var sprayDot = 'neutral', sprayLabel = '—';
     }
 
-    // Siphon (gravel rows only; DWC uses aeration instead)
+    // Footer: siphon avg for gravel rows; DWC bubbles for tanks
     let footer = '';
     if(!isDwc){
       const siphCol = rowIdx + 2; // S1=col2 … S6=col7
@@ -1789,7 +1809,9 @@ function renderCropGrid(){
       const siphMark = siphOk?'<i class="ti ti-check" style="font-size:11px;color:var(--c-good)"></i>':'<i class="ti ti-alert-triangle" style="font-size:11px;color:var(--c-warn)"></i>';
       footer = `<span style="color:var(--muted)"><span class="dot dot-${siphDot}" style="margin-right:4px;display:inline-block"></span>S${rowIdx+1}: ${avgSiph!=null?avgSiph+'m ':' — '}${avgSiph!=null?siphMark:''}</span>`;
     } else {
-      footer = `<span style="color:var(--muted)">Aeration: <span style="color:var(--c-neutral)">—</span></span>`;
+      const bubVal = rowIdx===0?eq.bubbles1:rowIdx===1?eq.bubbles2:null;
+      const bubDot = bubVal==='Yes'?'good':bubVal==='No'?'bad':'neutral';
+      footer = `<span style="color:var(--muted)"><span class="dot dot-${bubDot}" style="margin-right:4px;display:inline-block"></span>Bubbles: ${bubVal||'—'}</span>`;
     }
 
     const onclick = r ? `onclick="openBedDrillDown(${JSON.stringify(name).replace(/"/g,'&quot;')},${rowIdx})"` : '';
@@ -1799,16 +1821,17 @@ function renderCropGrid(){
         <span class="badge ${bdgCls}">${bdgLabel}</span>
       </div>
       <div class="bed-obs-grid">
-        <div class="bed-obs-item"><span class="dot dot-neutral"></span><span>Yellowing</span></div>
-        <div class="bed-obs-item"><span class="dot dot-neutral"></span><span>Wilting</span></div>
+        <div class="bed-obs-item"><span class="dot dot-${yn(yellowing)}"></span><span>${yellowing==='Yes'?'Yellowing':'No yellowing'}</span></div>
+        <div class="bed-obs-item"><span class="dot dot-${yn(wilting)}"></span><span>${wilting==='Yes'?'Wilting':'No wilting'}</span></div>
         <div class="bed-obs-item"><span class="dot dot-${pestNote?'bad':'neutral'}"></span><span>${pestNote?'Pests noted':'No pests'}</span></div>
         ${isDwc
-          ? `<div class="bed-obs-item"><span class="dot dot-neutral"></span><span>Bitterness</span></div>`
+          ? `<div class="bed-obs-item"><span class="dot dot-${yn(bitterness)}"></span><span>${bitterness==='Yes'?'Bitter taste':'No bitterness'}</span></div>`
           : `<div class="bed-obs-item"><span class="dot dot-${sprayDot}"></span><span>Spray: ${sprayLabel}</span></div>`}
       </div>
       <hr class="card-divider">
       <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
         <span style="color:${harvestColor};font-weight:500">${harvestText}</span>
+        <span><span class="dot dot-${healthDot(healthRaw)}" style="width:7px;height:7px;margin-right:3px;display:inline-block"></span><span style="color:var(--muted);font-size:11px">${healthRaw||'—'}</span></span>
         ${footer}
       </div>
     </div>`;
