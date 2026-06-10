@@ -1661,11 +1661,11 @@ function renderHealthRow(){
     mr(deathsToday>0?'bad':'good', 'Deaths today', deathsToday===0?'None':String(deathsToday)) +
     mr('neutral', 'Last fed', latestFishDate!=='—'?fmtDate(latestFishDate):'—');
 
-  // Card 4: Siphon health — latest readings
+  // Card 4: Siphon health — latest readings per siphon
+  const siphRAGi = v => v==null?'neutral':v>=15&&v<=18?'good':v>18&&v<=20?'warn':'bad';
   const siphRows = sl.every(v=>v==null)
     ? mr('neutral','No siphon data yet', lastSiphDate!=='—'?`<span style="font-size:10px;color:var(--muted)">last ${fmtDate(lastSiphDate)}</span>`:'')
-    : mr(siphRAG, 'In target (15–18 min)', siphLatInTarget+' / 6') +
-      (siphLatOut.length ? mr('warn','Outside target', siphLatOut.map(x=>`S${x.i+1}: ${x.v}min`).join(', ')) : mr('good','All within target',''));
+    : sl.map((v,i) => mr(siphRAGi(v), `S${i+1}`, v!=null?v+' min':'—')).join('');
 
   // Card 5: Equipment — from latest Form2 checklist
   const equipRows = !eq.pump
