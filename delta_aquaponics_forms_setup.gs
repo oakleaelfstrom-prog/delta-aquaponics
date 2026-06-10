@@ -1072,3 +1072,292 @@ function seedDemoData() {
 
   Logger.log('=== SEED DEMO DATA COMPLETE ===');
 }
+
+// ============================================================
+// SEED FORM DATA — 30 days of realistic farm operation
+// Writes directly to Form1_DailyRounds, Form2_DailyCheck,
+// Form3_Weekly tabs (new column format).
+// Safe to run — skips any tab that already has data rows.
+// ============================================================
+
+function seedFormData() {
+  const ssId = getSsId();
+  if (!ssId) { Logger.log('ERROR: Run setup() first.'); return; }
+  const ss = SpreadsheetApp.openById(ssId);
+
+  const f1Sheet = ss.getSheetByName('Form1_DailyRounds');
+  const f2Sheet = ss.getSheetByName('Form2_DailyCheck');
+  const f3Sheet = ss.getSheetByName('Form3_Weekly');
+  if (!f1Sheet || !f2Sheet || !f3Sheet) {
+    Logger.log('ERROR: Form sheet tabs not found. Run setup() and updateForms() first.');
+    return;
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────
+  const rnd  = (lo, hi) => +(lo + Math.random() * (hi - lo)).toFixed(1);
+  const rndI = (lo, hi) => Math.floor(lo + Math.random() * (hi - lo + 1));
+  const pick = arr => arr[rndI(0, arr.length - 1)];
+
+  const STAFF = ['Kagiso Molosiwa', 'Mpho Setlhare', 'Tebogo Kelesitse', 'Boitumelo Radithabe'];
+
+  // Day 0 = May 11 2026
+  const simDay = n => { const d = new Date(2026, 4, 11); d.setDate(d.getDate() + n); return d; };
+
+  // Crops planted before / during simulation
+  const CROPS = [
+    { name: 'Tomato — Trinity F1',        planted: new Date(2026,4,10), harvest: new Date(2026,7,2),  firstWeek: 0 },
+    { name: 'Tomato — Cherry (Samantha)', planted: new Date(2026,4,10), harvest: new Date(2026,7,2),  firstWeek: 0 },
+    { name: 'Sweet Pepper — Yolo Wonder', planted: new Date(2026,4,3),  harvest: new Date(2026,6,12), firstWeek: 0 },
+    { name: 'Lettuce Elise Prime',        planted: new Date(2026,4,24), harvest: new Date(2026,6,8),  firstWeek: 2 },
+    { name: 'Lettuce Atlantis',           planted: new Date(2026,4,24), harvest: new Date(2026,6,8),  firstWeek: 2 },
+    { name: 'Kale Choumoullier',          planted: new Date(2026,4,17), harvest: new Date(2026,6,15), firstWeek: 1 },
+  ];
+
+  // ── FORM 1: 3× daily, 90 rows, 23 cols ───────────────────────
+  if (f1Sheet.getLastRow() > 1) {
+    Logger.log('Form1_DailyRounds already has data — skipped.');
+  } else {
+    const f1 = [];
+
+    for (let day = 0; day < 30; day++) {
+      const base     = simDay(day);
+      const isCold   = day >= 15 && day <= 17;
+      const isWarmer = day >= 21;
+
+      const ROUNDS = [
+        { name: 'Morning', hour: 7,  staff: [STAFF[1], STAFF[3]] },
+        { name: 'Midday',  hour: 12, staff: [STAFF[0], STAFF[2]] },
+        { name: 'Evening', hour: 17, staff: [STAFF[1], STAFF[2]] },
+      ];
+
+      for (const round of ROUNDS) {
+        const ts = new Date(base.getFullYear(), base.getMonth(), base.getDate(), round.hour, rndI(5, 40));
+        const staff = pick(round.staff);
+
+        let insideTemp, outsideTemp, waterTemp;
+        if (round.name === 'Morning') {
+          insideTemp  = rnd(isCold ? 12 : 14, isCold ? 16 : 18);
+          outsideTemp = rnd(isCold ?  5 :  7, isCold ?  9 : 12);
+          waterTemp   = rnd(16.5, 19.0);
+        } else if (round.name === 'Midday') {
+          insideTemp  = rnd(isWarmer ? 28 : 25, isWarmer ? 34 : 30);
+          outsideTemp = rnd(isWarmer ? 22 : 19, isWarmer ? 27 : 24);
+          waterTemp   = rnd(20.0, 23.0);
+        } else {
+          insideTemp  = rnd(20, 24);
+          outsideTemp = rnd(13, 17);
+          waterTemp   = rnd(18.5, 21.5);
+        }
+
+        const weather = isCold
+          ? pick(['Cold', 'Cloudy', 'Partly sunny'])
+          : pick(['Sunny', 'Sunny', 'Partly sunny']);
+
+        const fan        = (round.name === 'Morning' && insideTemp < 16) ? 'Off' : 'On';
+        const shadeCloth = (round.name === 'Midday' && insideTemp > 31)
+          ? 'Half closed — partial shade'
+          : 'Open — no shade';
+
+        const feedAmt  = round.name === 'Midday' ? rndI(700, 900) : rndI(400, 600);
+        const feedTime = round.hour + ':' + String(rndI(10, 50)).padStart(2, '0') + ':00';
+
+        const BASE_DRAIN = [16, 15, 17, 16, 16, 15];
+        const drains = BASE_DRAIN.map((b, i) => {
+          let v = b + rndI(-1, 2);
+          if (day === 27 && i === 4) v = 21; // Row 5 blockage day 28
+          return Math.max(12, v);
+        });
+
+        let gravelDry  = 'Yes — all beds are dry';
+        let rowsNotDry = '';
+        if (day >= 14 && day <= 16 && round.name === 'Morning') {
+          gravelDry  = 'No — some beds are wet';
+          rowsNotDry = 'Row 4, Row 5';
+        }
+
+        let algaeVis  = 'No';
+        let algaeRows = '';
+        if (day > 20 && day % 4 === 1) {
+          algaeVis  = 'Yes — on some beds';
+          algaeRows = pick(['Row 4', 'Row 5', 'Row 4, Row 5']);
+        }
+
+        let notes = '';
+        if (day === 6  && round.name === 'Evening') notes = 'Kale seedlings transplanted into Row 6 this afternoon. Good root development.';
+        if (day === 13 && round.name === 'Morning') notes = 'Lettuce seedlings transplanted into Row 4 (Elise Prime) and Row 5 (Atlantis). Looking healthy.';
+        if (day === 27 && round.name === 'Midday')  notes = 'Row 5 drain cycle slow — 21 minutes. Possible bell siphon blockage. Will monitor.';
+        if (day === 28 && round.name === 'Morning') notes = 'Row 5 drain cycle back to normal. Blockage cleared.';
+
+        f1.push([
+          ts, staff, round.name,
+          +insideTemp.toFixed(1), +outsideTemp.toFixed(1), +waterTemp.toFixed(1),
+          weather, fan, shadeCloth,
+          'Yes', feedAmt, feedTime,
+          drains[0], drains[1], drains[2], drains[3], drains[4], drains[5],
+          gravelDry, rowsNotDry, algaeVis, algaeRows, notes
+        ]);
+      }
+    }
+
+    f1Sheet.getRange(2, 1, f1.length, f1[0].length).setValues(f1);
+    Logger.log('Form1_DailyRounds: ' + f1.length + ' rows written.');
+  }
+
+  // ── FORM 2: daily full inspection, 30 rows, 73 cols ──────────
+  if (f2Sheet.getLastRow() > 1) {
+    Logger.log('Form2_DailyCheck already has data — skipped.');
+  } else {
+    const f2 = [];
+
+    // 9-field bed inspection block for a given row (1-indexed) and sim day
+    const bedBlock = (rowNum, day) => {
+      let health   = 'Good',   yellowing = 'No', wilting = 'No';
+      let pests    = 'No',     canopy    = 'Not needed today';
+      let ready    = 'No',     harvested = 'No', kg = '', notes = '';
+
+      // Tomato rows: canopy trimming from day 15 onward; aphids days 19–25
+      if (rowNum <= 2) {
+        if (day >= 15 && day % 3 === 0) canopy = 'Yes';
+        if (day >= 19 && day <= 25) {
+          health = 'Some concerns';
+          pests  = day >= 21 && day <= 23 ? 'Yes' : 'Possible — not sure';
+          notes  = day >= 21 ? 'Aphids spotted on lower leaves. Monitoring closely.' : '';
+        }
+      }
+
+      // Row 3 (sweet pepper): ready from day 24; harvests on days 24 and 29
+      if (rowNum === 3) {
+        if (day >= 24 && day <= 28) ready = 'Some plants are ready';
+        if (day >= 29) ready = 'Yes — ready now';
+        if (day === 24) { harvested = 'Yes'; kg = 0.8; notes = 'First pepper harvest. Good colour and size.'; }
+        if (day === 29) { harvested = 'Yes'; kg = 1.2; notes = 'Second pepper harvest, good yield.'; }
+      }
+
+      // Rows 4 & 5 (lettuce): transplant shock days 14–16; yellowing row 4 days 21–23; harvest day 29
+      if (rowNum === 4 || rowNum === 5) {
+        if (day >= 14 && day <= 16) { health = 'Some concerns'; wilting = 'Yes'; notes = 'Transplant shock — settling in.'; }
+        if (rowNum === 4 && day >= 21 && day <= 23) {
+          health = 'Some concerns'; yellowing = 'Yes';
+          notes = 'Lower leaves yellowing — possible iron deficiency. Check nutrient dosing.';
+        }
+        if (day >= 28) ready = 'Some plants are ready';
+        if (day === 29) {
+          harvested = 'Yes';
+          kg = rowNum === 4 ? 0.6 : 0.5;
+        }
+      }
+
+      // Row 6 (kale): canopy from day 15 onward
+      if (rowNum === 6 && day >= 15 && day % 4 === 0) canopy = 'Yes';
+
+      return [health, yellowing, wilting, pests, canopy, ready, harvested, kg, notes];
+    };
+
+    for (let day = 0; day < 30; day++) {
+      const base = simDay(day);
+      const ts   = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 9, rndI(0, 45));
+      const staff = pick([STAFF[0], STAFF[2]]);
+      const dateCell = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+
+      // pH rises mid-sim (CO₂ fluctuation), corrected with acid dose around day 22
+      const pH  = day < 10 ? rnd(7.0, 7.3)
+                : day < 18 ? rnd(7.3, 7.6)
+                : day < 23 ? rnd(7.4, 7.7)
+                : rnd(7.1, 7.4);
+      const no3 = rnd(40 + day * 1.1, 58 + day * 1.1); // nitrate builds slowly
+      const no2 = rnd(0.1, 0.4);
+
+      const deaths      = day === 17 ? 2 : day === 24 ? 1 : 0;
+      const deadRemoved = deaths > 0 ? 'Yes' : 'No — there were none to remove';
+      const pumpStatus  = day === 27 ? 'Issue' : 'OK';
+      const f2Notes     = day === 22 ? 'Added iron supplement to nutrient solution — row 4 yellowing.'
+                        : day === 27 ? 'Circulation pump making grinding noise. Inspected — bearing worn. Ordered replacement part.'
+                        : '';
+
+      f2.push([
+        ts, staff, dateCell,
+        +pH.toFixed(2), +no3.toFixed(0), +no2.toFixed(2),
+        ...bedBlock(1, day), ...bedBlock(2, day), ...bedBlock(3, day),
+        ...bedBlock(4, day), ...bedBlock(5, day), ...bedBlock(6, day),
+        'Yes', 'No', 'No', deaths, deadRemoved,
+        pumpStatus, 'OK', 'OK', 'OK', 'OK', 'OK', 'OK',
+        f2Notes
+      ]);
+    }
+
+    f2Sheet.getRange(2, 1, f2.length, f2[0].length).setValues(f2);
+    Logger.log('Form2_DailyCheck: ' + f2.length + ' rows written.');
+  }
+
+  // ── FORM 3: weekly, 5 rows, 37 cols ──────────────────────────
+  if (f3Sheet.getLastRow() > 1) {
+    Logger.log('Form3_Weekly already has data — skipped.');
+  } else {
+    const f3 = [];
+
+    const WEEK_DATES = [
+      new Date(2026, 4, 11),  // Week 1
+      new Date(2026, 4, 18),  // Week 2
+      new Date(2026, 4, 25),  // Week 3
+      new Date(2026, 5,  1),  // Week 4
+      new Date(2026, 5,  8),  // Week 5
+    ];
+
+    // 3-field crop block: [cropName, plantedDate, harvestDate]
+    const cropBlock = (idx, weekIdx) => {
+      const c = CROPS[idx];
+      if (weekIdx < c.firstWeek) return ['Empty — nothing planted', '', ''];
+      const showPlanted = weekIdx === c.firstWeek; // only show planted date the first time
+      return [c.name, showPlanted ? c.planted : '', c.harvest];
+    };
+
+    WEEK_DATES.forEach((wkDate, wi) => {
+      const ts    = new Date(wkDate.getFullYear(), wkDate.getMonth(), wkDate.getDate(), 8, rndI(15, 50));
+      const staff = STAFF[0]; // Kagiso runs the weekly check
+
+      // Chemistry — slight weekly variation
+      const nh3 = +rnd(0.5, 1.8).toFixed(2);
+      const ca  = rndI(48, 72);
+      const mg  = rndI(14, 28);
+      const k   = rndI(55, 90);
+      const mn  = +rnd(0.1, 0.35).toFixed(2);
+      const fe  = +rnd(0.9, 2.4).toFixed(2);
+
+      // Fish — avg weight grows ~5 g/week from ~85 g
+      const avgWeight  = 85 + wi * 5 + rndI(0, 3);
+      const dailyFeed  = rndI(1500, 1900);
+      const healthObs  = wi === 1 ? 'All fish active and feeding well. No concerns.'
+                       : wi === 3 ? 'Slight reduction in appetite noted — water temp dropped to 18°C overnight. Monitoring.'
+                       : wi === 4 ? 'Appetite returned to normal. Fish growing visibly.'
+                       : '';
+
+      // Harvests
+      const totalHarvest = wi === 3 ? 0.8 : wi === 4 ? 2.3 : 0;
+      const replanted    = wi === 4 ? 'Yes' : 'No';
+      const replantNote  = wi === 4 ? 'Row 4 partially harvested and replanted with fresh Elise Prime seedlings.' : '';
+      const weekNote     = wi === 0 ? 'System running well. Tomatoes and pepper growing steadily.'
+                         : wi === 1 ? 'Kale transplanted into Row 6 on May 17. Good establishment.'
+                         : wi === 2 ? 'Rows 4 and 5 planted with lettuce. Rows 1 and 2 tomatoes starting to flower.'
+                         : wi === 3 ? 'First pepper harvest from Row 3. Iron supplement added for row 4 yellowing.'
+                         : 'Good harvest week. Tomatoes on rows 1 and 2 flowering well. Lettuce coming in strong.';
+
+      f3.push([
+        ts, staff, wkDate,
+        nh3, ca, mg, k, mn, fe,
+        15, avgWeight, 'Grower pellets (large)', dailyFeed,
+        'Good — active and healthy', healthObs,
+        ...cropBlock(0, wi), ...cropBlock(1, wi), ...cropBlock(2, wi),
+        ...cropBlock(3, wi), ...cropBlock(4, wi), ...cropBlock(5, wi),
+        totalHarvest, replanted, replantNote, weekNote
+      ]);
+    });
+
+    f3Sheet.getRange(2, 1, f3.length, f3[0].length).setValues(f3);
+    Logger.log('Form3_Weekly: ' + f3.length + ' rows written.');
+  }
+
+  Logger.log('=== SEED FORM DATA COMPLETE ===');
+  Logger.log('Form 1: 90 rows (30 days × 3 rounds)');
+  Logger.log('Form 2: 30 rows (1 daily inspection per day)');
+  Logger.log('Form 3: 5 rows (5 weekly summaries, May 11 – Jun 8)');
+}
