@@ -892,9 +892,11 @@ function parseWebAppData(allData) {
     if (ai !== null || ao !== null) env_rows.push([dt, tm, ai, ao, wx]);
 
     // Water temp (col 4) — partial WQ row (no pH here, pH comes from Form 2)
+    // Notes: col 18 in new format (19-col), col 30 in old format (31-col)
     const wt = fv(r[4]);
-    if (wt !== null) wq_rows.push([dt, tm, wt, null, sv(r[30])]);  // notes now at col 30 (DWC 3&4 added before it)
-    jNote(dt, tm, 'Daily Rounds', 'General', sv(r[30]));
+    const f1notes = sv(r.length > 20 ? r[30] : r[18]);
+    if (wt !== null) wq_rows.push([dt, tm, wt, null, f1notes]);
+    jNote(dt, tm, 'Daily Rounds', 'General', f1notes);
   });
 
   // ── Form 2 — daily full check ─────────────────────────────────────────────
@@ -928,29 +930,31 @@ function parseWebAppData(allData) {
           wq_rows.push([dt, 'Form2', null, ph, note || null, no3, no2]);
         }
 
-        // Fish deaths (col 99 — was 81, shifted +18 by DWC 3&4 plant blocks)
-        const deaths = Math.max(0, fv(r[99]) || 0);
+        // Fish + equip column offsets differ between old (125-col) and new (73-col) form layout
+        // Old: fish at 96-100, equip at 101-107, notes at 124
+        // New: fish at 60-64, equip at 65-71, notes at 72
+        const oldF2 = r.length >= 100;
+        const fBase = oldF2 ? 96 : 60;
+        const eBase = oldF2 ? 101 : 65;
+        const f2notes = sv(r[oldF2 ? 124 : 72]);
+
+        const deaths = Math.max(0, fv(r[fBase+3]) || 0);
         runningStock -= deaths;
-        const fishOk = sv(r[96]) !== 'No';
-        const gasping = sv(r[97]) === 'Yes';
-        const disease = sv(r[98]) === 'Yes';
+        const fishOk  = sv(r[fBase])   !== 'No';
+        const gasping  = sv(r[fBase+1]) === 'Yes';
+        const disease  = sv(r[fBase+2]) === 'Yes';
         const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
-        fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, sv(r[124]) || '', healthNote, Math.round(runningStock)]);
-        jNote(dt, null, 'Daily Check', 'General', sv(r[124]));
+        fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, f2notes || '', healthNote, Math.round(runningStock)]);
+        jNote(dt, null, 'Daily Check', 'General', f2notes);
         if (healthNote !== 'OK') jNote(dt, null, 'Daily Check', 'Fish health', healthNote);
 
-        // Equipment checklist (cols 101–107 = system, 108–111 = DWC1, 112–115 = DWC2, 116–119 = DWC3, 120–123 = DWC4)
         equip_rows.push([dt, {
-          pump:     sv(r[101]), level:    sv(r[102]), leaks:    sv(r[103]),
-          clean:    sv(r[104]), biowaste: sv(r[105]), nutrients:sv(r[106]),
-          clarity:  sv(r[107]), blower1:  sv(r[108]), blower2:  sv(r[112]),
-          bubbles1: sv(r[109]), bubbles2: sv(r[113]),
-          blower3:  sv(r[116]), blower4:  sv(r[120]),
-          bubbles3: sv(r[117]), bubbles4: sv(r[121])
+          pump:      sv(r[eBase]),   level:     sv(r[eBase+1]), leaks:    sv(r[eBase+2]),
+          clean:     sv(r[eBase+3]), biowaste:  sv(r[eBase+4]), nutrients:sv(r[eBase+5]),
+          clarity:   sv(r[eBase+6])
         }]);
 
-        // Plant health per gravel row (rows 1–6 → cols 6–59, 9 fields each)
-        // r[7]=yellowing, r[8]=wilting added at indices 7–8
+        // Plant health per gravel row (cols 6–59, 9 fields each — same in both layouts)
         for (let i = 0; i < 6; i++) {
           const b = 6 + i * 9;
           const health = sv(r[b]);
@@ -964,41 +968,14 @@ function parseWebAppData(allData) {
             harvested ? 'Harvest' : 'Inspection',
             `Health: ${health}`,
             bedPests,
-            null,        // no harvest date in Form2
+            null,
             [bedNote, wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
-            sv(r[b+1]),  // r[7] yellowing
-            sv(r[b+2]),  // r[8] wilting
-            null         // r[9] bitterness (gravel n/a)
+            sv(r[b+1]),
+            sv(r[b+2]),
+            null
           ]);
           jNote(dt, null, 'Daily Check', `Row ${i+1}`, bedNote);
           jNote(dt, null, 'Daily Check', `Row ${i+1} — pests`, bedPests);
-        }
-
-        // Plant health per DWC tank (tank 1 = cols 60–68, tank 2 = 69–77, tank 3 = 78–86, tank 4 = 87–95)
-        // r[7]=yellowing, r[8]=wilting, r[9]=bitterness
-        for (let i = 0; i < 4; i++) {
-          const b = 60 + i * 9;
-          const health = sv(r[b]);
-          if (!health) continue;
-          const harvested = sv(r[b+6]) === 'Yes';
-          const wt = fv(r[b+7]);
-          const bitter = sv(r[b+4]);
-          const dwcNote = sv(r[b+8]);
-          const dwcPests = sv(r[b+3]);
-          plant_rows.push([
-            dt, `DWC Tank ${i+1}`,
-            harvested ? 'Harvest' : 'Inspection',
-            `Health: ${health}`,
-            dwcPests,
-            null,
-            [dwcNote, wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
-            sv(r[b+1]),  // yellowing
-            sv(r[b+2]),  // wilting
-            bitter||null, // bitterness
-            null          // crop name (comes from Form 3, not Form 2)
-          ]);
-          jNote(dt, null, 'Daily Check', `DWC Tank ${i+1}`, dwcNote);
-          jNote(dt, null, 'Daily Check', `DWC Tank ${i+1} — pests`, dwcPests);
         }
       });
     }
@@ -1011,20 +988,32 @@ function parseWebAppData(allData) {
     const dt = cleanDate(String(r[2] || r[0])); // week commencing date (col 2) or timestamp
     if (!dt) return;
 
-    // Crop names + harvest dates: cols 15–34, interleaved (crop at 15+i*2, harvest at 16+i*2)
-    // Includes DWC Tanks 3 & 4 (newly added to Form 3)
-    const bedNames = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6','DWC Tank 1','DWC Tank 2','DWC Tank 3','DWC Tank 4'];
-    bedNames.forEach((name, i) => {
-      const cropVal = sv(r[15 + i*2]) || null;
-      const cropName = (cropVal && cropVal !== 'Empty — nothing planted') ? cropVal : null;
-      const hd = cleanDate(String(r[16 + i*2] || ''));
-      if (cropName) {
-        // Push a "Planted" record carrying the crop name in r[10]
-        plant_rows.push([dt, name, 'Planted', cropName, null, hd||null, null, null, null, null, cropName]);
-      } else if (hd) {
-        plant_rows.push([dt, name, 'Harvest date update', '', null, hd, null, null, null, null, null]);
+    // Crop names, planted dates, harvest dates per gravel row.
+    // Old format (39-col): 2 fields per bed (crop, harvest) for rows 1-6 + DWC 1-4 at cols 15-34
+    // New format (37-col): 3 fields per row (crop, planted date, harvest) for rows 1-6 only at cols 15-32
+    const oldF3 = r.length >= 39;
+    if (oldF3) {
+      // Legacy: no planted date, includes DWC tanks
+      const legacyNames = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6','DWC Tank 1','DWC Tank 2','DWC Tank 3','DWC Tank 4'];
+      legacyNames.forEach((name, i) => {
+        const cropVal = sv(r[15 + i*2]) || null;
+        const cropName = (cropVal && cropVal !== 'Empty — nothing planted') ? cropVal : null;
+        const hd = cleanDate(String(r[16 + i*2] || ''));
+        if (cropName) plant_rows.push([dt, name, 'Planted', cropName, null, hd||null, null, null, null, null, cropName, null]);
+        else if (hd)  plant_rows.push([dt, name, 'Harvest date update', '', null, hd, null, null, null, null, null, null]);
+      });
+    } else {
+      // New: 3 fields per row (crop=15+i*3, planted=16+i*3, harvest=17+i*3) for Rows 1-6
+      for (let i = 0; i < 6; i++) {
+        const base = 15 + i * 3;
+        const cropVal = sv(r[base]) || null;
+        const cropName = (cropVal && cropVal !== 'Empty — nothing planted') ? cropVal : null;
+        const plantedDate = cleanDate(String(r[base+1] || ''));
+        const hd = cleanDate(String(r[base+2] || ''));
+        if (cropName) plant_rows.push([dt, `Row ${i+1}`, 'Planted', cropName, null, hd||null, null, null, null, null, cropName, plantedDate||null]);
+        else if (hd)  plant_rows.push([dt, `Row ${i+1}`, 'Harvest date update', '', null, hd, null, null, null, null, null, null]);
       }
-    });
+    }
 
     // Weekly chemistry: cols 3–8 (NH₃, Ca, Mg, K, Mn, Fe)
     const nh3=fv(r[3]), ca=fv(r[4]), mg=fv(r[5]), kk=fv(r[6]), mn=fv(r[7]), fe=fv(r[8]);
@@ -2001,15 +1990,16 @@ function renderCropGrid(){
   const byType = {};
   [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r=>{
     if(!r[1]) return;
-    const k = r[1].toLowerCase().split(' ').slice(0,3).join(' '); // 3 words: fixes DWC Tank 1 vs 2 collision
-    if(!byType[k]) byType[k] = r; // keep latest
+    const k = r[1].toLowerCase().split(' ').slice(0,3).join(' ');
+    byType[k] = r; // ascending sort → last written = newest per bed
   });
   // Active crops sorted by harvest urgency
   const activeSorted = Object.values(byType)
     .filter(r=>!r[5])
     .sort((a,b)=>{
       const urgency = r => {
-        const wKey = Object.keys(HARVEST_WINDOWS).find(k=>(r[1]||'').toLowerCase().includes(k))||'lettuce';
+        const nm = (r[10]||r[1]||'').toLowerCase();
+        const wKey = Object.keys(HARVEST_WINDOWS).find(k=>nm.includes(k))||'tomato';
         const mx = HARVEST_WINDOWS[wKey][1];
         return r[0] ? Math.round((today-new Date(r[0]))/864e5)/mx : 0;
       };
@@ -2040,6 +2030,13 @@ function renderCropGrid(){
     if(!p[1]||!p[10]) return;
     if(!bedCrop[p[1]] || p[0] > (bedCrop[p[1]].date||'')) bedCrop[p[1]] = {name:p[10], date:p[0]};
   });
+  // Most recent planted date per bed (p[11] = date planted, from new Form 3 format)
+  const bedPlanted = {};
+  D.plants.forEach(p => {
+    if(!p[1]||!p[11]) return;
+    if(!bedPlanted[p[1]] || p[0] > (bedPlanted[p[1]].recordedOn||''))
+      bedPlanted[p[1]] = {plantedDate: p[11], recordedOn: p[0]};
+  });
 
   // Render one bed card (gravel or DWC)
   const bedCard = (label, isDwc, r, rowIdx) => {
@@ -2055,19 +2052,25 @@ function renderCropGrid(){
     const bitterness = r ? (r[9]||null) : null;
     const healthRaw  = r ? (r[3]||'').replace(/^Health:\s*/i,'').trim()||null : null;
 
-    // Harvest
+    // Harvest — use actual planted date if known, else skip countdown
+    const plantedInfo = bedPlanted[label];
+    const plantedDate = plantedInfo ? plantedInfo.plantedDate : null;
+    const cropKey = cropDisplay ? Object.keys(HARVEST_WINDOWS).find(k=>cropDisplay.toLowerCase().includes(k)) : null;
+    const [mn, mx] = cropKey ? HARVEST_WINDOWS[cropKey] : [0, 0];
     let harvestText = '—', harvestColor = 'var(--muted)', bdgCls = 'badge-neutral', bdgLabel = r ? 'Growing' : 'Empty';
-    if(r && r[0]){
-      const wKey = Object.keys(HARVEST_WINDOWS).find(k=>nameLower.includes(k))||'lettuce';
-      const [mn,mx] = HARVEST_WINDOWS[wKey];
-      const daysIn = Math.round((today-new Date(r[0]))/864e5);
-      const daysLeft = Math.max(0, mn-daysIn);
-      const pct = Math.min(100, Math.round(daysIn/mx*100));
-      const isReady = pct>=100, isNear = pct>=75&&!isReady;
-      harvestText  = isReady ? 'Ready now' : daysLeft>0 ? 'In '+daysLeft+'d' : 'In harvest window';
+    let plantedDaysAgo = null;
+    if(plantedDate && mx > 0) {
+      const daysIn = Math.round((today - new Date(plantedDate)) / 864e5);
+      plantedDaysAgo = daysIn;
+      const daysLeft = Math.max(0, mn - daysIn);
+      const pct = Math.min(100, Math.round(daysIn / mx * 100));
+      const isReady = pct >= 100, isNear = pct >= 75 && !isReady;
+      harvestText  = isReady ? 'Ready now' : daysLeft > 0 ? 'In ~' + daysLeft + 'd' : 'In harvest window';
       harvestColor = isReady ? 'var(--c-good)' : isNear ? 'var(--c-warn)' : 'var(--muted)';
-      bdgCls   = isReady?'badge-good':isNear?'badge-warn':'badge-neutral';
-      bdgLabel = isReady?'Ready now':isNear?'Near harvest':'Growing';
+      bdgCls   = isReady ? 'badge-good' : isNear ? 'badge-warn' : 'badge-neutral';
+      bdgLabel = isReady ? 'Ready now' : isNear ? 'Near harvest' : 'Growing';
+    } else if (r) {
+      bdgLabel = cropDisplay ? 'Growing' : 'Empty';
     }
 
     // Obs: pests & spray
@@ -2125,7 +2128,13 @@ function renderCropGrid(){
         <span style="color:${harvestColor};font-weight:500">${harvestText}</span>
         ${footer}
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">${lastBedDate[label]?'Last reading: '+fmtBedDate(lastBedDate[label]):'No data yet'}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${
+        plantedDaysAgo !== null
+          ? `Planted ${plantedDaysAgo}d ago · target ${mn}–${mx}d`
+          : plantedDate
+            ? `Planted ${plantedDate}`
+            : lastBedDate[label] ? 'Last reading: '+fmtBedDate(lastBedDate[label]) : 'No planting date recorded'
+      }</div>
     </div>`;
   };
 
