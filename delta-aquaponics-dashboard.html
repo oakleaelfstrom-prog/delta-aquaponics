@@ -167,9 +167,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sys-card-header i{font-size:18px;color:var(--muted)}
 
 /* ── GROWING BEDS GRID ── */
-#beds-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-@media(max-width:900px){#beds-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:500px){#beds-grid{grid-template-columns:1fr}}
+#beds-grid,#dwc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:900px){#beds-grid,#dwc-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){#beds-grid,#dwc-grid{grid-template-columns:1fr}}
 .bed-card-new{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;min-height:44px}
 .bed-card-new-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:13px;font-weight:500}
 .bed-obs-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
@@ -424,6 +424,8 @@ tr:hover td{background:var(--surface-2)}
     <div id="health-grid-new"></div>
     <div class="section-divider">Growing Beds</div>
     <div id="beds-grid"></div>
+    <div class="section-divider" style="margin-top:20px">DWC Tanks</div>
+    <div id="dwc-grid"></div>
   </div>
 
   <!-- WATER QUALITY -->
@@ -1807,11 +1809,16 @@ function renderCropGrid(){
     </div>`;
   };
 
-  const cards = [];
-  for(let i=0;i<6;i++) cards.push(bedCard(`Row ${i+1}`, false, gravelCrops[i]||null, i));
-  for(let i=0;i<2;i++) cards.push(bedCard(`DWC Tank ${i+1}`, true, dwcCrops[i]||null, i));
+  const bedCards = [];
+  for(let i=0;i<6;i++) bedCards.push(bedCard(`Row ${i+1}`, false, gravelCrops[i]||null, i));
+  grid.innerHTML = bedCards.join('');
 
-  grid.innerHTML = cards.join('');
+  const dwcGrid = document.getElementById('dwc-grid');
+  if(dwcGrid){
+    const dwcCards = [];
+    for(let i=0;i<4;i++) dwcCards.push(bedCard(`DWC Tank ${i+1}`, true, dwcCrops[i]||null, i));
+    dwcGrid.innerHTML = dwcCards.join('');
+  }
 }
 
 // ─── OVERVIEW ───────────────────────────────────────────────────────────────
