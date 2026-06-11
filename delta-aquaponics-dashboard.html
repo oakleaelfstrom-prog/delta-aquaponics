@@ -1525,9 +1525,9 @@ function renderBedTimeline(bedIdx) {
   });
   merged.sort((a,b)=>a.date<b.date?-1:1);
 
-  // Add expected harvest anchor
+  // Add expected harvest anchor — always green, always the final node
   if (harvestStr)
-    merged.push({date:harvestStr,type:'expected_harvest',label:'Expected harvest',detail:null,color:'#94a3b8',icon:'ti-flag'});
+    merged.push({date:harvestStr,type:'expected_harvest',label:'Expected harvest',detail:null,color:'#4ade80',icon:'ti-flag-2'});
 
   // ── Render ────────────────────────────────────────────────────────────────────
   const fmtD = d => { try{ return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }catch(e){return d;} };
@@ -1545,8 +1545,8 @@ function renderBedTimeline(bedIdx) {
           ${pct!==null?`<div style="font-size:16px;font-weight:700;color:var(--text)">Day ${daysIn}</div><div style="font-size:10px;color:var(--muted)">of ${totalDays} days (${pct}%)</div>`:''}
         </div>
         <div style="text-align:right">
-          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">🏁 Harvest</div>
-          <div style="font-size:12px;color:var(--muted);font-weight:500;margin-top:1px">${harvestStr?fmtD(harvestStr):'—'}</div>
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#4ade80">🏁 Harvest</div>
+          <div style="font-size:12px;color:var(--text);font-weight:500;margin-top:1px">${harvestStr?fmtD(harvestStr):'—'}</div>
         </div>
       </div>
       ${pct!==null?`
@@ -1566,78 +1566,101 @@ function renderBedTimeline(bedIdx) {
       </div>`:''}
     </div>` : '';
 
-  // Timeline events
-  let side = 0; // 0=left, 1=right
+  // ── Timeline — per-event connectors so the line ends exactly at the last dot ──
+  // Layout: [left flex:1] [center-col 14px: dot + optional line] [right flex:1]
+  // align-items:stretch means the center col fills the height of the tallest side column.
+  // padding-bottom on the side columns creates the inter-event gap (filled by the line).
+
+  let side = 0;
   let todayInserted = false;
   const BG = 'var(--surface-2)';
 
-  const tlRows = [];
-  merged.forEach(ev => {
-    const isPast  = ev.date <= todayStr;
-    const isFuture = !isPast;
+  const centerCol = (color, showLine, lineMinH='28px') => `
+    <div style="display:flex;flex-direction:column;align-items:center;width:14px;flex-shrink:0;">
+      <div style="width:13px;height:13px;border-radius:50%;background:${color};border:2px solid ${color};margin-top:10px;flex-shrink:0;box-shadow:0 0 0 3px ${color}30"></div>
+      ${showLine?`<div style="width:2px;background:var(--border);flex:1;min-height:${lineMinH}"></div>`:''}
+    </div>`;
 
-    // Insert TODAY marker before the first future event
-    if (isFuture && !todayInserted && merged[0]?.date <= todayStr) {
+  const todayCol = showLine => `
+    <div style="display:flex;flex-direction:column;align-items:center;width:14px;flex-shrink:0;">
+      <div style="width:18px;height:18px;border-radius:50%;background:var(--text);margin-top:0;flex-shrink:0;margin-left:-2px;border:3px solid white;box-shadow:0 0 0 4px rgba(0,0,0,.12)"></div>
+      ${showLine?`<div style="width:2px;background:var(--border);flex:1;min-height:60px"></div>`:''}
+    </div>`;
+
+  const tlRows = [];
+
+  merged.forEach((ev, evIdx) => {
+    const isPast           = ev.date <= todayStr;
+    const isHarvest        = ev.type === 'expected_harvest';
+    const isLast           = evIdx === merged.length - 1;
+    const hasNextEvent     = evIdx < merged.length - 1;
+
+    // Insert TODAY before the first future event
+    if (!isPast && !todayInserted && merged[0]?.date <= todayStr) {
       todayInserted = true;
+      // Large padding-bottom on side cols creates the gap between TODAY and harvest
       tlRows.push(`
-        <div style="display:flex;align-items:center;margin:4px 0 20px;position:relative;z-index:2">
-          <div style="flex:1;display:flex;justify-content:flex-end;padding-right:10px">
-            <span style="font-size:10px;font-weight:700;color:var(--text);background:var(--surface);padding:0 4px;white-space:nowrap">TODAY</span>
+        <div style="display:flex;align-items:stretch;">
+          <div style="flex:1;display:flex;justify-content:flex-end;padding-right:8px;padding-bottom:64px;align-items:flex-start;padding-top:2px;">
+            <span style="font-size:10px;font-weight:700;color:var(--text);">TODAY</span>
           </div>
-          <div style="width:18px;height:18px;border-radius:50%;background:var(--text);flex-shrink:0;z-index:2;border:3px solid white;box-shadow:0 0 0 3px rgba(0,0,0,.15)"></div>
-          <div style="flex:1;padding-left:10px">
-            <span style="font-size:10px;color:var(--muted);background:var(--surface);padding:0 4px;white-space:nowrap">${fmtD(todayStr)}</span>
+          ${todayCol(true)}
+          <div style="flex:1;padding-left:8px;padding-bottom:64px;padding-top:2px;">
+            <span style="font-size:10px;color:var(--muted);">${fmtD(todayStr)}</span>
           </div>
         </div>`);
     }
 
-    const opacity = isFuture ? '0.45' : '1';
-    const dotBg   = ev.color;
-    const isLeft  = side % 2 === 0;
+    const evColor  = ev.color;
+    const opacity  = (isPast || isHarvest) ? '1' : '0.5';
+    const cardBg   = isHarvest ? 'rgba(74,222,128,0.08)' : BG;
+    const cardBdr  = isHarvest ? '0.5px solid rgba(74,222,128,0.35)' : '0.5px solid transparent';
+    const isLeft   = side % 2 === 0;
+    const padBot   = isLast ? '0' : '22px';
     side++;
 
-    const cardHTML = `
+    const cardContent = `
       <div style="font-size:10px;color:var(--muted);white-space:nowrap;margin-bottom:2px">${fmtRange(ev)}</div>
-      <div style="font-size:12px;font-weight:600;color:${isFuture?'var(--muted)':ev.color};display:flex;align-items:center;gap:4px">
-        <i class="ti ${ev.icon}" style="font-size:13px"></i>${ev.label}
+      <div style="font-size:12px;font-weight:600;color:${evColor};display:flex;align-items:center;gap:4px;${isLeft?'justify-content:flex-end':''}">
+        ${isLeft
+          ? `${ev.label}&nbsp;<i class="ti ${ev.icon}" style="font-size:13px"></i>`
+          : `<i class="ti ${ev.icon}" style="font-size:13px"></i>&nbsp;${ev.label}`}
       </div>
       ${ev.detail?`<div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">${ev.detail}</div>`:''}`;
 
-    const dotHTML = `<div style="width:13px;height:13px;border-radius:50%;background:${isFuture?'var(--border)':dotBg};border:2px solid ${isFuture?'var(--muted)':dotBg};flex-shrink:0;margin-top:10px;position:relative;z-index:2;box-shadow:${isFuture?'none':'0 0 0 3px '+dotBg+'30'}"></div>`;
-
     if (isLeft) {
       tlRows.push(`
-        <div style="display:flex;align-items:flex-start;margin-bottom:18px;position:relative;z-index:1;opacity:${opacity}">
-          <div style="flex:1;display:flex;justify-content:flex-end;align-items:flex-start;padding-right:0;gap:0">
-            <div style="background:${BG};border-radius:10px 10px 0 10px;padding:8px 10px;text-align:right;max-width:150px">${cardHTML}</div>
-            <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid ${BG};margin-top:14px;flex-shrink:0"></div>
+        <div style="display:flex;align-items:stretch;opacity:${opacity}">
+          <div style="flex:1;display:flex;justify-content:flex-end;align-items:flex-start;padding-right:0;padding-bottom:${padBot}">
+            <div style="background:${cardBg};border:${cardBdr};border-radius:10px 10px 0 10px;padding:8px 10px;text-align:right;max-width:148px">${cardContent}</div>
+            <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid ${cardBg};margin-top:14px;flex-shrink:0"></div>
           </div>
-          ${dotHTML}
-          <div style="flex:1"></div>
+          ${centerCol(evColor, !isLast)}
+          <div style="flex:1;padding-bottom:${padBot}"></div>
         </div>`);
     } else {
       tlRows.push(`
-        <div style="display:flex;align-items:flex-start;margin-bottom:18px;position:relative;z-index:1;opacity:${opacity}">
-          <div style="flex:1"></div>
-          ${dotHTML}
-          <div style="flex:1;display:flex;justify-content:flex-start;align-items:flex-start;padding-left:0;gap:0">
-            <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:6px solid ${BG};margin-top:14px;flex-shrink:0"></div>
-            <div style="background:${BG};border-radius:10px 10px 10px 0;padding:8px 10px;text-align:left;max-width:150px">${cardHTML}</div>
+        <div style="display:flex;align-items:stretch;opacity:${opacity}">
+          <div style="flex:1;padding-bottom:${padBot}"></div>
+          ${centerCol(evColor, !isLast)}
+          <div style="flex:1;display:flex;justify-content:flex-start;align-items:flex-start;padding-left:0;padding-bottom:${padBot}">
+            <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:6px solid ${cardBg};margin-top:14px;flex-shrink:0"></div>
+            <div style="background:${cardBg};border:${cardBdr};border-radius:10px 10px 10px 0;padding:8px 10px;text-align:left;max-width:148px">${cardContent}</div>
           </div>
         </div>`);
     }
   });
 
-  // If today is after all events (no future events), add TODAY at the end
-  if (!todayInserted && merged.length && merged[merged.length-1].date <= todayStr) {
+  // If all events are in the past (no expected harvest or harvest already passed), cap with TODAY
+  if (!todayInserted) {
     tlRows.push(`
-      <div style="display:flex;align-items:center;margin:4px 0 8px;position:relative;z-index:2">
-        <div style="flex:1;display:flex;justify-content:flex-end;padding-right:10px">
-          <span style="font-size:10px;font-weight:700;color:var(--text);background:var(--surface);padding:0 4px">TODAY</span>
+      <div style="display:flex;align-items:stretch;">
+        <div style="flex:1;display:flex;justify-content:flex-end;padding-right:8px;align-items:flex-start;padding-top:2px;">
+          <span style="font-size:10px;font-weight:700;color:var(--text);">TODAY</span>
         </div>
-        <div style="width:18px;height:18px;border-radius:50%;background:var(--text);flex-shrink:0;z-index:2;border:3px solid white;box-shadow:0 0 0 3px rgba(0,0,0,.15)"></div>
-        <div style="flex:1;padding-left:10px">
-          <span style="font-size:10px;color:var(--muted);background:var(--surface);padding:0 4px">${fmtD(todayStr)}</span>
+        ${todayCol(false)}
+        <div style="flex:1;padding-left:8px;padding-top:2px;">
+          <span style="font-size:10px;color:var(--muted);">${fmtD(todayStr)}</span>
         </div>
       </div>`);
   }
@@ -1649,10 +1672,7 @@ function renderBedTimeline(bedIdx) {
 
   const body = document.getElementById('drill-body');
   body.innerHTML = progressHTML + (merged.length ? `
-    <div style="position:relative;padding:28px 16px 80px">
-      <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--border);transform:translateX(-50%);z-index:0"></div>
-      ${tlRows.join('')}
-    </div>` : emptyMsg);
+    <div style="padding:28px 16px 48px">${tlRows.join('')}</div>` : emptyMsg);
 
   body.ontouchstart = e => { _bedSwipeStartX = e.touches[0].clientX; };
   body.ontouchend   = e => {
