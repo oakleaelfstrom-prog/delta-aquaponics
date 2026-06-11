@@ -1425,150 +1425,235 @@ function renderBedTimeline(bedIdx) {
   const ROWS = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6'];
   const rowLabel = ROWS[bedIdx];
   const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
 
-  // Crop info — latest Form3 planted entry with a crop name
+  const normDate = v => {
+    if (!v) return null;
+    const s = String(v).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    try { return new Date(new Date(s).getTime()+2*3600000).toISOString().slice(0,10); } catch(e) { return null; }
+  };
+
+  // Crop info — planted date only appears in the FIRST week's Form3 row (p[11]),
+  // later weeks leave it blank. Harvest date is most accurate from the latest row.
   const allRow = D.plants.filter(p => p[1] === rowLabel);
-  const plantedEntry = allRow.filter(p => p[2]==='Planted' && p[10])
-    .sort((a,b)=>(a[0]||'')>(b[0]||'')?-1:1)[0];
-  const cropName    = plantedEntry ? plantedEntry[10] : null;
-  const plantedStr  = plantedEntry ? plantedEntry[11] : null; // YYYY-MM-DD
+  const allPlanted = allRow.filter(p => p[2]==='Planted' && p[10])
+    .sort((a,b)=>(a[0]||'')<(b[0]||'')?-1:1); // oldest first
+  const entryWithDate   = allPlanted.find(p => p[11]);
+  const mostRecentEntry = allPlanted[allPlanted.length-1] || null;
+  const plantedEntry    = entryWithDate || mostRecentEntry;
+  const cropName   = plantedEntry ? plantedEntry[10] : null;
+  const plantedStr = normDate(entryWithDate ? entryWithDate[11] : null);
+  const harvestStr = normDate(mostRecentEntry ? mostRecentEntry[5] : null);
   const plantedDate = plantedStr ? new Date(plantedStr+'T12:00:00') : null;
-  const daysIn      = plantedDate ? Math.round((today-plantedDate)/864e5) : null;
+  const harvestDate = harvestStr ? new Date(harvestStr+'T12:00:00') : null;
+  const daysIn    = plantedDate ? Math.round((today-plantedDate)/864e5) : null;
+  const totalDays = (plantedDate&&harvestDate) ? Math.round((harvestDate-plantedDate)/864e5) : null;
+  const pct       = (daysIn!=null&&totalDays) ? Math.min(100,Math.max(0,Math.round(daysIn/totalDays*100))) : null;
 
   // Nav buttons
   const prevBtn = document.getElementById('bed-nav-prev');
   const nextBtn = document.getElementById('bed-nav-next');
-  prevBtn.style.opacity  = bedIdx===0 ? '0.3':'1';
-  prevBtn.style.pointerEvents = bedIdx===0 ? 'none':'auto';
-  nextBtn.style.opacity  = bedIdx===5 ? '0.3':'1';
-  nextBtn.style.pointerEvents = bedIdx===5 ? 'none':'auto';
+  prevBtn.style.opacity = bedIdx===0?'0.3':'1';
+  prevBtn.style.pointerEvents = bedIdx===0?'none':'auto';
+  nextBtn.style.opacity = bedIdx===5?'0.3':'1';
+  nextBtn.style.pointerEvents = bedIdx===5?'none':'auto';
   prevBtn.textContent = bedIdx>0 ? '← '+ROWS[bedIdx-1] : '←';
   nextBtn.textContent = bedIdx<5 ? ROWS[bedIdx+1]+' →' : '→';
-
-  // Header
   document.getElementById('drill-title').textContent = rowLabel + (cropName ? ' — '+cropName : ' — Empty');
 
   // Siphon
   const siphCol = bedIdx+2;
   const latestSiph = D.siphons.slice().reverse().map(s=>s[siphCol]).find(v=>v!=null&&v>0)??null;
-  const siphColor = latestSiph==null?'var(--muted)':latestSiph>=15&&latestSiph<=18?'var(--c-good)':latestSiph>20?'var(--c-bad)':'var(--c-warn)';
+  const siphColor = latestSiph==null?'var(--muted)':latestSiph>=15&&latestSiph<=18?'#4ade80':latestSiph>20?'#f87171':'#fbbf24';
 
-  // ── Build timeline events ────────────────────────────────────────────────────
+  // ── Build events ─────────────────────────────────────────────────────────────
   const events = [];
+  if (plantedStr)
+    events.push({date:plantedStr,type:'planted',label:'Planted',detail:cropName,color:'#4ade80',icon:'ti-plant-2'});
 
-  // Planted
-  if (plantedStr) {
-    events.push({ date:plantedStr, type:'planted', label:'Planted', detail:cropName, color:'#4ade80' });
-  }
-
-  // Form2 inspection entries — only notable events
   allRow.filter(p=>p[2]==='Inspection'||p[2]==='Harvest')
     .sort((a,b)=>(a[0]||'')<(b[0]||'')?-1:1)
     .forEach(p => {
-      const date=p[0]; if(!date) return;
+      const date=normDate(p[0]); if(!date) return;
       const health=(p[3]||'').replace(/^Health:\s*/i,'').trim();
-      const pests=p[4], notes=p[6], yellowing=p[7], wilting=p[8];
+      const pests=p[4],notes=p[6],yellowing=p[7],wilting=p[8];
       const isHarvest=p[2]==='Harvest';
-
       if(isHarvest){
         const wm=(notes||'').match(/Weight:\s*([\d.]+)/i);
         const cleanNote=(notes||'').replace(/\s*·?\s*Weight:[\s\d.]+kg\.?/gi,'').trim();
-        events.push({date,type:'harvest',label:wm?`Harvested — ${wm[1]} kg`:'Harvested',detail:cleanNote||null,color:'#4ade80'});
+        events.push({date,type:'harvest',label:wm?`Harvested — ${wm[1]} kg`:'Harvested',detail:cleanNote||null,color:'#4ade80',icon:'ti-scissors'});
       }
-      if(yellowing==='Yes') events.push({date,type:'yellowing',label:'Yellowing',detail:null,color:'#fbbf24'});
-      if(wilting==='Yes')   events.push({date,type:'wilting',  label:'Wilting',  detail:null,color:'#fb923c'});
+      if(yellowing==='Yes') events.push({date,type:'yellowing',label:'Yellowing observed',detail:null,color:'#fbbf24',icon:'ti-alert-triangle'});
+      if(wilting==='Yes')   events.push({date,type:'wilting',label:'Wilting observed',detail:null,color:'#fb923c',icon:'ti-droplet-off'});
       if(pests&&pests!=='No'){
         const confirmed=pests==='Yes';
-        events.push({date,type:confirmed?'pests_yes':'pests_poss',label:confirmed?'Pests confirmed':'Possible pests',detail:null,color:confirmed?'#f87171':'#fbbf24'});
+        events.push({date,type:confirmed?'pests_yes':'pests_poss',label:confirmed?'Pests confirmed':'Possible pests',detail:null,color:confirmed?'#f87171':'#fbbf24',icon:'ti-bug'});
       }
-      if(health==='Serious problem') events.push({date,type:'health_bad',label:'Serious health problem',detail:null,color:'#f87171'});
+      if(health==='Serious problem') events.push({date,type:'health_bad',label:'Serious health problem',detail:null,color:'#f87171',icon:'ti-alert-circle'});
       if(!isHarvest&&notes){
         const clean=(notes||'').replace(/Weight:[\s\d.]+kg\s*·?\s*/gi,'').trim();
-        if(clean) events.push({date,type:'note_'+date,label:'Note',detail:clean,color:'#60a5fa'});
+        if(clean) events.push({date,type:'note_'+date,label:'Note',detail:clean,color:'#60a5fa',icon:'ti-note'});
       }
     });
 
-  // Journal entries specific to this row (from Form2 bed notes)
   (D.journal||[]).filter(j=>{
-    const cat=(j[3]||'').toLowerCase(), text=(j[4]||'').trim();
+    const cat=(j[3]||'').toLowerCase(),text=(j[4]||'').trim();
     return text&&text!=='No'&&cat===rowLabel.toLowerCase();
   }).forEach(j=>{
-    const date=j[0],text=j[4];
-    if(!events.some(ev=>ev.date===date&&ev.type.startsWith('note_')))
-      events.push({date,type:'note_'+date,label:'Observation',detail:text,color:'#60a5fa'});
+    const date=normDate(j[0]),text=j[4];
+    if(date&&!events.some(ev=>ev.date===date&&ev.type.startsWith('note_')))
+      events.push({date,type:'note_'+date,label:'Observation',detail:text,color:'#60a5fa',icon:'ti-note'});
   });
 
-  // Sort and merge consecutive same-type runs into date ranges
-  events.sort((a,b)=>(a.date||'')<(b.date||'')?-1:1);
-
-  const MERGEABLE = new Set(['yellowing','wilting','pests_yes','pests_poss','health_bad']);
-  const byType = {};
-  const nonMerge = [];
-  events.forEach(ev => {
-    if(MERGEABLE.has(ev.type)){ if(!byType[ev.type]) byType[ev.type]=[]; byType[ev.type].push(ev); }
-    else nonMerge.push(ev);
-  });
-  const merged = [...nonMerge];
-  Object.values(byType).forEach(arr => {
+  // Merge consecutive same-type runs
+  events.sort((a,b)=>a.date<b.date?-1:1);
+  const MERGEABLE=new Set(['yellowing','wilting','pests_yes','pests_poss','health_bad']);
+  const byType={},nonMerge=[];
+  events.forEach(ev=>{ if(MERGEABLE.has(ev.type)){if(!byType[ev.type])byType[ev.type]=[];byType[ev.type].push(ev);}else nonMerge.push(ev); });
+  const merged=[...nonMerge];
+  Object.values(byType).forEach(arr=>{
     arr.sort((a,b)=>a.date<b.date?-1:1);
     let i=0;
     while(i<arr.length){
-      const ev={...arr[i]};
-      let j=i+1;
+      const ev={...arr[i]};let j=i+1;
       while(j<arr.length){
-        const gap=(new Date(arr[j].date+'T12:00:00')-new Date(arr[j-1].date+'T12:00:00'))/864e5;
-        if(gap<=2){ev.dateEnd=arr[j].date;j++;}else break;
+        if((new Date(arr[j].date+'T12:00:00')-new Date(arr[j-1].date+'T12:00:00'))/864e5<=2){ev.dateEnd=arr[j].date;j++;}else break;
       }
-      merged.push(ev); i=j;
+      merged.push(ev);i=j;
     }
   });
-  merged.sort((a,b)=>(a.date||'')<(b.date||'')?-1:1);
+  merged.sort((a,b)=>a.date<b.date?-1:1);
 
-  // ── Render ───────────────────────────────────────────────────────────────────
-  const fmtD = d => { try{ const dt=new Date(d+'T12:00:00'); return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }catch(e){return d;} };
+  // Add expected harvest anchor
+  if (harvestStr)
+    merged.push({date:harvestStr,type:'expected_harvest',label:'Expected harvest',detail:null,color:'#94a3b8',icon:'ti-flag'});
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+  const fmtD = d => { try{ return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }catch(e){return d;} };
   const fmtRange = ev => ev.dateEnd&&ev.dateEnd!==ev.date ? fmtD(ev.date)+' – '+fmtD(ev.dateEnd) : fmtD(ev.date);
 
-  const summaryCard = `
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;padding:16px;background:var(--surface-2);border-radius:14px">
-      <div style="width:52px;height:52px;background:${cropName?'rgba(74,222,128,.15)':'var(--border)'};border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <i class="ti ti-${cropName?'plant-2':'plant-off'}" style="font-size:24px;color:${cropName?'#4ade80':'var(--muted)'}"></i>
+  // Progress bar
+  const progressHTML = cropName ? `
+    <div style="padding:16px 20px 14px;background:var(--surface);border-bottom:0.5px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
+        <div>
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#4ade80">🌱 Planted</div>
+          <div style="font-size:12px;color:var(--text);font-weight:500;margin-top:1px">${plantedStr?fmtD(plantedStr):'—'}</div>
+        </div>
+        <div style="text-align:center">
+          ${pct!==null?`<div style="font-size:16px;font-weight:700;color:var(--text)">Day ${daysIn}</div><div style="font-size:10px;color:var(--muted)">of ${totalDays} days (${pct}%)</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">🏁 Harvest</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:500;margin-top:1px">${harvestStr?fmtD(harvestStr):'—'}</div>
+        </div>
       </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">${cropName||'Empty bed'}</div>
-        <div style="font-size:12px;color:var(--muted)">${daysIn!==null?`Planted ${daysIn} days ago · ${fmtD(plantedStr)}`:'No planting date recorded'}</div>
+      ${pct!==null?`
+      <div style="height:6px;background:var(--border);border-radius:3px;position:relative;overflow:visible">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(to right,#22c55e,#4ade80);border-radius:3px;position:relative;transition:width .4s">
+          <div style="position:absolute;right:-6px;top:-3px;width:12px;height:12px;background:#111827;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+        </div>
       </div>
-      ${latestSiph!==null?`<div style="text-align:right;flex-shrink:0"><div style="font-size:18px;font-weight:600;color:${siphColor}">${latestSiph}m</div><div style="font-size:10px;color:var(--muted)">Siphon S${bedIdx+1}</div></div>`:''}
-    </div>`;
+      <div style="display:flex;justify-content:space-between;margin-top:5px">
+        <span style="font-size:9px;color:var(--muted)">Planted</span>
+        <span style="font-size:9px;font-weight:700;color:var(--text)">TODAY</span>
+        <span style="font-size:9px;color:var(--muted)">Expected harvest</span>
+      </div>`:''}
+      ${latestSiph!==null?`<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;color:var(--muted)">Siphon S${bedIdx+1}:</span>
+        <span style="font-size:13px;font-weight:600;color:${siphColor}">${latestSiph}m</span>
+      </div>`:''}
+    </div>` : '';
 
-  const tlItems = merged.map((ev,i) => {
-    const isLast=i===merged.length-1;
-    return `<div style="display:flex;gap:0">
-      <div style="display:flex;flex-direction:column;align-items:center;width:26px;flex-shrink:0;margin-right:14px">
-        <div style="width:11px;height:11px;border-radius:50%;background:${ev.color};margin-top:3px;flex-shrink:0;box-shadow:0 0 0 3px ${ev.color}30"></div>
-        ${isLast?'':'<div style="width:1.5px;background:var(--border);flex:1;margin-top:3px;min-height:24px"></div>'}
-      </div>
-      <div style="flex:1;padding-bottom:${isLast?'0':'22px'}">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${fmtRange(ev)}</div>
-        <div style="font-size:13px;font-weight:500;color:var(--text)">${ev.label}</div>
-        ${ev.detail?`<div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45">${ev.detail}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
+  // Timeline events
+  let side = 0; // 0=left, 1=right
+  let todayInserted = false;
+  const BG = 'var(--surface-2)';
 
-  const emptyMsg = cropName
-    ? '<div style="color:var(--muted);font-size:12px;padding:8px 0">No notable events recorded yet.</div>'
-    : '<div style="text-align:center;padding:48px 0;color:var(--muted)"><i class="ti ti-plant-off" style="font-size:36px;display:block;margin-bottom:10px;opacity:.4"></i><div style="font-size:14px">No crop planted in this row</div></div>';
+  const tlRows = [];
+  merged.forEach(ev => {
+    const isPast  = ev.date <= todayStr;
+    const isFuture = !isPast;
 
-  const body = document.getElementById('drill-body');
-  body.innerHTML = `<div style="padding:20px 20px 60px">
-    ${summaryCard}
-    ${merged.length
-      ? '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:18px">Plant timeline</div>'
-        + tlItems
-      : emptyMsg}
+    // Insert TODAY marker before the first future event
+    if (isFuture && !todayInserted && merged[0]?.date <= todayStr) {
+      todayInserted = true;
+      tlRows.push(`
+        <div style="display:flex;align-items:center;margin:4px 0 20px;position:relative;z-index:2">
+          <div style="flex:1;display:flex;justify-content:flex-end;padding-right:10px">
+            <span style="font-size:10px;font-weight:700;color:var(--text);background:var(--surface);padding:0 4px;white-space:nowrap">TODAY</span>
+          </div>
+          <div style="width:18px;height:18px;border-radius:50%;background:var(--text);flex-shrink:0;z-index:2;border:3px solid white;box-shadow:0 0 0 3px rgba(0,0,0,.15)"></div>
+          <div style="flex:1;padding-left:10px">
+            <span style="font-size:10px;color:var(--muted);background:var(--surface);padding:0 4px;white-space:nowrap">${fmtD(todayStr)}</span>
+          </div>
+        </div>`);
+    }
+
+    const opacity = isFuture ? '0.45' : '1';
+    const dotBg   = ev.color;
+    const isLeft  = side % 2 === 0;
+    side++;
+
+    const cardHTML = `
+      <div style="font-size:10px;color:var(--muted);white-space:nowrap;margin-bottom:2px">${fmtRange(ev)}</div>
+      <div style="font-size:12px;font-weight:600;color:${isFuture?'var(--muted)':ev.color};display:flex;align-items:center;gap:4px">
+        <i class="ti ${ev.icon}" style="font-size:13px"></i>${ev.label}
+      </div>
+      ${ev.detail?`<div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">${ev.detail}</div>`:''}`;
+
+    const dotHTML = `<div style="width:13px;height:13px;border-radius:50%;background:${isFuture?'var(--border)':dotBg};border:2px solid ${isFuture?'var(--muted)':dotBg};flex-shrink:0;margin-top:10px;position:relative;z-index:2;box-shadow:${isFuture?'none':'0 0 0 3px '+dotBg+'30'}"></div>`;
+
+    if (isLeft) {
+      tlRows.push(`
+        <div style="display:flex;align-items:flex-start;margin-bottom:18px;position:relative;z-index:1;opacity:${opacity}">
+          <div style="flex:1;display:flex;justify-content:flex-end;align-items:flex-start;padding-right:0;gap:0">
+            <div style="background:${BG};border-radius:10px 10px 0 10px;padding:8px 10px;text-align:right;max-width:150px">${cardHTML}</div>
+            <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid ${BG};margin-top:14px;flex-shrink:0"></div>
+          </div>
+          ${dotHTML}
+          <div style="flex:1"></div>
+        </div>`);
+    } else {
+      tlRows.push(`
+        <div style="display:flex;align-items:flex-start;margin-bottom:18px;position:relative;z-index:1;opacity:${opacity}">
+          <div style="flex:1"></div>
+          ${dotHTML}
+          <div style="flex:1;display:flex;justify-content:flex-start;align-items:flex-start;padding-left:0;gap:0">
+            <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:6px solid ${BG};margin-top:14px;flex-shrink:0"></div>
+            <div style="background:${BG};border-radius:10px 10px 10px 0;padding:8px 10px;text-align:left;max-width:150px">${cardHTML}</div>
+          </div>
+        </div>`);
+    }
+  });
+
+  // If today is after all events (no future events), add TODAY at the end
+  if (!todayInserted && merged.length && merged[merged.length-1].date <= todayStr) {
+    tlRows.push(`
+      <div style="display:flex;align-items:center;margin:4px 0 8px;position:relative;z-index:2">
+        <div style="flex:1;display:flex;justify-content:flex-end;padding-right:10px">
+          <span style="font-size:10px;font-weight:700;color:var(--text);background:var(--surface);padding:0 4px">TODAY</span>
+        </div>
+        <div style="width:18px;height:18px;border-radius:50%;background:var(--text);flex-shrink:0;z-index:2;border:3px solid white;box-shadow:0 0 0 3px rgba(0,0,0,.15)"></div>
+        <div style="flex:1;padding-left:10px">
+          <span style="font-size:10px;color:var(--muted);background:var(--surface);padding:0 4px">${fmtD(todayStr)}</span>
+        </div>
+      </div>`);
+  }
+
+  const emptyMsg = `<div style="text-align:center;padding:60px 20px;color:var(--muted)">
+    <i class="ti ti-plant-off" style="font-size:40px;display:block;margin-bottom:12px;opacity:.3"></i>
+    <div style="font-size:14px">No crop planted in this row</div>
   </div>`;
 
-  // Touch swipe to navigate rows
+  const body = document.getElementById('drill-body');
+  body.innerHTML = progressHTML + (merged.length ? `
+    <div style="position:relative;padding:28px 16px 80px">
+      <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--border);transform:translateX(-50%);z-index:0"></div>
+      ${tlRows.join('')}
+    </div>` : emptyMsg);
+
   body.ontouchstart = e => { _bedSwipeStartX = e.touches[0].clientX; };
   body.ontouchend   = e => {
     const dx = e.changedTouches[0].clientX - _bedSwipeStartX;
