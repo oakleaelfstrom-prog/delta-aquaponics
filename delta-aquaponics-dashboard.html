@@ -2289,6 +2289,13 @@ function renderCropGrid(){
     if(!bedPlanted[p[1]] || p[0] > (bedPlanted[p[1]].recordedOn||''))
       bedPlanted[p[1]] = {plantedDate: p[11], recordedOn: p[0]};
   });
+  // Actual expected harvest date per bed (p[5] = harvestDate recorded in Form3_Weekly)
+  const bedHarvestDate = {};
+  D.plants.forEach(p => {
+    if(!p[1]||!p[5]) return;
+    if(!bedHarvestDate[p[1]] || p[0] > (bedHarvestDate[p[1]].recordedOn||''))
+      bedHarvestDate[p[1]] = {date: p[5], recordedOn: p[0]};
+  });
 
   // Render one bed card (gravel or DWC)
   const bedCard = (label, isDwc, r, rowIdx) => {
@@ -2304,14 +2311,34 @@ function renderCropGrid(){
     const bitterness = r ? (r[9]||null) : null;
     const healthRaw  = r ? (r[3]||'').replace(/^Health:\s*/i,'').trim()||null : null;
 
-    // Harvest — use actual planted date if known, else skip countdown
+    // Harvest — prefer actual recorded harvest date from Form3, fall back to HARVEST_WINDOWS estimate
     const plantedInfo = bedPlanted[label];
     const plantedDate = plantedInfo ? plantedInfo.plantedDate : null;
     const cropKey = cropDisplay ? Object.keys(HARVEST_WINDOWS).find(k=>cropDisplay.toLowerCase().includes(k)) : null;
     const [mn, mx] = cropKey ? HARVEST_WINDOWS[cropKey] : [0, 0];
+    const actualHarvestDate = bedHarvestDate[label] ? bedHarvestDate[label].date : null;
     let harvestText = '—', harvestColor = 'var(--muted)', bdgCls = 'badge-neutral', bdgLabel = r ? 'Growing' : 'Empty';
     let plantedDaysAgo = null;
-    if(plantedDate && mx > 0) {
+    if (actualHarvestDate) {
+      const daysLeft = Math.round((new Date(actualHarvestDate) - today) / 864e5);
+      const isReady = daysLeft <= 0;
+      if (plantedDate) {
+        plantedDaysAgo = Math.round((today - new Date(plantedDate)) / 864e5);
+        const totalDays = Math.round((new Date(actualHarvestDate) - new Date(plantedDate)) / 864e5);
+        const pct = totalDays > 0 ? Math.min(100, Math.round(plantedDaysAgo / totalDays * 100)) : (isReady ? 100 : 0);
+        const isNear = pct >= 75 && !isReady;
+        harvestText  = isReady ? 'Ready now' : 'In ~' + Math.max(0, daysLeft) + 'd';
+        harvestColor = isReady ? 'var(--c-good)' : isNear ? 'var(--c-warn)' : 'var(--muted)';
+        bdgCls   = isReady ? 'badge-good' : isNear ? 'badge-warn' : 'badge-neutral';
+        bdgLabel = isReady ? 'Ready now' : isNear ? 'Near harvest' : 'Growing';
+      } else {
+        const isNear = daysLeft > 0 && daysLeft <= 7;
+        harvestText  = isReady ? 'Ready now' : 'In ~' + daysLeft + 'd';
+        harvestColor = isReady ? 'var(--c-good)' : isNear ? 'var(--c-warn)' : 'var(--muted)';
+        bdgCls   = isReady ? 'badge-good' : isNear ? 'badge-warn' : 'badge-neutral';
+        bdgLabel = isReady ? 'Ready now' : isNear ? 'Near harvest' : 'Growing';
+      }
+    } else if (plantedDate && mx > 0) {
       const daysIn = Math.round((today - new Date(plantedDate)) / 864e5);
       plantedDaysAgo = daysIn;
       const daysLeft = Math.max(0, mn - daysIn);
@@ -2381,7 +2408,7 @@ function renderCropGrid(){
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:6px">${
         plantedDaysAgo !== null
-          ? `Planted ${plantedDaysAgo}d ago · target ${mn}–${mx}d`
+          ? `Planted ${plantedDaysAgo}d ago · ${actualHarvestDate ? 'harvest ' + fmtBedDate(actualHarvestDate) : 'target ' + mn + '–' + mx + 'd'}`
           : plantedDate
             ? `Planted ${plantedDate}`
             : lastBedDate[label] ? 'Last reading: '+fmtBedDate(lastBedDate[label]) : 'No planting date recorded'
