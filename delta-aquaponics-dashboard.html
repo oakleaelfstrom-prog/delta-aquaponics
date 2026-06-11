@@ -2146,7 +2146,7 @@ function renderCropGrid(){
       <div class="bed-obs-grid">
         <div class="bed-obs-item"><span class="dot dot-${yn(yellowing)}"></span><span>${yellowing==='Yes'?'Yellowing':'No yellowing'}</span></div>
         <div class="bed-obs-item"><span class="dot dot-${yn(wilting)}"></span><span>${wilting==='Yes'?'Wilting':'No wilting'}</span></div>
-        <div class="bed-obs-item"><span class="dot dot-${pestNote?'bad':'neutral'}"></span><span>${pestNote?'Pests noted':'No pests'}</span></div>
+        <div class="bed-obs-item"><span class="dot dot-${pestNote&&pestNote!=='No'?'bad':'good'}"></span><span>${pestNote&&pestNote!=='No'?'Pests noted':'No pests'}</span></div>
         ${isDwc
           ? `<div class="bed-obs-item"><span class="dot dot-${yn(bitterness)}"></span><span>${bitterness==='Yes'?'Bitter taste':'No bitterness'}</span></div>`
           : `<div class="bed-obs-item"><span class="dot dot-${sprayDot}"></span><span>Spray: ${sprayLabel}</span></div>`}
