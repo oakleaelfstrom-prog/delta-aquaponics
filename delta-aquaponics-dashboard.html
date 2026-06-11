@@ -1096,7 +1096,8 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   let cumul=0; const fin_cumul=[...fin].filter(r=>r[5]!=null&&r[0]).sort((a,b)=>a[0]>b[0]?1:-1).map(r=>{cumul+=r[5];return[r[0],Math.round(cumul)];});
 
   const total_spend = fin.reduce((s,r)=>s+(r[5]||0),0);
-  const latest_wq = [...wq].reverse().find(r=>r[3]!=null) || {};
+  const latest_wq      = [...wq].reverse().find(r=>r[3]!=null) || {};   // latest pH row (Form2)
+  const latest_wtemp_r = [...wq].reverse().find(r=>r[2]!=null);          // latest temp row (Form1)
   const latest_env = env.filter(r=>r[1]==='Morning').slice(-1)[0] || [];
   const cur_stock = stock_chart.length ? stock_chart[stock_chart.length-1][1] : DEFAULT_DATA.stats.current_stock;
   const chem = [...chem_new].sort((a,b)=>a[0]>b[0]?1:-1);
@@ -1116,7 +1117,7 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
     fish, stock_chart, cause_data, plants, siphons:siph, siph_avgs, siph_latest, siph_chart_data,
     compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem, journal,
     stats:{ current_stock:cur_stock, stocked:1295, total_mortality:1295-cur_stock, survival_pct:Math.round(cur_stock/1295*1000)/10,
-      latest_ph:latest_wq[3]??null, latest_wtemp:latest_wq[2]??null, latest_env_morn:latest_env[2]??null,
+      latest_ph:latest_wq[3]??null, latest_wtemp:latest_wtemp_r?.[2]??null, latest_env_morn:latest_env[2]??null,
       latest_env_morn_out, latest_equip, latest_equip_date,
       latest_nh3:lc[1]??null, latest_ca:lc[2]??null, latest_mg:lc[3]??null,
       latest_k:lc[4]??null, latest_mn:lc[5]??null, latest_fe:lc[6]??null,
