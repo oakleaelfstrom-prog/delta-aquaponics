@@ -1012,7 +1012,12 @@ function parseWebAppData(allData) {
     // Crop names, planted dates, harvest dates per gravel row.
     // Old format (39-col): 2 fields per bed (crop, harvest) for rows 1-6 + DWC 1-4 at cols 15-34
     // New format (37-col): 3 fields per row (crop, planted date, harvest) for rows 1-6 only at cols 15-32
-    const oldF3 = r.length >= 39;
+    // Detect old 39-col format vs new 37-col format.
+    // r.length can be 39 even for new data if the sheet has leftover columns
+    // from an older header row — so also check r[17]: in new format it's a
+    // harvest-date ISO string, in old format it's a crop-name string.
+    const looksLikeISODate = v => /^\d{4}-\d{2}-\d{2}/.test(String(v || ''));
+    const oldF3 = r.length >= 39 && !looksLikeISODate(String(r[17] || ''));
     if (oldF3) {
       // Legacy: no planted date, includes DWC tanks
       const legacyNames = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6','DWC Tank 1','DWC Tank 2','DWC Tank 3','DWC Tank 4'];
@@ -2161,8 +2166,17 @@ function renderCropGrid(){
     </div>`;
   };
 
+  // Build one card per row using the latest non-harvested record for THAT
+  // specific row — not the urgency-sorted list, which would show the wrong
+  // row's health data in each card.
   const bedCards = [];
-  for(let i=0;i<6;i++) bedCards.push(bedCard(`Row ${i+1}`, false, gravelCrops[i]||null, i));
+  for(let i=0;i<6;i++){
+    const label = `Row ${i+1}`;
+    const rowRecord = D.plants
+      .filter(p => p[1] === label && !p[5])
+      .sort((a,b) => (a[0]||'') > (b[0]||'') ? -1 : 1)[0] || null;
+    bedCards.push(bedCard(label, false, rowRecord, i));
+  }
   grid.innerHTML = bedCards.join('');
 
   const dwcGrid = document.getElementById('dwc-grid');
