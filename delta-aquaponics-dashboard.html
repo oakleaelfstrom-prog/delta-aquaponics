@@ -2133,18 +2133,26 @@ function renderHealthRow(){
   const lastNo3Date     = D.wq.filter(r=>r[5]!=null).slice(-1)[0]?.[0]||null;
   const lastChemDate    = D.weekly_chem.length ? D.weekly_chem[D.weekly_chem.length-1][0] : null;
 
-  // Footer dates + time slots
-  const lastWQDate     = s.last_wq_date||'—';
-  const lastWQSlot     = D.wq.filter(r=>r[2]!=null||r[3]!=null).slice(-1)[0]?.[1] || null;
-  const lastSiphDate   = D.siphons.length ? D.siphons[D.siphons.length-1][0] : '—';
-  const lastSiphSlot   = D.siphons.length ? D.siphons[D.siphons.length-1][1] : null;
+  // Footer dates + time slots — sorted by date then Evening>Midday>Morning
+  const _tO = t => t==='Evening'?3:t==='Midday'?2:1;
+  const _byTime = arr => [...arr].sort((a,b)=>a[0]!==b[0]?(a[0]<b[0]?-1:1):_tO(a[1])-_tO(b[1]));
+  const _latestWQ   = D.wq.length ? _byTime(D.wq.filter(r=>r[2]!=null)).pop()||null : null;
+  const lastWQDate  = _latestWQ ? _latestWQ[0] : s.last_wq_date||'—';
+  const lastWQSlot  = _latestWQ ? _latestWQ[1] : null;
+  const _latestSiph = D.siphons.length ? _byTime(D.siphons).pop() : null;
+  const lastSiphDate = _latestSiph ? _latestSiph[0] : '—';
+  const lastSiphSlot = _latestSiph ? _latestSiph[1] : null;
   const latestFishDate = D.fish.length ? D.fish[D.fish.length-1][0] : '—';
   const lastEquipDate  = s.latest_equip_date||'—';
   const lastRoundEntry = [...(D.compliance||[])].reverse().find(r=>r.f1_morn||r.f1_mid||r.f1_eve)||null;
   const lastRoundDate  = lastRoundEntry ? lastRoundEntry.date : '—';
   const lastRoundSlot  = lastRoundEntry ? (lastRoundEntry.f1_eve?'Evening':lastRoundEntry.f1_mid?'Midday':'Morning') : null;
-  const _tO = t => t==='Evening'?3:t==='Midday'?2:1;
-  const _latestEnv = D.env.length ? [...D.env].sort((a,b)=>a[0]!==b[0]?(a[0]<b[0]?-1:1):_tO(a[1])-_tO(b[1])).pop() : null;
+  const lastRoundFeedTime = lastRoundEntry
+    ? (typeof lastRoundEntry.f1_eve==='string' ? lastRoundEntry.f1_eve
+      : typeof lastRoundEntry.f1_mid==='string' ? lastRoundEntry.f1_mid
+      : typeof lastRoundEntry.f1_morn==='string' ? lastRoundEntry.f1_morn : null)
+    : null;
+  const _latestEnv = D.env.length ? _byTime(D.env).pop() : null;
   const lastEnvDate    = _latestEnv ? _latestEnv[0] : '—';
   const lastEnvSlot    = _latestEnv ? _latestEnv[1] : null;
 
@@ -2182,7 +2190,7 @@ function renderHealthRow(){
   const fishRows =
     mr(stockRAG, 'Stock', s.current_stock.toLocaleString()) +
     mr(deathsToday>0?'bad':'good', 'Deaths today', deathsToday===0?'None':String(deathsToday)) +
-    mr('neutral', 'Last fed', lastRoundDate!=='—'?fmtDate(lastRoundDate)+(lastRoundSlot?' · '+lastRoundSlot:''):'—');
+    mr('neutral', 'Last fed', lastRoundDate!=='—'?fmtDate(lastRoundDate)+(lastRoundFeedTime?' · '+lastRoundFeedTime:lastRoundSlot?' · '+lastRoundSlot:''):'—');
 
   // Card 4: Siphon health — 2-column 3×3 layout
   const siphRAGi = v => v==null?'neutral':v>=15&&v<=18?'good':v>18&&v<=20?'warn':'bad';
