@@ -1098,14 +1098,16 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   const total_spend = fin.reduce((s,r)=>s+(r[5]||0),0);
   const latest_wq      = [...wq].reverse().find(r=>r[3]!=null) || {};   // latest pH row (Form2)
   const latest_wtemp_r = [...wq].reverse().find(r=>r[2]!=null);          // latest temp row (Form1)
-  const latest_env = env.filter(r=>r[1]==='Morning').slice(-1)[0] || [];
+  const _tOrd = t => t==='Evening'?3:t==='Midday'?2:1; // sort helper: Evening > Midday > Morning
+  const _envSorted = [...env].sort((a,b) => a[0]!==b[0]?(a[0]<b[0]?-1:1):_tOrd(a[1])-_tOrd(b[1]));
+  const latest_env = _envSorted[_envSorted.length-1] || [];
   const cur_stock = stock_chart.length ? stock_chart[stock_chart.length-1][1] : DEFAULT_DATA.stats.current_stock;
   const chem = [...chem_new].sort((a,b)=>a[0]>b[0]?1:-1);
   const lc = chem.length ? chem[chem.length-1] : [];
   // Latest siphon reading per row (most recent entry, not all-time average)
   const siph_latest = [2,3,4,5,6,7].map(i => { const vs=siph.filter(r=>r[i]!=null); return vs.length?vs[vs.length-1][i]:null; });
   // Outside air temp from latest morning env entry
-  const latest_env_morn_out = env.filter(r=>r[1]==='Morning'&&r[3]!=null).slice(-1)[0]?.[3]??null;
+  const latest_env_morn_out = _envSorted.filter(r=>r[3]!=null).pop()?.[3]??null;
   // Latest equipment check
   const equip_sorted = [...equip_new].sort((a,b)=>a[0]>b[0]?1:-1);
   const latest_equip = equip_sorted.length ? equip_sorted[equip_sorted.length-1][1] : null;
@@ -2133,7 +2135,7 @@ function renderHealthRow(){
 
   // Footer dates + time slots
   const lastWQDate     = s.last_wq_date||'—';
-  const lastWQSlot     = D.wq.length ? D.wq[D.wq.length-1][1] : null;
+  const lastWQSlot     = D.wq.filter(r=>r[2]!=null||r[3]!=null).slice(-1)[0]?.[1] || null;
   const lastSiphDate   = D.siphons.length ? D.siphons[D.siphons.length-1][0] : '—';
   const lastSiphSlot   = D.siphons.length ? D.siphons[D.siphons.length-1][1] : null;
   const latestFishDate = D.fish.length ? D.fish[D.fish.length-1][0] : '—';
@@ -2141,6 +2143,10 @@ function renderHealthRow(){
   const lastRoundEntry = [...(D.compliance||[])].reverse().find(r=>r.f1_morn||r.f1_mid||r.f1_eve)||null;
   const lastRoundDate  = lastRoundEntry ? lastRoundEntry.date : '—';
   const lastRoundSlot  = lastRoundEntry ? (lastRoundEntry.f1_eve?'Evening':lastRoundEntry.f1_mid?'Midday':'Morning') : null;
+  const _tO = t => t==='Evening'?3:t==='Midday'?2:1;
+  const _latestEnv = D.env.length ? [...D.env].sort((a,b)=>a[0]!==b[0]?(a[0]<b[0]?-1:1):_tO(a[1])-_tO(b[1])).pop() : null;
+  const lastEnvDate    = _latestEnv ? _latestEnv[0] : '—';
+  const lastEnvSlot    = _latestEnv ? _latestEnv[1] : null;
 
   const card = (icon, title, rows, footer, freq='', iconColor='var(--muted)') =>
     `<div class="sys-card">
@@ -2176,7 +2182,7 @@ function renderHealthRow(){
   const fishRows =
     mr(stockRAG, 'Stock', s.current_stock.toLocaleString()) +
     mr(deathsToday>0?'bad':'good', 'Deaths today', deathsToday===0?'None':String(deathsToday)) +
-    mr('neutral', 'Last fed', latestFishDate!=='—'?fmtDate(latestFishDate):'—');
+    mr('neutral', 'Last fed', lastRoundDate!=='—'?fmtDate(lastRoundDate)+(lastRoundSlot?' · '+lastRoundSlot:''):'—');
 
   // Card 4: Siphon health — 2-column 3×3 layout
   const siphRAGi = v => v==null?'neutral':v>=15&&v<=18?'good':v>18&&v<=20?'warn':'bad';
@@ -2208,7 +2214,7 @@ function renderHealthRow(){
     mr(eveDot,  'Evening round',  eveVal);
 
   document.getElementById('health-grid-new').innerHTML =
-    card('sun',      'Climate',       climateRows, 'Last reading: '+lastWQDate+(lastWQSlot?' · '+lastWQSlot:''),         '3× daily', '#fbbf24') +
+    card('sun',      'Climate',       climateRows, 'Last reading: '+lastEnvDate+(lastEnvSlot?' · '+lastEnvSlot:''),     '3× daily', '#fbbf24') +
     `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet" style="color:#60a5fa"></i>Water vitals<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">3× daily · 1× daily · weekly</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
     card('fish',     'Fish tank',     fishRows,    'Last reading: '+latestFishDate,                                               '1× daily', '#f97316') +
     card('activity', 'Siphon health', siphRows,    'Last reading: '+lastSiphDate+(lastSiphSlot?' · '+lastSiphSlot:''),           '3× daily', '#a78bfa') +
