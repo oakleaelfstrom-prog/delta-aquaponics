@@ -1,5 +1,14 @@
-.DS_Store
-*.xlsx
-*.docx
-.claude/
-delta_aquaponics_setup.gs
+# ──────────────────────────────────────────────────────────────────
+# DEFENSIVE ALLOW-LIST.
+# Ignore EVERYTHING by default, then re-include only the files the
+# public website needs. This guarantees secrets (KoboToolbox API token
+# in *.gs, Google Sheet IDs, spreadsheets, internal docs) can never be
+# committed by accident — even files added later stay out unless
+# explicitly un-ignored below.
+# ──────────────────────────────────────────────────────────────────
+/*
+
+# ── Files the Vercel site needs (the ONLY things published) ──
+!.gitignore
+!delta-aquaponics-dashboard.html
+!vercel.json

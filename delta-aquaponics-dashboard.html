@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Delta Aquaponics — Management Dashboard</title>
+<script>/* Instant theme class — prevents flash of wrong theme on load */(function(){if(localStorage.getItem('deltaTheme')!=='my')document.documentElement.classList.add('boss-theme');})()</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -46,6 +47,66 @@
     --blue-pale:rgba(21,101,192,0.15);
   }
 }
+
+/* ── BOSS THEME (default on load) ── */
+html.boss-theme{
+  --bg:#f5f0e8;--surface:#fff;--surface-2:#faf8f4;
+  --text:#1c1c1c;--text-2:#333;--muted:#888;--border:rgba(0,0,0,0.09);
+  --nav-bg:#1a3d1b;--nav-text:rgba(255,255,255,.42);--nav-active:#c8a84b;
+  --c-good:#2c5f2e;--c-good-bg:#f0fdf4;
+  --c-warn:#c8a84b;--c-warn-bg:#fffdf7;
+  --c-bad:#c0392b;--c-bad-bg:#fff5f5;
+  --c-neutral:#888;--c-neutral-bg:#f0ece5;
+  --green:#1a3d1b;--green-mid:#2c5f2e;--green-light:#2c5f2e;--green-pale:#f0fdf4;
+  --amber:#c8a84b;--amber-pale:#fffdf7;--red-pale:#fff5f5;--blue-pale:#eff6ff;
+  --card:#fff;
+}
+/* Keep boss theme light even when OS is in dark mode */
+@media(prefers-color-scheme:dark){
+  html.boss-theme{
+    --bg:#f5f0e8;--surface:#fff;--surface-2:#faf8f4;
+    --text:#1c1c1c;--text-2:#333;--muted:#888;--border:rgba(0,0,0,0.09);
+    --c-good-bg:#f0fdf4;--c-warn-bg:#fffdf7;--c-bad-bg:#fff5f5;--c-neutral-bg:#f0ece5;
+    --card:#fff;--green-pale:#f0fdf4;--amber-pale:#fffdf7;--red-pale:#fff5f5;--blue-pale:#eff6ff;
+  }
+}
+/* Drawer: white body with dark-green header */
+html.boss-theme #drawer{background:#fff}
+html.boss-theme .drawer-header{background:#1a3d1b}
+html.boss-theme .drawer-ops-label{color:#bbb;border-top-color:rgba(0,0,0,.06)}
+html.boss-theme .nav-link{color:#333}
+html.boss-theme .nav-link:hover{background:rgba(26,61,27,.05)}
+html.boss-theme .nav-link.active{background:#f0f5f0;color:#1a3d1b;border-left-color:#c8a84b}
+/* Live badge → gold */
+html.boss-theme .live-badge.connected{background:rgba(200,168,75,.15);color:#c8a84b}
+html.boss-theme .live-badge.connected::before{background:#c8a84b}
+/* Buttons */
+html.boss-theme .btn-primary{background:#1a3d1b}
+html.boss-theme .btn-primary:hover{background:#2c5f2e}
+html.boss-theme .modal input:focus{border-color:#2c5f2e}
+/* Executive summary card */
+html.boss-theme .exec-card{background:#1a3d1b}
+html.boss-theme .exec-row-val.highlight{color:#c8a84b}
+html.boss-theme .exec-source-badge.live{background:rgba(200,168,75,.2);color:#c8a84b}
+/* Period selector */
+html.boss-theme .period-btn.active{background:#1a3d1b;border-color:#1a3d1b}
+/* Section header bands */
+html.boss-theme .ov-hd-pillars{background:rgba(200,168,75,.08);color:#7a5c0a;border-left-color:#c8a84b}
+html.boss-theme .ov-hd-analytics{background:rgba(44,95,46,.08);color:#2c5f2e;border-left-color:#2c5f2e}
+html.boss-theme .ov-hd-beds{background:rgba(44,95,46,.08);color:#2c5f2e;border-left-color:#2c5f2e}
+html.boss-theme .ov-hd-dwc{background:rgba(200,168,75,.08);color:#7a5c0a;border-left-color:#c8a84b}
+/* Quickjump active pills */
+html.boss-theme .qj-btn[data-sec="pillars"].active{background:rgba(200,168,75,.1);color:#7a5c0a;border-color:rgba(200,168,75,.35)}
+html.boss-theme .qj-btn[data-sec="analytics"].active{background:rgba(44,95,46,.1);color:#2c5f2e;border-color:rgba(44,95,46,.3)}
+html.boss-theme .qj-btn[data-sec="beds"].active{background:rgba(44,95,46,.1);color:#2c5f2e;border-color:rgba(44,95,46,.3)}
+html.boss-theme .qj-btn[data-sec="dwc"].active{background:rgba(200,168,75,.1);color:#7a5c0a;border-color:rgba(200,168,75,.35)}
+/* Emoji nav icons in boss theme */
+.boss-icon{font-style:normal;font-size:16px;width:20px;text-align:center;display:inline-block;line-height:1}
+
+/* Theme toggle button (always visible in topnav) */
+#theme-toggle{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;cursor:pointer;white-space:nowrap;letter-spacing:.01em;transition:background .15s;font-family:inherit;flex-shrink:0}
+#theme-toggle:hover{background:rgba(255,255,255,.18)}
+
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;font-weight:400}
 
 /* ── TOP NAV ── */
@@ -453,6 +514,7 @@ tr:hover td{background:var(--surface-2)}
   <div class="brand">Delta Aquaponics<small>Delta Eco Concerns · Botswana</small></div>
   <span id="current-section">Overview</span>
   <div class="topnav-right">
+    <button id="theme-toggle" onclick="toggleTheme()" title="Switch visual theme">My Style</button>
     <span class="last-updated" id="lastUpdated">Loading…</span>
     <span class="live-badge offline" id="liveBadge" onclick="openGSModal()">Live</span>
   </div>
@@ -875,21 +937,10 @@ function parseWebAppData(allData) {
     const dt = cleanDate(String(r[0]));
     if (!dt) return;
 
-    // Version detection: new=23 cols (added Round, Shade cloth, row-specific gravel/algae)
-    //   old-new=19 cols (current), old-old=31+ cols (had DWC quick check)
-    const isNewF1 = r.length >= 23;
-    const isOldOld = !isNewF1 && r.length > 20;
-
-    // Round: explicit field in new form; inferred from timestamp in old forms
-    const tm = isNewF1 ? (sv(r[2]) || 'Morning') : (timeLabel(String(r[0])) || 'Morning');
-
-    // Column offsets per version
-    const aiCol = isNewF1 ? 3 : 2;   // inside temp
-    const aoCol = isNewF1 ? 4 : 3;   // outside temp
-    const wtCol = isNewF1 ? 5 : 4;   // water temp
-    const wxCol = isNewF1 ? 6 : 5;   // weather
-    const s0    = isNewF1 ? 12 : 10; // first siphon col
-    const notesCol = isNewF1 ? 22 : isOldOld ? 30 : 18;
+    // Fixed schema — Form1_DailyRounds, 28 cols (KoboToolbox sync):
+    //   2 Round · 3 inside temp · 4 outside temp · 5 water temp · 6 weather
+    //   16–21 siphon rows 1–6 · 24 rows-not-dry · 26 rows-with-algae · 27 notes
+    const tm = sv(r[2]) || timeLabel(String(r[0])) || 'Morning';
 
     // Compliance
     const fmtTs = ts => { try { const d=new Date(ts); return isNaN(d)?null:d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); } catch(e){return null;} };
@@ -899,27 +950,25 @@ function parseWebAppData(allData) {
     else if (tm === 'Midday') comp_map[dt].f1_mid = submitTime || true;
     else comp_map[dt].f1_eve = submitTime || true;
 
-    // Siphon rows 1–6
-    const s = [0,1,2,3,4,5].map(i => fv(r[s0+i]));
+    // Siphon rows 1–6 (cols 16–21)
+    const s = [0,1,2,3,4,5].map(i => fv(r[16+i]));
     if (s.some(v => v !== null)) siph_rows.push([dt, tm, ...s]);
 
-    // Environment
-    const ai = fv(r[aiCol]), ao = fv(r[aoCol]), wx = sv(r[wxCol]);
+    // Environment (inside 3, outside 4, weather 6)
+    const ai = fv(r[3]), ao = fv(r[4]), wx = sv(r[6]);
     if (ai !== null || ao !== null) env_rows.push([dt, tm, ai, ao, wx]);
 
-    // Water temp + notes
-    const wt = fv(r[wtCol]);
-    const f1notes = sv(r[notesCol]);
+    // Water temp (5) + notes (27)
+    const wt = fv(r[5]);
+    const f1notes = sv(r[27]);
     if (wt !== null) wq_rows.push([dt, tm, wt, null, f1notes]);
     jNote(dt, tm, 'Daily Rounds', 'General', f1notes);
 
-    // New-form-only: log gravel moisture and algae rows to journal
-    if (isNewF1) {
-      const notDryRows = sv(r[19]);
-      const algaeRows  = sv(r[21]);
-      if (notDryRows) jNote(dt, tm, 'Daily Rounds', 'Gravel moisture', 'Top layer not dry: ' + notDryRows);
-      if (algaeRows)  jNote(dt, tm, 'Daily Rounds', 'Algae', 'Algae visible on: ' + algaeRows);
-    }
+    // Gravel moisture (24) and algae (26) rows → journal
+    const notDryRows = sv(r[24]);
+    const algaeRows  = sv(r[26]);
+    if (notDryRows) jNote(dt, tm, 'Daily Rounds', 'Gravel moisture', 'Top layer not dry: ' + notDryRows);
+    if (algaeRows)  jNote(dt, tm, 'Daily Rounds', 'Algae', 'Algae visible on: ' + algaeRows);
   });
 
   // ── Form 2 — daily full check ─────────────────────────────────────────────
@@ -953,38 +1002,36 @@ function parseWebAppData(allData) {
           wq_rows.push([dt, 'Form2', null, ph, note || null, no3, no2]);
         }
 
-        // Fish + equip column offsets differ between old (125-col) and new (73-col) form layout
-        // Old: fish at 96-100, equip at 101-107, notes at 124
-        // New: fish at 60-64, equip at 65-71, notes at 72
-        const oldF2 = r.length >= 100;
-        const fBase = oldF2 ? 96 : 60;
-        const eBase = oldF2 ? 101 : 65;
-        const f2notes = sv(r[oldF2 ? 124 : 72]);
+        // Fixed schema — Form2_DailyCheck, 106 cols (KoboToolbox sync):
+        //   84 fish active · 85 listing/gasping · 86 disease · 87 dead count · 88 dead removed
+        //   98–104 equip (pumps, sump, leaks, clean, biowaste, nutrient, clarity) · 105 notes
+        const f2notes = sv(r[105]);
 
-        const deaths = Math.max(0, fv(r[fBase+3]) || 0);
+        const deaths = Math.max(0, fv(r[87]) || 0);
         runningStock -= deaths;
-        const fishOk  = sv(r[fBase])   !== 'No';
-        const gasping  = sv(r[fBase+1]) === 'Yes';
-        const disease  = sv(r[fBase+2]) === 'Yes';
+        const fishOk  = sv(r[84]) !== 'No';
+        const gasping  = sv(r[85]) === 'Yes';
+        const disease  = sv(r[86]) === 'Yes';
         const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
         fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, f2notes || '', healthNote, Math.round(runningStock)]);
         jNote(dt, null, 'Daily Check', 'General', f2notes);
         if (healthNote !== 'OK') jNote(dt, null, 'Daily Check', 'Fish health', healthNote);
 
         equip_rows.push([dt, {
-          pump:      sv(r[eBase]),   level:     sv(r[eBase+1]), leaks:    sv(r[eBase+2]),
-          clean:     sv(r[eBase+3]), biowaste:  sv(r[eBase+4]), nutrients:sv(r[eBase+5]),
-          clarity:   sv(r[eBase+6])
+          pump:      sv(r[98]),  level:     sv(r[99]),  leaks:    sv(r[100]),
+          clean:     sv(r[101]), biowaste:  sv(r[102]), nutrients:sv(r[103]),
+          clarity:   sv(r[104])
         }]);
 
-        // Plant health per gravel row (cols 6–59, 9 fields each — same in both layouts)
+        // Plant health per gravel row — 6 rows, 13 fields each, base = 6 + i*13:
+        //   +0 health +1 yellowing +2 wilting +3 pests +8 harvested +9 weight +10 notes
         for (let i = 0; i < 6; i++) {
-          const b = 6 + i * 9;
+          const b = 6 + i * 13;
           const health = sv(r[b]);
           if (!health) continue;
-          const harvested = sv(r[b+6]) === 'Yes';
-          const wt = fv(r[b+7]);
-          const bedNote = sv(r[b+8]);
+          const harvested = sv(r[b+8]) === 'Yes';
+          const wt = fv(r[b+9]);
+          const bedNote = sv(r[b+10]);
           const bedPests = sv(r[b+3]);
           plant_rows.push([
             dt, `Row ${i+1}`,
@@ -1011,36 +1058,17 @@ function parseWebAppData(allData) {
     const dt = cleanDate(String(r[2] || r[0])); // week commencing date (col 2) or timestamp
     if (!dt) return;
 
-    // Crop names, planted dates, harvest dates per gravel row.
-    // Old format (39-col): 2 fields per bed (crop, harvest) for rows 1-6 + DWC 1-4 at cols 15-34
-    // New format (37-col): 3 fields per row (crop, planted date, harvest) for rows 1-6 only at cols 15-32
-    // Detect old 39-col format vs new 37-col format.
-    // r.length can be 39 even for new data if the sheet has leftover columns
-    // from an older header row — so also check r[17]: in new format it's a
-    // harvest-date ISO string, in old format it's a crop-name string.
-    const looksLikeISODate = v => /^\d{4}-\d{2}-\d{2}/.test(String(v || ''));
-    const oldF3 = r.length >= 39 && !looksLikeISODate(String(r[17] || ''));
-    if (oldF3) {
-      // Legacy: no planted date, includes DWC tanks
-      const legacyNames = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6','DWC Tank 1','DWC Tank 2','DWC Tank 3','DWC Tank 4'];
-      legacyNames.forEach((name, i) => {
-        const cropVal = sv(r[15 + i*2]) || null;
-        const cropName = (cropVal && cropVal !== 'Empty — nothing planted') ? cropVal : null;
-        const hd = cleanDate(String(r[16 + i*2] || ''));
-        if (cropName) plant_rows.push([dt, name, 'Planted', cropName, null, hd||null, null, null, null, null, cropName, null]);
-        else if (hd)  plant_rows.push([dt, name, 'Harvest date update', '', null, hd, null, null, null, null, null, null]);
-      });
-    } else {
-      // New: 3 fields per row (crop=15+i*3, planted=16+i*3, harvest=17+i*3) for Rows 1-6
-      for (let i = 0; i < 6; i++) {
-        const base = 15 + i * 3;
-        const cropVal = sv(r[base]) || null;
-        const cropName = (cropVal && cropVal !== 'Empty — nothing planted') ? cropVal : null;
-        const plantedDate = cleanDate(String(r[base+1] || ''));
-        const hd = cleanDate(String(r[base+2] || ''));
-        if (cropName) plant_rows.push([dt, `Row ${i+1}`, 'Planted', cropName, null, hd||null, null, null, null, null, cropName, plantedDate||null]);
-        else if (hd)  plant_rows.push([dt, `Row ${i+1}`, 'Harvest date update', '', null, hd, null, null, null, null, null, null]);
-      }
+    // Fixed schema — Form3_Weekly, 45 cols (KoboToolbox sync):
+    //   per row block = 4 fields, row i base = 16 + i*4:
+    //     +0 crop · +1 planted date · +2 expected harvest date · +3 weekly photo
+    for (let i = 0; i < 6; i++) {
+      const base = 16 + i * 4;
+      const cropVal = sv(r[base]) || null;
+      const cropName = (cropVal && cropVal !== 'Empty — nothing planted') ? cropVal : null;
+      const plantedDate = cleanDate(String(r[base+1] || ''));
+      const hd = cleanDate(String(r[base+2] || ''));
+      if (cropName) plant_rows.push([dt, `Row ${i+1}`, 'Planted', cropName, null, hd||null, null, null, null, null, cropName, plantedDate||null]);
+      else if (hd)  plant_rows.push([dt, `Row ${i+1}`, 'Harvest date update', '', null, hd, null, null, null, null, null, null]);
     }
 
     // Weekly chemistry: cols 3–8 (NH₃, Ca, Mg, K, Mn, Fe)
@@ -2898,12 +2926,51 @@ function renderAll(){
   renderPhases();
 }
 
+// ── THEME TOGGLE ──────────────────────────────────────────────
+const BOSS_ICONS = {
+  overview:'📊', water:'💧', environment:'☀️',
+  fish:'🐟', plants:'🌱', siphons:'⚙️', maintenance:'🔧'
+};
+
+function applyTheme(boss) {
+  const html = document.documentElement;
+  const btn  = document.getElementById('theme-toggle');
+  if (boss) {
+    html.classList.add('boss-theme');
+    if (btn) btn.textContent = 'My Style';
+    document.querySelectorAll('.nav-link[data-section]').forEach(el => {
+      const icon = el.querySelector('i');
+      if (!icon) return;
+      if (!icon.dataset.tablerClass) icon.dataset.tablerClass = icon.className;
+      icon.className = 'boss-icon';
+      icon.textContent = BOSS_ICONS[el.dataset.section] || '●';
+    });
+  } else {
+    html.classList.remove('boss-theme');
+    if (btn) btn.textContent = 'Boss Style';
+    document.querySelectorAll('.nav-link[data-section]').forEach(el => {
+      const icon = el.querySelector('i');
+      if (!icon || !icon.dataset.tablerClass) return;
+      icon.className = icon.dataset.tablerClass;
+      icon.textContent = '';
+    });
+  }
+}
+
+function toggleTheme() {
+  const next = !document.documentElement.classList.contains('boss-theme');
+  localStorage.setItem('deltaTheme', next ? 'boss' : 'my');
+  applyTheme(next);
+}
+// ──────────────────────────────────────────────────────────────
+
 window.addEventListener('load', ()=>{
   // Migrate from legacy sheet-ID storage if present
   if (!WEBAPP_URL && localStorage.getItem('deltaSheetId')) {
     localStorage.removeItem('deltaSheetId'); // clear the old key
   }
 
+  applyTheme(localStorage.getItem('deltaTheme') !== 'my');
   renderAll();
   renderOpsNav('water');
   navStack = ['overview'];
