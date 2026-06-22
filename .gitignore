@@ -12,3 +12,5 @@
 !.gitignore
 !delta-aquaponics-dashboard.html
 !vercel.json
+
+.vercel

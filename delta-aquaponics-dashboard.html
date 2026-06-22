@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Delta Aquaponics — Management Dashboard</title>
-<script>/* Instant theme class — prevents flash of wrong theme on load */(function(){if(localStorage.getItem('deltaTheme')!=='my')document.documentElement.classList.add('boss-theme');})()</script>
+<script>/* Instant theme class — prevents flash of wrong theme on load */(function(){var t=localStorage.getItem('deltaTheme');document.documentElement.classList.add((t==='dark'||t==='my')?'dark-theme':'boss-theme');})()</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -101,7 +101,31 @@ html.boss-theme .qj-btn[data-sec="analytics"].active{background:rgba(44,95,46,.1
 html.boss-theme .qj-btn[data-sec="beds"].active{background:rgba(44,95,46,.1);color:#2c5f2e;border-color:rgba(44,95,46,.3)}
 html.boss-theme .qj-btn[data-sec="dwc"].active{background:rgba(200,168,75,.1);color:#7a5c0a;border-color:rgba(200,168,75,.35)}
 /* Emoji nav icons in boss theme */
-.boss-icon{font-style:normal;font-size:16px;width:20px;text-align:center;display:inline-block;line-height:1}
+.boss-icon{font-style:normal;font-size:17px;width:20px;text-align:center;display:inline-block;line-height:1}
+
+/* ── DARK THEME (toggle option — forced dark regardless of OS) ── */
+html.dark-theme{
+  --surface:#1C1C1E;--surface-2:#2C2C2E;--bg:#000000;
+  --text:#F2F2F7;--text-2:#EBEBF5;--muted:#8E8E93;
+  --border:rgba(255,255,255,0.1);
+  --c-good-bg:rgba(42,122,42,0.15);--c-warn-bg:rgba(202,138,4,0.15);
+  --c-bad-bg:rgba(185,28,28,0.15);--c-neutral-bg:rgba(107,114,128,0.15);
+  --card:#1C1C1E;--green-pale:rgba(42,122,42,0.15);
+  --amber-pale:rgba(202,138,4,0.15);--red-pale:rgba(185,28,28,0.15);
+  --blue-pale:rgba(21,101,192,0.15);
+}
+
+/* Regular (boss) theme — bolder & higher-contrast text for readability */
+html.boss-theme{--text:#151515;--text-2:#242424;--muted:#555}
+html.boss-theme body{font-weight:500;-webkit-font-smoothing:antialiased}
+html.boss-theme #main,html.boss-theme #drawer,html.boss-theme .modal,html.boss-theme #topnav{font-weight:500}
+html.boss-theme .nav-link{font-weight:600}
+html.boss-theme .brand,html.boss-theme #current-section,html.boss-theme h1,html.boss-theme h2,html.boss-theme h3{font-weight:700}
+
+/* Portal button — links to the management portal (both themes) */
+#portal-btn{display:inline-flex;align-items:center;gap:5px;background:var(--nav-active);color:#16240f;font-weight:700;font-size:11px;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;transition:opacity .15s,transform .1s}
+#portal-btn:hover{opacity:.9}
+#portal-btn:active{transform:scale(.97)}
 
 /* Theme toggle button (always visible in topnav) */
 #theme-toggle{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;cursor:pointer;white-space:nowrap;letter-spacing:.01em;transition:background .15s;font-family:inherit;flex-shrink:0}
@@ -391,6 +415,16 @@ tr:hover td{background:var(--surface-2)}
 .timeline{padding:14px 16px}
 .timeline-item{display:flex;gap:14px;padding-bottom:18px;position:relative}
 .timeline-item:not(:last-child)::before{content:'';position:absolute;left:14px;top:30px;bottom:0;width:2px;background:var(--border)}
+/* Event "show picture" button + photo lightbox */
+.evt-photo-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--text-2);background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;line-height:1.3;white-space:nowrap}
+.evt-photo-btn:hover{background:var(--surface-2);color:var(--text)}
+.evt-photo-btn i{color:#60a5fa}
+#photo-lightbox{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;padding:24px}
+#photo-lightbox.open{display:flex}
+#photo-lightbox .plb-inner{position:relative;max-width:92vw;max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:10px;align-items:center}
+#photo-lightbox img{max-width:88vw;max-height:82vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+#photo-lightbox .plb-close{position:fixed;top:16px;right:20px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:26px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#photo-lightbox .plb-close:hover{background:rgba(255,255,255,.28)}
 .tl-dot{width:30px;height:30px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:0.5px solid var(--border)}
 .tl-content{flex:1}
 .tl-content h4{font-size:13px;font-weight:500;margin-bottom:2px}
@@ -444,6 +478,8 @@ tr:hover td{background:var(--surface-2)}
   .brand small{display:none}
   .section{padding:12px}
   #current-section{display:none}
+  #portal-btn .pb-txt{display:none}
+  #portal-btn{padding:5px 9px}
   .gantt-label{width:110px;font-size:10px}
   .gantt-track{min-width:160px}
 }
@@ -514,7 +550,8 @@ tr:hover td{background:var(--surface-2)}
   <div class="brand">Delta Aquaponics<small>Delta Eco Concerns · Botswana</small></div>
   <span id="current-section">Overview</span>
   <div class="topnav-right">
-    <button id="theme-toggle" onclick="toggleTheme()" title="Switch visual theme">My Style</button>
+    <a id="portal-btn" href="https://delta-aquaponics.vercel.app/index.html" target="_blank" rel="noopener" title="Open the management portal">🏠<span class="pb-txt">Portal</span></a>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Switch visual theme">Dark theme</button>
     <span class="last-updated" id="lastUpdated">Loading…</span>
     <span class="live-badge offline" id="liveBadge" onclick="openGSModal()">Live</span>
   </div>
@@ -1033,6 +1070,8 @@ function parseWebAppData(allData) {
           const wt = fv(r[b+9]);
           const bedNote = sv(r[b+10]);
           const bedPests = sv(r[b+3]);
+          const issuePhoto   = sv(r[b+12]);   // aggregated concern close-ups (health/yellowing/wilting/pests)
+          const routinePhoto = sv(r[b+11]);   // daily routine overview photo
           plant_rows.push([
             dt, `Row ${i+1}`,
             harvested ? 'Harvest' : 'Inspection',
@@ -1042,7 +1081,11 @@ function parseWebAppData(allData) {
             [bedNote, wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
             sv(r[b+1]),
             sv(r[b+2]),
-            null
+            null,
+            null,            // 10 reserved (cropName — Form3 only)
+            null,            // 11 reserved (plantedDate — Form3 only)
+            issuePhoto,      // 12 concern close-up photo(s), comma-separated
+            routinePhoto     // 13 routine overview photo
           ]);
           jNote(dt, null, 'Daily Check', `Row ${i+1}`, bedNote);
           jNote(dt, null, 'Daily Check', `Row ${i+1} — pests`, bedPests);
@@ -1435,6 +1478,41 @@ function closeDrillDown(){
 let _bedTimelineIdx = 0;
 let _bedSwipeStartX = 0;
 
+// ── Event photo lightbox ──────────────────────────────────────────
+// Photos are stored as public Drive links in the sheet (re-hosted from
+// KoboToolbox during sync). showPhotoSet opens them in a full overlay.
+function showPhotoSet(id){
+  const urls=(window._evtPhotos&&window._evtPhotos[id])||[];
+  if(!urls.length)return;
+  let ov=document.getElementById('photo-lightbox');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='photo-lightbox';
+    ov.addEventListener('click',e=>{if(e.target===ov)closePhotoLightbox();});
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=`<div class="plb-inner">
+    <button class="plb-close" onclick="closePhotoLightbox()" aria-label="Close">&times;</button>
+    ${urls.map(u=>`<img src="${u}" loading="lazy" alt="Event photo" referrerpolicy="no-referrer"/>`).join('')}
+  </div>`;
+  ov.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closePhotoLightbox(){
+  const ov=document.getElementById('photo-lightbox');
+  if(ov)ov.classList.remove('open');
+  // keep the body locked if the bed drill-down is still open underneath
+  const drill=document.getElementById('drill-modal');
+  if(!drill||!drill.classList.contains('open'))document.body.style.overflow='';
+}
+// Capture-phase Escape: close the lightbox first without also closing the bed modal
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const ov=document.getElementById('photo-lightbox');
+    if(ov&&ov.classList.contains('open')){closePhotoLightbox();e.stopImmediatePropagation();}
+  }
+},true);
+
 function openBedDrillDown(rowLabel, bedIdx) {
   _bedTimelineIdx = bedIdx;
   document.getElementById('bed-nav-area').style.display = 'flex';
@@ -1503,28 +1581,32 @@ function renderBedTimeline(bedIdx) {
   if (plantedStr)
     events.push({date:plantedStr,type:'planted',label:'Planted',detail:cropName,color:'#4ade80',icon:'ti-plant-2'});
 
+  const splitPhotos = v => String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
+
   allRow.filter(p=>p[2]==='Inspection'||p[2]==='Harvest')
     .sort((a,b)=>(a[0]||'')<(b[0]||'')?-1:1)
     .forEach(p => {
       const date=normDate(p[0]); if(!date) return;
       const health=(p[3]||'').replace(/^Health:\s*/i,'').trim();
       const pests=p[4],notes=p[6],yellowing=p[7],wilting=p[8];
+      const issuePhotos=splitPhotos(p[12]);     // concern close-ups (pests/yellowing/wilting/health)
+      const routinePhoto=String(p[13]||'').trim();
       const isHarvest=p[2]==='Harvest';
       if(isHarvest){
         const wm=(notes||'').match(/Weight:\s*([\d.]+)/i);
         const cleanNote=(notes||'').replace(/\s*·?\s*Weight:[\s\d.]+kg\.?/gi,'').trim();
-        events.push({date,type:'harvest',label:wm?`Harvested — ${wm[1]} kg`:'Harvested',detail:cleanNote||null,color:'#4ade80',icon:'ti-scissors'});
+        events.push({date,type:'harvest',label:wm?`Harvested — ${wm[1]} kg`:'Harvested',detail:cleanNote||null,color:'#4ade80',icon:'ti-scissors',photos:routinePhoto?[routinePhoto]:[]});
       }
-      if(yellowing==='Yes') events.push({date,type:'yellowing',label:'Yellowing observed',detail:null,color:'#fbbf24',icon:'ti-alert-triangle'});
-      if(wilting==='Yes')   events.push({date,type:'wilting',label:'Wilting observed',detail:null,color:'#fb923c',icon:'ti-droplet-off'});
+      if(yellowing==='Yes') events.push({date,type:'yellowing',label:'Yellowing observed',detail:null,color:'#fbbf24',icon:'ti-alert-triangle',photos:issuePhotos});
+      if(wilting==='Yes')   events.push({date,type:'wilting',label:'Wilting observed',detail:null,color:'#fb923c',icon:'ti-droplet-off',photos:issuePhotos});
       if(pests&&pests!=='No'){
         const confirmed=pests==='Yes';
-        events.push({date,type:confirmed?'pests_yes':'pests_poss',label:confirmed?'Pests confirmed':'Possible pests',detail:null,color:confirmed?'#f87171':'#fbbf24',icon:'ti-bug'});
+        events.push({date,type:confirmed?'pests_yes':'pests_poss',label:confirmed?'Pests confirmed':'Possible pests',detail:null,color:confirmed?'#f87171':'#fbbf24',icon:'ti-bug',photos:issuePhotos});
       }
-      if(health==='Serious problem') events.push({date,type:'health_bad',label:'Serious health problem',detail:null,color:'#f87171',icon:'ti-alert-circle'});
+      if(health==='Serious problem') events.push({date,type:'health_bad',label:'Serious health problem',detail:null,color:'#f87171',icon:'ti-alert-circle',photos:issuePhotos});
       if(!isHarvest&&notes){
         const clean=(notes||'').replace(/Weight:[\s\d.]+kg\s*·?\s*/gi,'').trim();
-        if(clean) events.push({date,type:'note_'+date,label:'Note',detail:clean,color:'#60a5fa',icon:'ti-note'});
+        if(clean) events.push({date,type:'note_'+date,label:'Note',detail:clean,color:'#60a5fa',icon:'ti-note',photos:routinePhoto?[routinePhoto]:[]});
       }
     });
 
@@ -1547,9 +1629,9 @@ function renderBedTimeline(bedIdx) {
     arr.sort((a,b)=>a.date<b.date?-1:1);
     let i=0;
     while(i<arr.length){
-      const ev={...arr[i]};let j=i+1;
+      const ev={...arr[i]};ev.photos=[...(arr[i].photos||[])];let j=i+1;
       while(j<arr.length){
-        if((new Date(arr[j].date+'T12:00:00')-new Date(arr[j-1].date+'T12:00:00'))/864e5<=2){ev.dateEnd=arr[j].date;j++;}else break;
+        if((new Date(arr[j].date+'T12:00:00')-new Date(arr[j-1].date+'T12:00:00'))/864e5<=2){ev.dateEnd=arr[j].date;ev.photos.push(...(arr[j].photos||[]));j++;}else break;
       }
       merged.push(ev);i=j;
     }
@@ -1620,6 +1702,10 @@ function renderBedTimeline(bedIdx) {
 
   const tlRows = [];
 
+  // Per-render registry of event photo sets (URLs passed to the lightbox by id)
+  window._evtPhotos = {};
+  let _photoSeq = 0;
+
   merged.forEach((ev, evIdx) => {
     const isPast           = ev.date <= todayStr;
     const isHarvest        = ev.type === 'expected_harvest';
@@ -1650,6 +1736,14 @@ function renderBedTimeline(bedIdx) {
     const padBot   = isLast ? '0' : '22px';
     side++;
 
+    const evPhotos = (ev.photos || []).filter(Boolean);
+    let photoBtn = '';
+    if (evPhotos.length) {
+      const psid = 'ev' + (_photoSeq++);
+      window._evtPhotos[psid] = evPhotos;
+      photoBtn = `<button class="evt-photo-btn" onclick="showPhotoSet('${psid}')"><i class="ti ti-photo" style="font-size:12px"></i>${evPhotos.length>1?' Show '+evPhotos.length+' pictures':' Show picture'}</button>`;
+    }
+
     const cardContent = `
       <div style="display:inline-block;font-size:11px;font-weight:600;color:var(--text-2);background:var(--bg);border-radius:5px;padding:2px 6px;margin-bottom:5px;white-space:nowrap">${fmtRange(ev)}</div>
       <div style="font-size:12px;font-weight:600;color:${evColor};display:flex;align-items:center;gap:4px;${isLeft?'justify-content:flex-end':''}">
@@ -1657,7 +1751,8 @@ function renderBedTimeline(bedIdx) {
           ? `${ev.label}&nbsp;<i class="ti ${ev.icon}" style="font-size:13px"></i>`
           : `<i class="ti ${ev.icon}" style="font-size:13px"></i>&nbsp;${ev.label}`}
       </div>
-      ${ev.detail?`<div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">${ev.detail}</div>`:''}`;
+      ${ev.detail?`<div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">${ev.detail}</div>`:''}
+      ${photoBtn?`<div style="margin-top:6px;${isLeft?'text-align:right':''}">${photoBtn}</div>`:''}`;
 
     if (isLeft) {
       tlRows.push(`
@@ -2932,12 +3027,24 @@ const BOSS_ICONS = {
   fish:'🐟', plants:'🌱', siphons:'⚙️', maintenance:'🔧'
 };
 
-function applyTheme(boss) {
+// Regular = boss (warm light, emoji icons) · Dark = forced dark with Tabler icons
+function applyTheme(dark) {
   const html = document.documentElement;
   const btn  = document.getElementById('theme-toggle');
-  if (boss) {
+  if (dark) {
+    html.classList.remove('boss-theme');
+    html.classList.add('dark-theme');
+    if (btn) btn.textContent = 'Regular';
+    document.querySelectorAll('.nav-link[data-section]').forEach(el => {
+      const icon = el.querySelector('i');
+      if (!icon || !icon.dataset.tablerClass) return;
+      icon.className = icon.dataset.tablerClass;
+      icon.textContent = '';
+    });
+  } else {
+    html.classList.remove('dark-theme');
     html.classList.add('boss-theme');
-    if (btn) btn.textContent = 'My Style';
+    if (btn) btn.textContent = 'Dark theme';
     document.querySelectorAll('.nav-link[data-section]').forEach(el => {
       const icon = el.querySelector('i');
       if (!icon) return;
@@ -2945,22 +3052,13 @@ function applyTheme(boss) {
       icon.className = 'boss-icon';
       icon.textContent = BOSS_ICONS[el.dataset.section] || '●';
     });
-  } else {
-    html.classList.remove('boss-theme');
-    if (btn) btn.textContent = 'Boss Style';
-    document.querySelectorAll('.nav-link[data-section]').forEach(el => {
-      const icon = el.querySelector('i');
-      if (!icon || !icon.dataset.tablerClass) return;
-      icon.className = icon.dataset.tablerClass;
-      icon.textContent = '';
-    });
   }
 }
 
 function toggleTheme() {
-  const next = !document.documentElement.classList.contains('boss-theme');
-  localStorage.setItem('deltaTheme', next ? 'boss' : 'my');
-  applyTheme(next);
+  const goDark = !document.documentElement.classList.contains('dark-theme');
+  localStorage.setItem('deltaTheme', goDark ? 'dark' : 'regular');
+  applyTheme(goDark);
 }
 // ──────────────────────────────────────────────────────────────
 
@@ -2970,7 +3068,7 @@ window.addEventListener('load', ()=>{
     localStorage.removeItem('deltaSheetId'); // clear the old key
   }
 
-  applyTheme(localStorage.getItem('deltaTheme') !== 'my');
+  applyTheme(['dark','my'].includes(localStorage.getItem('deltaTheme')));
   renderAll();
   renderOpsNav('water');
   navStack = ['overview'];
