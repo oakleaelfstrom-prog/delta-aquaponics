@@ -122,6 +122,20 @@ html.boss-theme #main,html.boss-theme #drawer,html.boss-theme .modal,html.boss-t
 html.boss-theme .nav-link{font-weight:600}
 html.boss-theme .brand,html.boss-theme #current-section,html.boss-theme h1,html.boss-theme h2,html.boss-theme h3{font-weight:700}
 
+/* Match team.html — bigger icons + heavier weights across the Regular theme */
+html.boss-theme .boss-icon{font-size:20px;width:24px}
+html.boss-theme .ov-hd i{font-size:19px}
+html.boss-theme .sys-card-header i{font-size:20px}
+html.boss-theme body,html.boss-theme #main,html.boss-theme #drawer,html.boss-theme .modal{font-weight:600}
+html.boss-theme .nav-link{font-weight:700}
+html.boss-theme .drawer-header h2{font-weight:800}
+html.boss-theme .drawer-ops-label,html.boss-theme .section-divider,html.boss-theme .alert-group-label,html.boss-theme .journal-day-label{font-weight:700}
+html.boss-theme .section-header h2,html.boss-theme .ov-hd{font-weight:800}
+html.boss-theme .kpi-card .value,html.boss-theme .sc-value,html.boss-theme .exec-kpi .ek-val{font-weight:800}
+html.boss-theme .kpi-card .label,html.boss-theme .exec-row-label,html.boss-theme .metric-value,html.boss-theme .card-header h3,html.boss-theme .sys-card-header,html.boss-theme .bed-card-new-header,html.boss-theme .exec-card-head h3,html.boss-theme #drill-title,html.boss-theme .modal h3,html.boss-theme th{font-weight:700}
+html.boss-theme .qj-btn,html.boss-theme .period-btn,html.boss-theme .ops-btn,html.boss-theme .range-btn,html.boss-theme .chip,html.boss-theme .badge,html.boss-theme .btn-primary,html.boss-theme .btn-secondary{font-weight:700}
+html.boss-theme .plant-card .crop-name,html.boss-theme .tl-content h4,html.boss-theme .phase-tl-name,html.boss-theme .journal-pg-title,html.boss-theme .journal-week-row-label,html.boss-theme .gantt-label{font-weight:700}
+
 /* Portal button — links to the management portal (both themes) */
 #portal-btn{display:inline-flex;align-items:center;gap:5px;background:var(--nav-active);color:#16240f;font-weight:700;font-size:11px;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;transition:opacity .15s,transform .1s}
 #portal-btn:hover{opacity:.9}
@@ -425,6 +439,7 @@ tr:hover td{background:var(--surface-2)}
 #photo-lightbox img{max-width:88vw;max-height:82vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
 #photo-lightbox .plb-close{position:fixed;top:16px;right:20px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:26px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 #photo-lightbox .plb-close:hover{background:rgba(255,255,255,.28)}
+#photo-lightbox .plb-broken{color:#fff;background:rgba(255,255,255,.08);padding:28px 36px;border-radius:8px;font-size:13px}
 .tl-dot{width:30px;height:30px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:0.5px solid var(--border)}
 .tl-content{flex:1}
 .tl-content h4{font-size:13px;font-weight:500;margin-bottom:2px}
@@ -1493,10 +1508,19 @@ function showPhotoSet(id){
   }
   ov.innerHTML=`<div class="plb-inner">
     <button class="plb-close" onclick="closePhotoLightbox()" aria-label="Close">&times;</button>
-    ${urls.map(u=>`<img src="${u}" loading="lazy" alt="Event photo" referrerpolicy="no-referrer"/>`).join('')}
+    ${urls.map(u=>`<img src="${u}" loading="lazy" alt="Event photo" referrerpolicy="no-referrer" onerror="_plbImgError(this)"/>`).join('')}
   </div>`;
   ov.classList.add('open');
   document.body.style.overflow='hidden';
+}
+// Graceful fallback when an image can't load (e.g. a not-yet-rehosted
+// Kobo link, which needs a login, or a Drive link still propagating).
+function _plbImgError(img){
+  img.style.display='none';
+  const d=document.createElement('div');
+  d.className='plb-broken';
+  d.textContent='Photo could not be loaded';
+  img.insertAdjacentElement('afterend', d);
 }
 function closePhotoLightbox(){
   const ov=document.getElementById('photo-lightbox');
