@@ -136,6 +136,14 @@ html.boss-theme .kpi-card .label,html.boss-theme .exec-row-label,html.boss-theme
 html.boss-theme .qj-btn,html.boss-theme .period-btn,html.boss-theme .ops-btn,html.boss-theme .range-btn,html.boss-theme .chip,html.boss-theme .badge,html.boss-theme .btn-primary,html.boss-theme .btn-secondary{font-weight:700}
 html.boss-theme .plant-card .crop-name,html.boss-theme .tl-content h4,html.boss-theme .phase-tl-name,html.boss-theme .journal-pg-title,html.boss-theme .journal-week-row-label,html.boss-theme .gantt-label{font-weight:700}
 
+/* Vivid section-header bands + quick-jump pills (match boss site — replace the faint .08 colours) */
+html.boss-theme .ov-hd-pillars,html.boss-theme .ov-hd-dwc{background:rgba(200,168,75,.20);color:#6b5207;border-left:4px solid #c8a84b}
+html.boss-theme .ov-hd-pillars i,html.boss-theme .ov-hd-dwc i{color:#a07d14}
+html.boss-theme .ov-hd-analytics,html.boss-theme .ov-hd-beds{background:rgba(44,95,46,.16);color:#163a17;border-left:4px solid #2c5f2e}
+html.boss-theme .ov-hd-analytics i,html.boss-theme .ov-hd-beds i{color:#2c5f2e}
+html.boss-theme .qj-btn[data-sec="pillars"].active,html.boss-theme .qj-btn[data-sec="dwc"].active{background:rgba(200,168,75,.22);color:#6b5207;border-color:#c8a84b}
+html.boss-theme .qj-btn[data-sec="analytics"].active,html.boss-theme .qj-btn[data-sec="beds"].active{background:rgba(44,95,46,.18);color:#163a17;border-color:#2c5f2e}
+
 /* Portal button — links to the management portal (both themes) */
 #portal-btn{display:inline-flex;align-items:center;gap:5px;background:var(--nav-active);color:#16240f;font-weight:700;font-size:11px;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;transition:opacity .15s,transform .1s}
 #portal-btn:hover{opacity:.9}
