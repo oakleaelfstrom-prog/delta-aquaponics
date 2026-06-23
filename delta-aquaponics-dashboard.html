@@ -939,9 +939,9 @@ async function fetchWebAppData(webAppUrl) {
 // We map each tab to the arrays that buildMergedData() expects.
 function parseWebAppData(allData) {
   let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [], equip_rows = [], journal_rows = [];
-  const jNote = (date, time, src, cat, text) => {
+  const jNote = (date, time, src, cat, text, photos) => {
     if (!text || text.length < 3 || /^(ok|n\/a|none|na|-|yes|no|good|normal)$/i.test(text.trim())) return;
-    journal_rows.push([date, time, src, cat, text.trim()]);
+    journal_rows.push([date, time, src, cat, text.trim(), (photos || []).filter(Boolean)]);
   };
   // compliance_map: date → {f1_morn, f1_mid, f1_eve, f2}
   const comp_map = {};
@@ -1024,11 +1024,13 @@ function parseWebAppData(allData) {
     if (wt !== null) wq_rows.push([dt, tm, wt, null, f1notes]);
     jNote(dt, tm, 'Daily Rounds', 'General', f1notes);
 
-    // Gravel moisture (24) and algae (26) rows → journal
+    // Gravel moisture (24) and algae (26) rows → journal, with the gravel
+    // surface photo (22, holds the wet-pot + algae close-ups, comma-joined)
     const notDryRows = sv(r[24]);
     const algaeRows  = sv(r[26]);
-    if (notDryRows) jNote(dt, tm, 'Daily Rounds', 'Gravel moisture', 'Top layer not dry: ' + notDryRows);
-    if (algaeRows)  jNote(dt, tm, 'Daily Rounds', 'Algae', 'Algae visible on: ' + algaeRows);
+    const gravelPhotos = String(r[22]||'').split(',').map(s=>s.trim()).filter(Boolean);
+    if (notDryRows) jNote(dt, tm, 'Daily Rounds', 'Gravel moisture', 'Top layer not dry: ' + notDryRows, gravelPhotos);
+    if (algaeRows)  jNote(dt, tm, 'Daily Rounds', 'Algae', 'Algae visible on: ' + algaeRows, gravelPhotos);
   });
 
   // ── Form 2 — daily full check ─────────────────────────────────────────────
@@ -1066,6 +1068,7 @@ function parseWebAppData(allData) {
         //   84 fish active · 85 listing/gasping · 86 disease · 87 dead count · 88 dead removed
         //   98–104 equip (pumps, sump, leaks, clean, biowaste, nutrient, clarity) · 105 notes
         const f2notes = sv(r[105]);
+        const fishPhoto = sv(r[89]);   // fish tank photo
 
         const deaths = Math.max(0, fv(r[87]) || 0);
         runningStock -= deaths;
@@ -1074,8 +1077,8 @@ function parseWebAppData(allData) {
         const disease  = sv(r[86]) === 'Yes';
         const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
         fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, f2notes || '', healthNote, Math.round(runningStock)]);
-        jNote(dt, null, 'Daily Check', 'General', f2notes);
-        if (healthNote !== 'OK') jNote(dt, null, 'Daily Check', 'Fish health', healthNote);
+        jNote(dt, null, 'Daily Check', 'General', f2notes, fishPhoto?[fishPhoto]:[]);
+        if (healthNote !== 'OK') jNote(dt, null, 'Daily Check', 'Fish health', healthNote, fishPhoto?[fishPhoto]:[]);
 
         equip_rows.push([dt, {
           pump:      sv(r[98]),  level:     sv(r[99]),  leaks:    sv(r[100]),
@@ -1110,8 +1113,10 @@ function parseWebAppData(allData) {
             issuePhoto,      // 12 concern close-up photo(s), comma-separated
             routinePhoto     // 13 routine overview photo
           ]);
-          jNote(dt, null, 'Daily Check', `Row ${i+1}`, bedNote);
-          jNote(dt, null, 'Daily Check', `Row ${i+1} — pests`, bedPests);
+          const issuePhotos   = String(issuePhoto||'').split(',').map(s=>s.trim()).filter(Boolean);
+          const rowPhotos     = [...issuePhotos, ...String(routinePhoto||'').split(',').map(s=>s.trim()).filter(Boolean)];
+          jNote(dt, null, 'Daily Check', `Row ${i+1}`, bedNote, rowPhotos);
+          jNote(dt, null, 'Daily Check', `Row ${i+1} — pests`, bedPests, issuePhotos);
         }
       });
     }
@@ -1143,13 +1148,15 @@ function parseWebAppData(allData) {
 
     // Weekly fish health note (col 13 = visual health, 10 = avg weight, 9 = sampled) — EC removed, cols shifted
     const fishHealth = sv(r[13]);
+    const f3FishPhoto = sv(r[15]);   // weekly fish tank photo
+    const f3FishPhotos = f3FishPhoto ? [f3FishPhoto] : [];
     if (fishHealth && fishHealth !== 'Good') {
       const wt = fv(r[10]), n = fv(r[9]);
       const note = [fishHealth, wt !== null ? `avg ${wt}g` : '', n !== null ? `n=${n}` : ''].filter(Boolean).join(' · ');
       maint_rows.push([dt, 'Fish', 'Weekly weigh', note, sv(r[1]) || 'Staff', sv(r[14])]);
-      jNote(dt, null, 'Weekly Check', 'Fish health', note);
+      jNote(dt, null, 'Weekly Check', 'Fish health', note, f3FishPhotos);
     }
-    jNote(dt, null, 'Weekly Check', 'General', sv(r[14]));
+    jNote(dt, null, 'Weekly Check', 'General', sv(r[14]), f3FishPhotos);
   });
 
   // Convert comp_map → sorted array [{date, f1_morn, f1_mid, f1_eve, f2}]
@@ -1379,9 +1386,10 @@ function closeDrillDown(){
     return 'background:rgba(255,255,255,.08);color:var(--muted)';
   }
   function entryHtml(e, hl='') {
-    const [date,time,src,cat,text]=e;
+    const [date,time,src,cat,text,photos]=e;
     let t=text;
     if(hl){const re=new RegExp('('+hl.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');t=text.replace(re,'<mark>$1</mark>');}
+    const ps=_regPhotos(photos);
     return `<div class="journal-entry">
       <div class="journal-entry-meta">
         <span class="journal-tag" style="${tagStyle(src)}">${src}</span>
@@ -1389,6 +1397,7 @@ function closeDrillDown(){
         <span class="journal-entry-cat">${cat}</span>
       </div>
       <div class="journal-entry-text">${t}</div>
+      ${ps?`<button class="evt-photo-btn" style="margin-top:7px" onclick="showPhotoSet('${ps}')"><i class="ti ti-photo" style="font-size:12px"></i>${photos.length>1?' Show '+photos.length+' pictures':' Show picture'}</button>`:''}
     </div>`;
   }
 
@@ -1504,8 +1513,18 @@ let _bedSwipeStartX = 0;
 // ── Event photo lightbox ──────────────────────────────────────────
 // Photos are stored as public Drive links in the sheet (re-hosted from
 // KoboToolbox during sync). showPhotoSet opens them in a full overlay.
+// Shared, persistent registry used by BOTH the bed timeline and the
+// journal — each photo set gets a globally unique id so they never clash.
+function _regPhotos(urls){
+  const list=(urls||[]).filter(Boolean);
+  if(!list.length) return null;
+  window._photoSets = window._photoSets || {};
+  const id = 'ps' + (window._psSeq = (window._psSeq||0) + 1);
+  window._photoSets[id] = list;
+  return id;
+}
 function showPhotoSet(id){
-  const urls=(window._evtPhotos&&window._evtPhotos[id])||[];
+  const urls=(window._photoSets&&window._photoSets[id])||[];
   if(!urls.length)return;
   let ov=document.getElementById('photo-lightbox');
   if(!ov){
@@ -1734,10 +1753,6 @@ function renderBedTimeline(bedIdx) {
 
   const tlRows = [];
 
-  // Per-render registry of event photo sets (URLs passed to the lightbox by id)
-  window._evtPhotos = {};
-  let _photoSeq = 0;
-
   merged.forEach((ev, evIdx) => {
     const isPast           = ev.date <= todayStr;
     const isHarvest        = ev.type === 'expected_harvest';
@@ -1769,12 +1784,10 @@ function renderBedTimeline(bedIdx) {
     side++;
 
     const evPhotos = (ev.photos || []).filter(Boolean);
-    let photoBtn = '';
-    if (evPhotos.length) {
-      const psid = 'ev' + (_photoSeq++);
-      window._evtPhotos[psid] = evPhotos;
-      photoBtn = `<button class="evt-photo-btn" onclick="showPhotoSet('${psid}')"><i class="ti ti-photo" style="font-size:12px"></i>${evPhotos.length>1?' Show '+evPhotos.length+' pictures':' Show picture'}</button>`;
-    }
+    const psid = _regPhotos(evPhotos);
+    const photoBtn = psid
+      ? `<button class="evt-photo-btn" onclick="showPhotoSet('${psid}')"><i class="ti ti-photo" style="font-size:12px"></i>${evPhotos.length>1?' Show '+evPhotos.length+' pictures':' Show picture'}</button>`
+      : '';
 
     const cardContent = `
       <div style="display:inline-block;font-size:11px;font-weight:600;color:var(--text-2);background:var(--bg);border-radius:5px;padding:2px 6px;margin-bottom:5px;white-space:nowrap">${fmtRange(ev)}</div>
@@ -2355,20 +2368,19 @@ function renderHealthRow(){
     ? mr('neutral','No siphon data yet', lastSiphDate!=='—'?`<span style="font-size:10px;color:var(--muted)">last ${fmtDate(lastSiphDate)}</span>`:'')
     : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${siphCol1}</div><div>${siphCol2}</div></div>`;
 
-  // Card 5: Equipment — from latest Form2 checklist
+  // Card 5: Equipment — 2-column layout like Water vitals (4 left · 3 right; DWC blowers removed for now)
+  const equipCol1 =
+    mrW(eqDot(eq.pump),  'Circulation pump', eqVal(eq.pump)) +
+    mrW(eqDot(eq.level), 'Sump water level', eqVal(eq.level)) +
+    mrW(eqDot(eq.leaks), 'No leaks',         eqVal(eq.leaks)) +
+    mrW(eqDot(eq.clean), 'System clean',     eqVal(eq.clean));
+  const equipCol2 =
+    mrW(eqDot(eq.biowaste),  'Biowaste bin',  eqVal(eq.biowaste)) +
+    mrW(eqDot(eq.nutrients), 'Nutrient bins', eqVal(eq.nutrients)) +
+    mrW(eqDot(eq.clarity),   'Water clarity', eqVal(eq.clarity));
   const equipRows = !eq.pump
     ? mr('neutral','No equipment check yet','')
-    : mr(eqDot(eq.pump),      'Circulation pump',   eqVal(eq.pump)) +
-      mr(eqDot(eq.level),     'Sump water level',   eqVal(eq.level)) +
-      mr(eqDot(eq.leaks),     'No leaks',           eqVal(eq.leaks)) +
-      mr(eqDot(eq.clean),     'System clean',       eqVal(eq.clean)) +
-      mr(eqDot(eq.biowaste),  'Biowaste bin',       eqVal(eq.biowaste)) +
-      mr(eqDot(eq.nutrients), 'Nutrient bins',      eqVal(eq.nutrients)) +
-      mr(eqDot(eq.clarity),   'Water clarity',      eqVal(eq.clarity)) +
-      mr(eqDot(eq.blower1),   'DWC1 blower',        eqVal(eq.blower1)) +
-      mr(eqDot(eq.blower2),   'DWC2 blower',        eqVal(eq.blower2)) +
-      mr(eqDot(eq.blower3),   'DWC3 blower',        eqVal(eq.blower3)) +
-      mr(eqDot(eq.blower4),   'DWC4 blower',        eqVal(eq.blower4));
+    : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${equipCol1}</div><div>${equipCol2}</div></div>`;
 
   // Card 6: Daily rounds — Form1 submission times
   const checkRows =
