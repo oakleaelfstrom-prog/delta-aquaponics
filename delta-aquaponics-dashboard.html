@@ -397,6 +397,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* ── DRILL-DOWN BOTTOM SHEET ── */
 #drill-modal{position:fixed;inset:0;z-index:500;display:none;flex-direction:column;background:var(--surface)}
 #drill-modal.open{display:flex}
+#harvest-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px;align-items:start}
+#harvest-grid .bed-cell{border:0.5px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+#harvest-grid .bed-cell-title{padding:12px 16px;font-size:14px;font-weight:700;color:var(--text);background:var(--surface-2);border-bottom:0.5px solid var(--border)}
+@media(max-width:760px){#harvest-grid{grid-template-columns:1fr}}
 #drill-sheet{flex:1;display:flex;flex-direction:column;overflow:hidden}
 #drill-header{padding:14px 16px 12px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
 #drill-title{font-size:15px;font-weight:600;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1607,7 +1611,27 @@ function navigateBedTimeline(dir) {
   setTimeout(() => { renderBedTimeline(newIdx); body.style.opacity = '1'; }, 150);
 }
 
-function renderBedTimeline(bedIdx) {
+// Drilldown from the "Next harvest" pillar — the actual growing rows only (same
+// data as the Growing Beds section), each with its full timeline, two per row.
+function openHarvestDrillDown() {
+  document.getElementById('bed-nav-area').style.display = 'none';
+  document.getElementById('drill-title').textContent = 'Growing Beds — Timelines';
+  document.getElementById('drill-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  const body = document.getElementById('drill-body');
+  body.ontouchstart = null;
+  body.ontouchend = null;
+  body.innerHTML = '<div id="harvest-grid"></div>';
+  const grid = document.getElementById('harvest-grid');
+  for (let i = 0; i < 6; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'bed-cell';
+    grid.appendChild(cell);
+    renderBedTimeline(i, cell);
+  }
+}
+
+function renderBedTimeline(bedIdx, targetEl) {
   const ROWS = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6'];
   const rowLabel = ROWS[bedIdx];
   const today = new Date();
@@ -1637,16 +1661,20 @@ function renderBedTimeline(bedIdx) {
   const totalDays = (plantedDate&&harvestDate) ? Math.round((harvestDate-plantedDate)/864e5) : null;
   const pct       = (daysIn!=null&&totalDays) ? Math.min(100,Math.max(0,Math.round(daysIn/totalDays*100))) : null;
 
-  // Nav buttons
-  const prevBtn = document.getElementById('bed-nav-prev');
-  const nextBtn = document.getElementById('bed-nav-next');
-  prevBtn.style.opacity = bedIdx===0?'0.3':'1';
-  prevBtn.style.pointerEvents = bedIdx===0?'none':'auto';
-  nextBtn.style.opacity = bedIdx===5?'0.3':'1';
-  nextBtn.style.pointerEvents = bedIdx===5?'none':'auto';
-  prevBtn.textContent = bedIdx>0 ? '← '+ROWS[bedIdx-1] : '←';
-  nextBtn.textContent = bedIdx<5 ? ROWS[bedIdx+1]+' →' : '→';
-  document.getElementById('drill-title').textContent = rowLabel + (cropName ? ' — '+cropName : ' — Empty');
+  // Title — used by single-bed mode (modal title) and grid mode (cell header)
+  const titleText = rowLabel + (cropName ? ' — '+cropName : ' — Empty');
+  if (!targetEl) {
+    // Single-bed mode only: wire up the prev/next nav and the modal title.
+    const prevBtn = document.getElementById('bed-nav-prev');
+    const nextBtn = document.getElementById('bed-nav-next');
+    prevBtn.style.opacity = bedIdx===0?'0.3':'1';
+    prevBtn.style.pointerEvents = bedIdx===0?'none':'auto';
+    nextBtn.style.opacity = bedIdx===5?'0.3':'1';
+    nextBtn.style.pointerEvents = bedIdx===5?'none':'auto';
+    prevBtn.textContent = bedIdx>0 ? '← '+ROWS[bedIdx-1] : '←';
+    nextBtn.textContent = bedIdx<5 ? ROWS[bedIdx+1]+' →' : '→';
+    document.getElementById('drill-title').textContent = titleText;
+  }
 
   // Siphon
   const siphCol = bedIdx+2;
@@ -1867,15 +1895,18 @@ function renderBedTimeline(bedIdx) {
     <div style="font-size:14px">No crop planted in this row</div>
   </div>`;
 
-  const body = document.getElementById('drill-body');
-  body.innerHTML = progressHTML + (merged.length ? `
+  const body = targetEl || document.getElementById('drill-body');
+  const cellHeader = targetEl ? `<div class="bed-cell-title">${titleText}</div>` : '';
+  body.innerHTML = cellHeader + progressHTML + (merged.length ? `
     <div style="padding:28px 16px 48px">${tlRows.join('')}</div>` : emptyMsg);
 
-  body.ontouchstart = e => { _bedSwipeStartX = e.touches[0].clientX; };
-  body.ontouchend   = e => {
-    const dx = e.changedTouches[0].clientX - _bedSwipeStartX;
-    if(Math.abs(dx)>60) navigateBedTimeline(dx<0?1:-1);
-  };
+  if (!targetEl) {
+    body.ontouchstart = e => { _bedSwipeStartX = e.touches[0].clientX; };
+    body.ontouchend   = e => {
+      const dx = e.changedTouches[0].clientX - _bedSwipeStartX;
+      if(Math.abs(dx)>60) navigateBedTimeline(dx<0?1:-1);
+    };
+  }
 }
 
 // ─── ALERT SYSTEM ────────────────────────────────────────────────────────────
@@ -2245,7 +2276,7 @@ function renderScorecards(){
 
   document.getElementById('scorecard-row').innerHTML =
     sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `navTo('water')`, '#60a5fa') +
-    sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, `navTo('plants')`, '#4ade80') +
+    sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, `openHarvestDrillDown()`, '#4ade80') +
     sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':'')+(deaths>0?` <span style="font-size:16px;font-weight:400;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`:''), fishLabel, fishSub, `navTo('fish')`, '#f97316') +
     sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalPage()', '#fbbf24');
 }
