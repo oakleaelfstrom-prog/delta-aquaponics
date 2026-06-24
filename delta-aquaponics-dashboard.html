@@ -164,6 +164,12 @@ html.boss-theme .sc-label i.ti-fish::before{content:"🐟"}
 html.boss-theme .sc-label i.ti-notebook::before{content:"📓"}
 html.boss-theme .sc-label i{font-size:15px !important}
 
+/* Card text — bolder & higher-contrast in the Regular theme (labels were faint muted grey) */
+html.boss-theme .sc-label{color:var(--text-2);font-weight:700}
+html.boss-theme .sc-sub{color:var(--text-2);font-weight:600}
+html.boss-theme .metric-row{font-weight:600}
+html.boss-theme .metric-label{color:var(--text-2);font-weight:600}
+
 /* Portal button — links to the management portal (both themes) */
 #portal-btn{display:inline-flex;align-items:center;gap:5px;background:var(--nav-active);color:#16240f;font-weight:700;font-size:11px;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;transition:opacity .15s,transform .1s}
 #portal-btn:hover{opacity:.9}
@@ -593,7 +599,7 @@ tr:hover td{background:var(--surface-2)}
   <div class="brand">Delta Aquaponics<small>Delta Eco Concerns · Botswana</small></div>
   <span id="current-section">Overview</span>
   <div class="topnav-right">
-    <a id="portal-btn" href="https://delta-aquaponics.vercel.app/index.html" target="_blank" rel="noopener" title="Open the management portal">🏠<span class="pb-txt">Portal</span></a>
+    <a id="portal-btn" href="https://delta-aquaponics.vercel.app/index.html" title="Open the management portal">🏠<span class="pb-txt">Portal</span></a>
     <button id="theme-toggle" onclick="toggleTheme()" title="Switch visual theme">Dark theme</button>
     <span class="last-updated" id="lastUpdated">Loading…</span>
     <span class="live-badge offline" id="liveBadge" onclick="openGSModal()">Live</span>
