@@ -144,6 +144,26 @@ html.boss-theme .ov-hd-analytics i,html.boss-theme .ov-hd-beds i{color:#2c5f2e}
 html.boss-theme .qj-btn[data-sec="pillars"].active,html.boss-theme .qj-btn[data-sec="dwc"].active{background:rgba(200,168,75,.22);color:#6b5207;border-color:#c8a84b}
 html.boss-theme .qj-btn[data-sec="analytics"].active,html.boss-theme .qj-btn[data-sec="beds"].active{background:rgba(44,95,46,.18);color:#163a17;border-color:#2c5f2e}
 
+/* Boss emoji icons on the MAIN dashboard (card headers, section bands, KPI cards) — match the drawer nav */
+html.boss-theme .sys-card-header i::before,
+html.boss-theme .ov-hd i::before,
+html.boss-theme .sc-label i::before{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif !important;font-weight:400 !important;font-style:normal}
+html.boss-theme .ov-hd i.ti-chart-bar::before{content:"📊"}
+html.boss-theme .ov-hd i.ti-activity::before{content:"📈"}
+html.boss-theme .ov-hd i.ti-plant-2::before{content:"🌱"}
+html.boss-theme .ov-hd i.ti-droplet::before{content:"💧"}
+html.boss-theme .sys-card-header i.ti-sun::before{content:"☀️"}
+html.boss-theme .sys-card-header i.ti-droplet::before{content:"💧"}
+html.boss-theme .sys-card-header i.ti-fish::before{content:"🐟"}
+html.boss-theme .sys-card-header i.ti-activity::before{content:"⚙️"}
+html.boss-theme .sys-card-header i.ti-settings::before{content:"🔧"}
+html.boss-theme .sys-card-header i.ti-calendar::before{content:"📋"}
+html.boss-theme .sc-label i.ti-droplet::before{content:"💧"}
+html.boss-theme .sc-label i.ti-plant-2::before{content:"🌱"}
+html.boss-theme .sc-label i.ti-fish::before{content:"🐟"}
+html.boss-theme .sc-label i.ti-notebook::before{content:"📓"}
+html.boss-theme .sc-label i{font-size:15px !important}
+
 /* Portal button — links to the management portal (both themes) */
 #portal-btn{display:inline-flex;align-items:center;gap:5px;background:var(--nav-active);color:#16240f;font-weight:700;font-size:11px;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;transition:opacity .15s,transform .1s}
 #portal-btn:hover{opacity:.9}
