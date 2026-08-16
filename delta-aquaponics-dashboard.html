@@ -901,6 +901,22 @@ function col(headers, name) {
 function fv(v) { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g,'')); return isNaN(n) ? null : Math.round(n*100)/100; }
 function sv(v) { return (v != null && v !== '' && String(v) !== 'null') ? String(v).trim() || null : null; }
 
+// ── Electrical conductivity ──────────────────────────────────────────────────
+// The Kobo question carries no unit and farm meters report either mS/cm
+// (e.g. 1.4) or µS/cm (e.g. 1400). Aquaponics EC sits around 0.3–3 mS/cm,
+// so any reading above 50 is unambiguously µS/cm and is scaled down.
+// Everything downstream of the parser is therefore in mS/cm.
+//
+// Threshold comes from the farm's results-integration brief: Shorobe has a
+// source-water salinity problem, and EC above 2.0 mS/cm must raise an alert.
+const EC_ALERT_MS = 2.0;
+function ecMs(v) {
+  if (v == null) return null;
+  const n = Number(v);
+  if (!isFinite(n)) return null;
+  return n > 50 ? Math.round(n / 10) / 100 : n;
+}
+
 // Classify timestamp as Morning / Midday / Evening using hour
 function timeLabel(isoStr) {
   const d = new Date(isoStr);
@@ -1036,12 +1052,12 @@ function parseWebAppData(allData) {
     if (!comp_map[dt]) comp_map[dt] = {f1_morn:false, f1_mid:false, f1_eve:false, f2:false};
     comp_map[dt].f2 = true;
 
-    const ph = fv(r[3]), no3 = fv(r[4]), no2 = fv(r[5]), ec = fv(r[6]);
+    const ph = fv(r[3]), no3 = fv(r[4]), no2 = fv(r[5]), ec = ecMs(fv(r[6]));
     if (ph !== null || no3 !== null || no2 !== null || ec !== null) {
       const note = [
         no3 !== null ? `NO₃ ${no3}` : '',
         no2 !== null ? `NO₂ ${no2}` : '',
-        ec  !== null ? `EC ${ec}`   : '',
+        ec  !== null ? `EC ${ec} mS/cm` : '',
       ].filter(Boolean).join(' · ');
       // [dt, source, water_temp, pH, note, NO₃, NO₂, dissolved O₂, EC]
       // The source slot doubles as the merge key suffix, so it must stay
@@ -1473,9 +1489,7 @@ function openWaterDrillDown() {
     {name:'Ammonia',      unit:'ppm',  color:'#c0392b', good:[0,0.5],   ymin:0,   ymax:null, src:'chem',col:1, mode:'weekly'},
     {name:'Nitrite',      unit:'ppm',  color:'#e67e22', good:[0,0.5],   ymin:0,   ymax:null, src:'wq',  col:6, mode:'daily'},
     {name:'Nitrate',      unit:'ppm',  color:'#8e44ad', good:[25,50],   ymin:0,   ymax:null, src:'wq',  col:5, mode:'daily'},
-    // No agreed EC target range for this farm yet, and the form carries no
-    // unit — charted without a good-range band until that is confirmed.
-    {name:'Conductivity', unit:'EC',   color:'#0d9488', good:null,      ymin:0,   ymax:null, src:'wq',  col:8, mode:'daily'},
+    {name:'Conductivity', unit:'mS/cm', color:'#0d9488', good:[0,EC_ALERT_MS], ymin:0, ymax:null, src:'wq', col:8, mode:'daily'},
     {name:'Calcium',      unit:'ppm',  color:'#16a085', good:null,      ymin:0,   ymax:null, src:'chem',col:2, mode:'weekly'},
     {name:'Magnesium',    unit:'ppm',  color:'#27ae60', good:null,      ymin:0,   ymax:null, src:'chem',col:3, mode:'weekly'},
     {name:'Potassium',    unit:'ppm',  color:'#2980b9', good:null,      ymin:0,   ymax:null, src:'chem',col:4, mode:'weekly'},
@@ -1571,6 +1585,11 @@ function computeAlerts(){
   const dox = s.latest_do;
   if(dox!=null && dox<3) alerts.push({id:'do-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Dissolved Oxygen Critical',msg:`Dissolved oxygen ${dox} mg/L is below 3 mg/L. Fish are suffocating. Increase aeration immediately and contact management.`,active:true});
   else if(dox!=null && dox<5) alerts.push({id:'do-low',cls:'warn',icon:'alert-triangle',title:'Dissolved Oxygen Low',msg:`Dissolved oxygen ${dox} mg/L is below the 5 mg/L target. Check the air blower and increase aeration.`,active:true});
+  // Electrical conductivity (Form2, daily) — Shorobe has a source-water
+  // salinity problem, so anything above 2.0 mS/cm is an alert.
+  const ecv = s.latest_ec;
+  if(ecv!=null && ecv>EC_ALERT_MS) alerts.push({id:'ec-high',cls:'bad',icon:'alert-triangle',title:'Salinity High — EC Above Target',msg:`Electrical conductivity ${ecv} mS/cm is above the ${EC_ALERT_MS} mS/cm limit. Source-water salinity is climbing — check the water source, flush if needed, and contact management.`,active:true});
+  else if(ecv!=null && ecv>EC_ALERT_MS*0.85) alerts.push({id:'ec-watch',cls:'warn',icon:'alert-triangle',title:'Salinity Climbing',msg:`Electrical conductivity ${ecv} mS/cm is approaching the ${EC_ALERT_MS} mS/cm limit. Keep an eye on the source water.`,active:true});
   const slowSiph = D.siph_avgs.map((v,i)=>({s:i+1,v})).filter(x=>x.v!=null&&x.v>20);
   if(slowSiph.length) alerts.push({id:'siph-slow',cls:'warn',icon:'settings',title:'Siphon Cycle Slow',msg:`Row${slowSiph.length>1?'s':''} ${slowSiph.map(x=>`S${x.s} (${x.v}min)`).join(', ')} above 20min target. Roots may be oxygen-deprived. Adjust inflow valves.`,active:true});
   alerts.push({id:'jan-event',cls:'info',icon:'calendar',title:'Past Incident — Jan 15–16, 2026',msg:`247 fish died from a ventilation failure. Ventilation was corrected after the incident.`,active:false});
@@ -1927,9 +1946,9 @@ function renderHealthRow(){
   // Dissolved oxygen (Form1, 3× daily) — tilapia need >5 mg/L; <3 is critical.
   const dox = s.latest_do;
   const doRAG = dox==null?'neutral':dox>=5?'good':dox>=3?'warn':'bad';
-  // Electrical conductivity (Form2, daily). No agreed target range for this
-  // farm yet and the form carries no unit, so it is reported without a RAG.
+  // Electrical conductivity (Form2, daily), normalised to mS/cm.
   const ecv = s.latest_ec;
+  const ecRAG = ecv==null?'neutral':ecv>EC_ALERT_MS?'bad':ecv>EC_ALERT_MS*0.85?'warn':'good';
 
   // Weekly fish biomass (Form3)
   const lastBM = (D.biomass||[]).slice(-1)[0] || null;
@@ -2014,7 +2033,7 @@ function renderHealthRow(){
     mrW(doRAG,  'DO',   dox!=null?dox+' mg/L':noData(lastDoDate)) +
     mrW(no2RAG, 'NO₂',  latestNO2!=null?latestNO2+' ppm':'—') +
     mrW(no3RAG, 'NO₃',  latestNO3!=null?latestNO3+' ppm':'—') +
-    mrW('neutral', 'EC', ecv!=null?String(ecv):noData(lastEcDate));
+    mrW(ecRAG, 'EC', ecv!=null?ecv+' mS/cm':noData(lastEcDate));
   const waterCol2 =
     mrW(nh3RAG, 'NH₃', nh3!=null?nh3+' ppm':'—') +
     mrW(caRAG, 'Ca', ca!=null?ca+' ppm':'—') +
@@ -2136,12 +2155,15 @@ function renderWater(){
   // Dissolved oxygen — tilapia need >5 mg/L; below 3 is a suffocation risk.
   const doCls = s.latest_do==null?'neutral':s.latest_do>=5?'good':s.latest_do>=3?'warn':'bad';
   const doLbl = s.latest_do==null?'No data':s.latest_do>=5?'Healthy':s.latest_do>=3?'Low':'Critical';
+  // Conductivity — source-water salinity limit is 2.0 mS/cm.
+  const ecCls = s.latest_ec==null?'neutral':s.latest_ec>EC_ALERT_MS?'bad':s.latest_ec>EC_ALERT_MS*0.85?'warn':'good';
+  const ecLbl = s.latest_ec==null?'No data':s.latest_ec>EC_ALERT_MS?'Too salty':s.latest_ec>EC_ALERT_MS*0.85?'Climbing':'Normal';
 
   document.getElementById('wq-kpis').innerHTML=`
     <div class="kpi-card"><div class="label">Latest pH</div><div class="value" style="color:${ragC(phCls)}">${fmt(s.latest_ph,2)}</div><div class="sub">Target 6.8–7.2</div><span class="badge ${phCls==='good'?'good':phCls==='warn'?'warn':'bad'}">${phLbl}</span></div>
     <div class="kpi-card"><div class="label">Latest Water Temp</div><div class="value" style="color:${ragC(wtCls)}">${fmt(s.latest_wtemp,1)}°C</div><div class="sub">Target 24–30°C</div><span class="badge ${wtCls==='good'?'good':wtCls==='warn'?'warn':'bad'}">${wtLbl}</span></div>
     <div class="kpi-card"><div class="label">Dissolved Oxygen</div><div class="value" style="color:${ragC(doCls)}">${s.latest_do!=null?fmt(s.latest_do,1):'—'}</div><div class="sub">mg/L · target &gt; 5</div><span class="badge ${doCls}">${doLbl}</span></div>
-    <div class="kpi-card"><div class="label">Conductivity</div><div class="value" style="font-size:20px;color:var(--text)">${s.latest_ec!=null?fmt(s.latest_ec,0):'—'}</div><div class="sub">EC · no target range set</div><span class="badge neutral">Tracking</span></div>
+    <div class="kpi-card"><div class="label">Conductivity</div><div class="value" style="color:${ragC(ecCls)}">${s.latest_ec!=null?fmt(s.latest_ec,2):'—'}</div><div class="sub">mS/cm · limit ${EC_ALERT_MS}</div><span class="badge ${ecCls==='neutral'?'neutral':ecCls}">${ecLbl}</span></div>
     <div class="kpi-card"><div class="label">pH In-Range Days</div><div class="value" style="color:${pctOK>70?'var(--c-good)':pctOK>50?'var(--c-warn)':'var(--c-bad)'}">${pctOK}%</div><div class="sub">${inRangePH} of ${totalDays} days</div><span class="badge ${pctOK>70?'good':pctOK>50?'warn':'bad'}">${pctOK>70?'Good':'Needs attention'}</span></div>`;
 
   document.getElementById('wq-alerts').innerHTML = s.latest_ph>7.2
