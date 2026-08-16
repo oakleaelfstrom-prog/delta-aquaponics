@@ -388,6 +388,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .alert-group-label:first-child{margin-top:0}
 .alert.stale{opacity:.65}
 .alert-unseen-dot{display:inline-block;width:8px;height:8px;background:#FFC107;border-radius:50%;margin-right:6px;flex-shrink:0;margin-top:5px}
+.alert-stamp{display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;opacity:.75;font-weight:500}
 .alert-history-toggle{display:flex;align-items:center;gap:6px;background:none;border:0.5px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;width:100%;text-align:left;font-size:12px;font-weight:400;color:var(--muted);cursor:pointer;margin-top:4px;margin-bottom:2px}
 .alert-history-toggle:hover{background:var(--surface-2);color:var(--text)}
 .alert-history-toggle .hist-arrow{margin-left:auto;font-size:10px;transition:transform .2s}
@@ -1161,6 +1162,11 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
     if (isNaN(d)) return null;
     return Math.floor((Date.now() - d.getTime()) / 864e5);
   };
+  // Date + round of the reading behind a value, so alerts can be timestamped.
+  const _whenOf = idx => {
+    const row = _latestWQRow(idx);
+    return row ? {date: row[0], slot: (row[1]==='Morning'||row[1]==='Midday'||row[1]==='Evening') ? row[1] : null} : null;
+  };
   const _envSorted = [...env].sort((a,b) => a[0]!==b[0]?(a[0]<b[0]?-1:1):_tOrd(a[1])-_tOrd(b[1]));
   const latest_env = _envSorted[_envSorted.length-1] || [];
   const chem = [...chem_new].sort((a,b)=>a[0]>b[0]?1:-1);
@@ -1204,6 +1210,10 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
       latest_env_morn_out, latest_do, latest_ec,
       // How stale is each reading? null = never recorded.
       age_ph:_ageDays(3), age_wtemp:_ageDays(2), age_do:_ageDays(7), age_ec:_ageDays(8),
+      // When each reading was actually taken, so an alert can say so.
+      when_ph:_whenOf(3), when_wtemp:_whenOf(2), when_do:_whenOf(7), when_ec:_whenOf(8),
+      when_siph:(()=>{ const r=siph.length?siph[siph.length-1]:null;
+        return r ? {date:r[0], slot:r[1]||null} : null; })(),
       age_siph:(()=>{ const last=siph.length?siph[siph.length-1][0]:null; if(!last) return null;
         const d=new Date(last+'T12:00:00'); return isNaN(d)?null:Math.floor((Date.now()-d.getTime())/864e5); })(),
       latest_fish_sampled:lb[1]??null, latest_fish_weight:lb[2]??null,
@@ -1659,26 +1669,26 @@ function computeAlerts(){
     alerts.push({id:'data-stale',cls:'warn',icon:'clock',title:'No Recent Readings',
       msg:`The newest water reading is ${freshest} days old. Nothing below reflects the farm today — threshold alerts are paused until the team submits again.`,active:true});
   }
-  if(ph!=null && ph>7.5) alerts.push({id:'ph-crit',cls:'bad',icon:'alert-triangle',title:'pH Critically High',msg:`Current pH ${ph} is above 7.5. Plants cannot absorb nutrients and bacteria are under stress. Add pH-down solution immediately.`,active:true});
-  else if(ph!=null && ph>7.0) alerts.push({id:'ph-high',cls:'warn',icon:'alert-triangle',title:'pH Elevated',msg:`Current pH ${ph} is above the 7.0 target. This reduces nutrient availability to plants. Consider pH-down treatment.`,active:true});
-  if(wt!=null && wt<17) alerts.push({id:'wt-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Too Cold',msg:`Water temp ${wt}°C is below 17°C. Fish have stopped feeding. Close everything and contact management immediately.`,active:true});
-  else if(wt!=null && wt<20) alerts.push({id:'wt-cold',cls:'warn',icon:'temperature',title:'Water Temperature Low',msg:`Water temp ${wt}°C below 20°C — fish feeding slows. Close all greenhouse sides and monitor closely.`,active:true});
-  else if(wt!=null && wt>32) alerts.push({id:'wt-emergency-hot',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Overheating',msg:`Water temp ${wt}°C exceeds 32°C. Risk of mass mortality. Open all sides, run fan at maximum, contact management.`,active:true});
-  else if(wt!=null && wt>30) alerts.push({id:'wt-warm',cls:'warn',icon:'temperature',title:'Water Temperature High',msg:`Water temp ${wt}°C above 30°C — heat stress, oxygen dropping. Increase aeration and check evaporative cooler.`,active:true});
+  if(ph!=null && ph>7.5) alerts.push({id:'ph-crit',cls:'bad',icon:'alert-triangle',title:'pH Critically High',msg:`Current pH ${ph} is above 7.5. Plants cannot absorb nutrients and bacteria are under stress. Add pH-down solution immediately.`,when:s.when_ph,active:true});
+  else if(ph!=null && ph>7.0) alerts.push({id:'ph-high',cls:'warn',icon:'alert-triangle',title:'pH Elevated',msg:`Current pH ${ph} is above the 7.0 target. This reduces nutrient availability to plants. Consider pH-down treatment.`,when:s.when_ph,active:true});
+  if(wt!=null && wt<17) alerts.push({id:'wt-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Too Cold',msg:`Water temp ${wt}°C is below 17°C. Fish have stopped feeding. Close everything and contact management immediately.`,when:s.when_wtemp,active:true});
+  else if(wt!=null && wt<20) alerts.push({id:'wt-cold',cls:'warn',icon:'temperature',title:'Water Temperature Low',msg:`Water temp ${wt}°C below 20°C — fish feeding slows. Close all greenhouse sides and monitor closely.`,when:s.when_wtemp,active:true});
+  else if(wt!=null && wt>32) alerts.push({id:'wt-emergency-hot',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Overheating',msg:`Water temp ${wt}°C exceeds 32°C. Risk of mass mortality. Open all sides, run fan at maximum, contact management.`,when:s.when_wtemp,active:true});
+  else if(wt!=null && wt>30) alerts.push({id:'wt-warm',cls:'warn',icon:'temperature',title:'Water Temperature High',msg:`Water temp ${wt}°C above 30°C — heat stress, oxygen dropping. Increase aeration and check evaporative cooler.`,when:s.when_wtemp,active:true});
   // Dissolved oxygen (Form1, 3× daily) — tilapia suffocate below ~3 mg/L.
   const dox = fresh(s.latest_do, s.age_do);
-  if(dox!=null && dox<3) alerts.push({id:'do-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Dissolved Oxygen Critical',msg:`Dissolved oxygen ${dox} mg/L is below 3 mg/L. Fish are suffocating. Increase aeration immediately and contact management.`,active:true});
-  else if(dox!=null && dox<5) alerts.push({id:'do-low',cls:'warn',icon:'alert-triangle',title:'Dissolved Oxygen Low',msg:`Dissolved oxygen ${dox} mg/L is below the 5 mg/L target. Check the air blower and increase aeration.`,active:true});
+  if(dox!=null && dox<3) alerts.push({id:'do-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Dissolved Oxygen Critical',msg:`Dissolved oxygen ${dox} mg/L is below 3 mg/L. Fish are suffocating. Increase aeration immediately and contact management.`,when:s.when_do,active:true});
+  else if(dox!=null && dox<5) alerts.push({id:'do-low',cls:'warn',icon:'alert-triangle',title:'Dissolved Oxygen Low',msg:`Dissolved oxygen ${dox} mg/L is below the 5 mg/L target. Check the air blower and increase aeration.`,when:s.when_do,active:true});
   // Electrical conductivity (Form2, daily) — Shorobe has a source-water
   // salinity problem, so anything above 2.0 mS/cm is an alert.
   const ecv = fresh(s.latest_ec, s.age_ec);
-  if(ecv!=null && ecv>EC_ALERT_MS) alerts.push({id:'ec-high',cls:'bad',icon:'alert-triangle',title:'Salinity High — EC Above Target',msg:`Electrical conductivity ${ecv} mS/cm is above the ${EC_ALERT_MS} mS/cm limit. Source-water salinity is climbing — check the water source, flush if needed, and contact management.`,active:true});
-  else if(ecv!=null && ecv>EC_ALERT_MS*0.85) alerts.push({id:'ec-watch',cls:'warn',icon:'alert-triangle',title:'Salinity Climbing',msg:`Electrical conductivity ${ecv} mS/cm is approaching the ${EC_ALERT_MS} mS/cm limit. Keep an eye on the source water.`,active:true});
+  if(ecv!=null && ecv>EC_ALERT_MS) alerts.push({id:'ec-high',cls:'bad',icon:'alert-triangle',title:'Salinity High — EC Above Target',msg:`Electrical conductivity ${ecv} mS/cm is above the ${EC_ALERT_MS.toFixed(1)} mS/cm limit. Source-water salinity is climbing — check the water source, flush if needed, and contact management.`,when:s.when_ec,active:true});
+  else if(ecv!=null && ecv>EC_ALERT_MS*0.85) alerts.push({id:'ec-watch',cls:'warn',icon:'alert-triangle',title:'Salinity Climbing',msg:`Electrical conductivity ${ecv} mS/cm is approaching the ${EC_ALERT_MS.toFixed(1)} mS/cm limit. Keep an eye on the source water.`,when:s.when_ec,active:true});
   // Use the LATEST reading per row, not the all-time average: an average
   // drags in months of history, so a row cycling fine today still alerts.
   const siphStale = s.age_siph == null || s.age_siph > ALERT_MAX_AGE_DAYS;
   const slowSiph = siphStale ? [] : (D.siph_latest||[]).map((v,i)=>({s:i+1,v})).filter(x=>x.v!=null&&x.v>20);
-  if(slowSiph.length) alerts.push({id:'siph-slow',cls:'warn',icon:'settings',title:'Siphon Cycle Slow',msg:`Row${slowSiph.length>1?'s':''} ${slowSiph.map(x=>`S${x.s} (${x.v}min)`).join(', ')} above 20min target. Roots may be oxygen-deprived. Adjust inflow valves.`,active:true});
+  if(slowSiph.length) alerts.push({id:'siph-slow',cls:'warn',icon:'settings',title:'Siphon Cycle Slow',msg:`Row${slowSiph.length>1?'s':''} ${slowSiph.map(x=>`S${x.s} (${x.v}min)`).join(', ')} above 20min target. Roots may be oxygen-deprived. Adjust inflow valves.`,when:s.when_siph,active:true});
   alerts.push({id:'jan-event',cls:'info',icon:'calendar',title:'Past Incident — Jan 15–16, 2026',msg:`247 fish died from a ventilation failure. Ventilation was corrected after the incident.`,active:false});
   return alerts;
 }
@@ -1693,18 +1703,32 @@ function renderAlerts(){
     ...alerts.filter(a=>!a.active && !archivedAlerts.has(a.id)),
     ...alerts.filter(a=>a.active && archivedAlerts.has(a.id))
   ];
+  // When a reading tripped the alert. Managers act on these — "which round
+  // was this?" is the first question, so answer it on the alert itself.
+  const stampHtml = a => {
+    if (!a.when || !a.when.date) return '';
+    let rel = '';
+    const d = new Date(a.when.date + 'T12:00:00');
+    if (!isNaN(d)) {
+      const days = Math.floor((Date.now() - d.getTime())/864e5);
+      rel = days <= 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago';
+    }
+    let nice = a.when.date;
+    try { nice = new Date(a.when.date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch(e){}
+    return `<div class="alert-stamp"><i class="ti ti-clock" style="font-size:11px"></i>Reading taken ${nice}${a.when.slot?' · '+a.when.slot:''}${rel?' · '+rel:''}</div>`;
+  };
   const mkActive = a => {
     const unseen = !seenAlerts.has(a.id);
     return `<div class="alert ${a.cls}" id="al-${a.id}" onclick="markAlertSeen('${a.id}')">
       ${unseen?`<div class="alert-unseen-dot"></div>`:''}
       <span class="alert-icon"><i class="ti ti-${a.icon}" style="font-size:16px"></i></span>
-      <div><strong>${a.title}</strong> — ${a.msg}</div>
+      <div><strong>${a.title}</strong> — ${a.msg}${stampHtml(a)}</div>
       <button class="alert-x" onclick="archiveAlert('${a.id}',event)" title="Move to history">✕</button>
     </div>`;
   };
   const mkHistory = a => `<div class="alert ${a.cls} stale" id="alh-${a.id}">
     <span class="alert-icon"><i class="ti ti-${a.icon}" style="font-size:16px"></i></span>
-    <div><strong>${a.title}</strong> — ${a.msg}</div>
+    <div><strong>${a.title}</strong> — ${a.msg}${stampHtml(a)}</div>
   </div>`;
   let html = '';
   if(active.length) html += `<div class="alert-group">${active.map(mkActive).join('')}</div>`;
@@ -2125,6 +2149,25 @@ function renderHealthRow(){
   const lastEnvDate    = _latestEnv ? _latestEnv[0] : '—';
   const lastEnvSlot    = _latestEnv ? _latestEnv[1] : null;
 
+  // ── One "last round" for every Form1-fed card ────────────────────────────
+  // Climate, water temp/DO and the siphon times all arrive in the SAME Form1
+  // submission, so their cards must never show different dates. They used to,
+  // because each series is merged with a different legacy sheet tab whose
+  // history ends on a different day (env → 5 Jun, water → 5 Jun, siphons →
+  // 15 May). Take the newest across all three and share it.
+  const _f1Candidates = [_latestEnv, _latestWQ, _latestSiph].filter(Boolean);
+  const _lastF1 = _f1Candidates.length
+    ? _f1Candidates.sort((a,b)=> a[0]!==b[0] ? (a[0]<b[0]?-1:1) : _tO(a[1])-_tO(b[1])).pop()
+    : null;
+  const roundDate = _lastF1 ? _lastF1[0] : '—';
+  const roundSlot = _lastF1 ? _lastF1[1] : null;
+  const roundFooter = 'Last round: ' + (roundDate==='—' ? 'none yet' : fmtDate(roundDate) + (roundSlot?' · '+roundSlot:''));
+
+  // Water vitals mixes three forms on three cadences, so one date would lie.
+  const _latestCheck = D.wq.length ? _byTime(D.wq.filter(r=>r[3]!=null)).pop()||null : null;
+  const checkDate = _latestCheck ? _latestCheck[0] : null;
+  const panelDate = (D.weekly_chem||[]).length ? D.weekly_chem[D.weekly_chem.length-1][0] : null;
+
   // Every card opens the section that owns its numbers. `onclick` is what
   // makes the card look interactive too — see .sys-card[onclick] in the CSS.
   const card = (icon, title, rows, footer, freq='', iconColor='var(--muted)', action='') =>
@@ -2168,7 +2211,13 @@ function renderHealthRow(){
     mrW(kRAG,  'K',  kk!=null?kk+' ppm':'—') +
     mrW(mnRAG, 'Mn', mn!=null?mn+' ppm':'—') +
     mrW(feRAG, 'Fe', fe!=null?fe+' ppm':'—');
-  const waterFooter = 'Last reading: '+lastWQDate+(lastWQSlot?' · '+lastWQSlot:'');
+  // Three cadences, three dates — a single "last reading" would misdescribe
+  // two of the three groups on this card.
+  const waterFooter = [
+    'Round ' + (roundDate==='—' ? '—' : fmtDate(roundDate) + (roundSlot?' · '+roundSlot:'')),
+    'Check ' + (checkDate ? fmtDate(checkDate) : '—'),
+    'Panel ' + (panelDate ? fmtDate(panelDate) : '—'),
+  ].join('  ·  ');
 
   // Card 3: Fish — weekly biomass sample (Form3) + actual feeding (Form1)
   //
@@ -2217,11 +2266,11 @@ function renderHealthRow(){
     </div>`;
 
   document.getElementById('health-grid-new').innerHTML =
-    card('sun',      'Climate',       climateRows, 'Last reading: '+lastEnvDate+(lastEnvSlot?' · '+lastEnvSlot:''),     '3× daily', '#fbbf24', "navTo('environment')") +
+    card('sun',      'Climate',       climateRows, roundFooter,                                                        '3× daily', '#fbbf24', "navTo('environment')") +
     waterCard +
-    card('fish',     'Fish biomass',  fishRows,    'Last weigh-in: '+lastBiomassDate,                                   'weekly',   '#f97316', "navTo('fish')") +
-    card('activity', 'Siphon health', siphRows,    'Last reading: '+lastSiphDate+(lastSiphSlot?' · '+lastSiphSlot:''),  '3× daily', '#a78bfa', "navTo('siphons')") +
-    card('calendar', 'Daily rounds',  checkRows,   'Last reading: '+lastRoundDate+(lastRoundSlot?' · '+lastRoundSlot:''),'3× daily', '#5eead4', "openJournalPage()");
+    card('fish',     'Fish biomass',  fishRows,    'Last weigh-in: '+(lastBiomassDate==='—'?'none yet':fmtDate(lastBiomassDate)), 'weekly', '#f97316', "navTo('fish')") +
+    card('activity', 'Siphon health', siphRows,    roundFooter,                                                        '3× daily', '#a78bfa', "navTo('siphons')") +
+    card('calendar', 'Daily rounds',  checkRows,   roundFooter,                                                        '3× daily', '#5eead4', "openJournalPage()");
 }
 
 // ─── OVERVIEW ───────────────────────────────────────────────────────────────
@@ -2320,7 +2369,7 @@ function renderWater(){
     <div class="kpi-card"><div class="label">Latest pH</div><div class="value" style="color:${ragC(phCls)}">${fmt(s.latest_ph,2)}</div><div class="sub">Target 6.5–7.0</div><span class="badge ${phCls==='good'?'good':phCls==='warn'?'warn':'bad'}">${phLbl}</span></div>
     <div class="kpi-card"><div class="label">Latest Water Temp</div><div class="value" style="color:${ragC(wtCls)}">${fmt(s.latest_wtemp,1)}°C</div><div class="sub">Target 24–30°C</div><span class="badge ${wtCls==='good'?'good':wtCls==='warn'?'warn':'bad'}">${wtLbl}</span></div>
     <div class="kpi-card"><div class="label">Dissolved Oxygen</div><div class="value" style="color:${ragC(doCls)}">${s.latest_do!=null?fmt(s.latest_do,1):'—'}</div><div class="sub">mg/L · target &gt; 5</div><span class="badge ${doCls}">${doLbl}</span></div>
-    <div class="kpi-card"><div class="label">Conductivity</div><div class="value" style="color:${ragC(ecCls)}">${s.latest_ec!=null?fmt(s.latest_ec,2):'—'}</div><div class="sub">mS/cm · limit ${EC_ALERT_MS}</div><span class="badge ${ecCls==='neutral'?'neutral':ecCls}">${ecLbl}</span></div>
+    <div class="kpi-card"><div class="label">Conductivity</div><div class="value" style="color:${ragC(ecCls)}">${s.latest_ec!=null?fmt(s.latest_ec,2):'—'}</div><div class="sub">mS/cm · limit ${EC_ALERT_MS.toFixed(1)}</div><span class="badge ${ecCls==='neutral'?'neutral':ecCls}">${ecLbl}</span></div>
     <div class="kpi-card"><div class="label">pH In-Range Days</div><div class="value" style="color:${totalDays===0?'var(--text)':pctOK>70?'var(--c-good)':pctOK>50?'var(--c-warn)':'var(--c-bad)'}">${totalDays?pctOK+'%':'—'}</div><div class="sub">${totalDays?`${inRangePH} of ${totalDays} days · last ${PH_WINDOW_DAYS}d`:`no readings in last ${PH_WINDOW_DAYS} days`}</div><span class="badge ${totalDays===0?'neutral':pctOK>70?'good':pctOK>50?'warn':'bad'}">${totalDays===0?'No data':pctOK>70?'Good':'Needs attention'}</span></div>`;
 
   document.getElementById('wq-alerts').innerHTML = (s.latest_ph>7.0 && s.age_ph!=null && s.age_ph<=ALERT_MAX_AGE_DAYS && totalDays>0)
