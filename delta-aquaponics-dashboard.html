@@ -2298,8 +2298,15 @@ function renderWater(){
   const s = D.stats;
   const [phLbl,phCls]=pHStatus(s.latest_ph);
   const [wtLbl,wtCls]=tempStatus(s.latest_wtemp);
-  const inRangePH = D.wq_chart.filter(r=>r[2]!=null&&r[2]>=6.5&&r[2]<=7.0).length;
-  const totalDays = D.wq_chart.filter(r=>r[2]!=null).length;
+  // Recent performance only. Scoring the full history against the current
+  // target is misleading: the farm ran to 6.8–7.2 until 2026-08-16, so every
+  // older reading counts as "out of range" for a target that did not exist
+  // yet — which showed as a red 6% and looked like a farm problem.
+  const PH_WINDOW_DAYS = 30;
+  const phCutoff = new Date(Date.now()-PH_WINDOW_DAYS*864e5).toISOString().slice(0,10);
+  const phWindow = D.wq_chart.filter(r=>r[0]>=phCutoff&&r[2]!=null);
+  const inRangePH = phWindow.filter(r=>r[2]>=6.5&&r[2]<=7.0).length;
+  const totalDays = phWindow.length;
   const pctOK = totalDays?Math.round(inRangePH/totalDays*100):0;
   const ragC = c => c==='good'?'var(--c-good)':c==='warn'?'var(--c-warn)':c==='bad'?'var(--c-bad)':'var(--text)';
   // Dissolved oxygen — tilapia need >5 mg/L; below 3 is a suffocation risk.
@@ -2314,10 +2321,10 @@ function renderWater(){
     <div class="kpi-card"><div class="label">Latest Water Temp</div><div class="value" style="color:${ragC(wtCls)}">${fmt(s.latest_wtemp,1)}°C</div><div class="sub">Target 24–30°C</div><span class="badge ${wtCls==='good'?'good':wtCls==='warn'?'warn':'bad'}">${wtLbl}</span></div>
     <div class="kpi-card"><div class="label">Dissolved Oxygen</div><div class="value" style="color:${ragC(doCls)}">${s.latest_do!=null?fmt(s.latest_do,1):'—'}</div><div class="sub">mg/L · target &gt; 5</div><span class="badge ${doCls}">${doLbl}</span></div>
     <div class="kpi-card"><div class="label">Conductivity</div><div class="value" style="color:${ragC(ecCls)}">${s.latest_ec!=null?fmt(s.latest_ec,2):'—'}</div><div class="sub">mS/cm · limit ${EC_ALERT_MS}</div><span class="badge ${ecCls==='neutral'?'neutral':ecCls}">${ecLbl}</span></div>
-    <div class="kpi-card"><div class="label">pH In-Range Days</div><div class="value" style="color:${pctOK>70?'var(--c-good)':pctOK>50?'var(--c-warn)':'var(--c-bad)'}">${pctOK}%</div><div class="sub">${inRangePH} of ${totalDays} days</div><span class="badge ${pctOK>70?'good':pctOK>50?'warn':'bad'}">${pctOK>70?'Good':'Needs attention'}</span></div>`;
+    <div class="kpi-card"><div class="label">pH In-Range Days</div><div class="value" style="color:${totalDays===0?'var(--text)':pctOK>70?'var(--c-good)':pctOK>50?'var(--c-warn)':'var(--c-bad)'}">${totalDays?pctOK+'%':'—'}</div><div class="sub">${totalDays?`${inRangePH} of ${totalDays} days · last ${PH_WINDOW_DAYS}d`:`no readings in last ${PH_WINDOW_DAYS} days`}</div><span class="badge ${totalDays===0?'neutral':pctOK>70?'good':pctOK>50?'warn':'bad'}">${totalDays===0?'No data':pctOK>70?'Good':'Needs attention'}</span></div>`;
 
-  document.getElementById('wq-alerts').innerHTML = s.latest_ph>7.0
-    ? `<div class="alert warn"><span class="alert-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></span><div><strong>pH Persistently Elevated</strong> — Only ${pctOK}% of days have been in the 6.5–7.0 ideal range. Consider investigating lime content in water source or gravel media.</div></div>` : '';
+  document.getElementById('wq-alerts').innerHTML = (s.latest_ph>7.0 && s.age_ph!=null && s.age_ph<=ALERT_MAX_AGE_DAYS && totalDays>0)
+    ? `<div class="alert warn"><span class="alert-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></span><div><strong>pH Persistently Elevated</strong> — Only ${pctOK}% of the last ${PH_WINDOW_DAYS} days have been in the 6.5–7.0 ideal range. Consider investigating lime content in water source or gravel media.</div></div>` : '';
 
   // The full metric grid — the same view the Water health pillar opens, so
   // the tab and the drill-down can never show different things.
