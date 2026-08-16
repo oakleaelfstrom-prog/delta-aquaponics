@@ -629,7 +629,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="ops-nav" id="ops-nav-water"></div>
     <div class="section-header">
       <h2>Water Quality</h2>
-      <p>Fish tank readings — ideal pH 6.8–7.2, water temp 24–30°C, dissolved oxygen above 5 mg/L. Temperature and dissolved oxygen are logged 3× daily; pH, nitrite, nitrate and conductivity once daily.</p>
+      <p>Fish tank readings — ideal pH 6.5–7.0, water temp 24–30°C, dissolved oxygen above 5 mg/L. Temperature and dissolved oxygen are logged 3× daily; pH, nitrite, nitrate and conductivity once daily.</p>
     </div>
     <div id="wq-alerts"></div>
     <div class="kpi-row" id="wq-kpis"></div>
@@ -1483,7 +1483,7 @@ function openWaterDrillDown() {
   // or D.weekly_chem
   //   [date, NH₃, Ca, Mg, K, Mn, Fe]
   const METRICS = [
-    {name:'pH',           unit:'',     color:'#1565C0', good:[6.8,7.2], ymin:6.4, ymax:8.4,  src:'wq',  col:3, mode:'daily'},
+    {name:'pH',           unit:'',     color:'#1565C0', good:[6.5,7.0], ymin:6.2, ymax:8.2,  src:'wq',  col:3, mode:'daily'},
     {name:'Water temp',   unit:'°C',   color:'#B45309', good:[24,30],   ymin:14,  ymax:38,   src:'wq',  col:2, mode:'rounds'},
     {name:'Dissolved O₂', unit:'mg/L', color:'#0891b2', good:[5,12],    ymin:0,   ymax:null, src:'wq',  col:7, mode:'rounds'},
     {name:'Ammonia',      unit:'ppm',  color:'#c0392b', good:[0,0.5],   ymin:0,   ymax:null, src:'chem',col:1, mode:'weekly'},
@@ -1576,7 +1576,7 @@ function computeAlerts(){
   const s = D.stats; const alerts = [];
   const ph = s.latest_ph, wt = s.latest_wtemp;
   if(ph!=null && ph>7.5) alerts.push({id:'ph-crit',cls:'bad',icon:'alert-triangle',title:'pH Critically High',msg:`Current pH ${ph} is above 7.5. Plants cannot absorb nutrients and bacteria are under stress. Add pH-down solution immediately.`,active:true});
-  else if(ph!=null && ph>7.2) alerts.push({id:'ph-high',cls:'warn',icon:'alert-triangle',title:'pH Elevated',msg:`Current pH ${ph} is above the 7.2 target. This reduces nutrient availability to plants. Consider pH-down treatment.`,active:true});
+  else if(ph!=null && ph>7.0) alerts.push({id:'ph-high',cls:'warn',icon:'alert-triangle',title:'pH Elevated',msg:`Current pH ${ph} is above the 7.0 target. This reduces nutrient availability to plants. Consider pH-down treatment.`,active:true});
   if(wt!=null && wt<17) alerts.push({id:'wt-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Too Cold',msg:`Water temp ${wt}°C is below 17°C. Fish have stopped feeding. Close everything and contact management immediately.`,active:true});
   else if(wt!=null && wt<20) alerts.push({id:'wt-cold',cls:'warn',icon:'temperature',title:'Water Temperature Low',msg:`Water temp ${wt}°C below 20°C — fish feeding slows. Close all greenhouse sides and monitor closely.`,active:true});
   else if(wt!=null && wt>32) alerts.push({id:'wt-emergency-hot',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Overheating',msg:`Water temp ${wt}°C exceeds 32°C. Risk of mass mortality. Open all sides, run fan at maximum, contact management.`,active:true});
@@ -1655,8 +1655,8 @@ function filterByDays(arr, days, dateIdx=0){
 }
 function pHStatus(ph){
   if(ph==null) return ['—',''];
-  if(ph<=7.2 && ph>=6.8) return ['Ideal','good'];
-  if(ph<=7.5) return ['Slightly High','warn'];
+  if(ph<=7.0 && ph>=6.5) return ['Ideal','good'];
+  if(ph<=7.3) return ['Slightly High','warn'];
   return ['Out of Range','bad'];
 }
 function tempStatus(t){
@@ -1735,7 +1735,7 @@ function renderExecutiveSummary(){
           <span class="exec-source-badge computed">Auto-computed</span>
         </div>
         <div class="exec-kpis">
-          <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(phC)}">${avgPH||'—'}</div><div class="ek-lbl">Avg pH</div><div class="ek-sub">target 6.8–7.2</div></div>
+          <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(phC)}">${avgPH||'—'}</div><div class="ek-lbl">Avg pH</div><div class="ek-sub">target 6.5–7.0</div></div>
           <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(tC)}">${avgTmp!=null?avgTmp+'°':'—'}</div><div class="ek-lbl">Water Temp</div><div class="ek-sub">target 25–28°C</div></div>
           <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(doC)}">${avgDO!=null?avgDO:'—'}</div><div class="ek-lbl">Dissolved O₂</div><div class="ek-sub">target &gt; 5 mg/L</div></div>
           <div class="exec-kpi"><div class="ek-val">${checks}</div><div class="ek-lbl">Checks Logged</div><div class="ek-sub">this week</div></div>
@@ -1791,10 +1791,10 @@ function renderScorecards(){
   const issues = [];
   let wTotal=0, wScore=0;
   if(avgPH!=null){
-    // ideal 6.8–7.2 | acceptable 6.5–7.5 | borderline 6.2–6.5 / 7.5–8.0 | alert otherwise
-    const s=(avgPH>=6.8&&avgPH<=7.2)?1:(avgPH>=6.5&&avgPH<=7.5)?0.5:(avgPH>=6.2&&avgPH<=8.0)?0.25:0;
+    // ideal 6.5–7.0 | acceptable 6.3–7.3 | borderline 6.0–6.3 / 7.3–7.8 | alert otherwise
+    const s=(avgPH>=6.5&&avgPH<=7.0)?1:(avgPH>=6.3&&avgPH<=7.3)?0.5:(avgPH>=6.0&&avgPH<=7.8)?0.25:0;
     wTotal+=30; wScore+=s*30;
-    if(s<1){const dir=avgPH>7.2?'too high':'too low'; issues.push('pH — '+(s===0?dir+' (critical)':s===0.25?dir:'slightly '+dir));}
+    if(s<1){const dir=avgPH>7.0?'too high':'too low'; issues.push('pH — '+(s===0?dir+' (critical)':s===0.25?dir:'slightly '+dir));}
   }
   if(avgTmp!=null){
     // ideal 24–26 | acceptable 22–28 | borderline 20–22 / 28–30 | alert <20 or >30
@@ -1922,7 +1922,7 @@ function renderHealthRow(){
   const noData = dt => dt ? `—<span style="font-size:10px;color:var(--muted);margin-left:4px">last ${fmtDate(dt)}</span>` : '—';
 
   // RAG helpers
-  const phRAG  = s.latest_ph==null?'neutral':s.latest_ph>=6.8&&s.latest_ph<=7.2?'good':s.latest_ph>=6.5&&s.latest_ph<=7.5?'warn':'bad';
+  const phRAG  = s.latest_ph==null?'neutral':s.latest_ph>=6.5&&s.latest_ph<=7.0?'good':s.latest_ph>=6.3&&s.latest_ph<=7.3?'warn':'bad';
   // Water temp: optimal 25–28°C, acceptable 20–30°C, cascade failure <17°C (fish stop feeding → system collapses)
   const wtRAG  = s.latest_wtemp==null?'neutral':(s.latest_wtemp>=22&&s.latest_wtemp<=28)?'good':(s.latest_wtemp>=17&&s.latest_wtemp<=30)?'warn':'bad';
   // Inside air: ideal daytime 30–35°C, acceptable dip 12–13°C, fan trigger >40°C
@@ -2148,7 +2148,7 @@ function renderWater(){
   const s = D.stats;
   const [phLbl,phCls]=pHStatus(s.latest_ph);
   const [wtLbl,wtCls]=tempStatus(s.latest_wtemp);
-  const inRangePH = D.wq_chart.filter(r=>r[2]!=null&&r[2]>=6.8&&r[2]<=7.2).length;
+  const inRangePH = D.wq_chart.filter(r=>r[2]!=null&&r[2]>=6.5&&r[2]<=7.0).length;
   const totalDays = D.wq_chart.filter(r=>r[2]!=null).length;
   const pctOK = totalDays?Math.round(inRangePH/totalDays*100):0;
   const ragC = c => c==='good'?'var(--c-good)':c==='warn'?'var(--c-warn)':c==='bad'?'var(--c-bad)':'var(--text)';
@@ -2160,14 +2160,14 @@ function renderWater(){
   const ecLbl = s.latest_ec==null?'No data':s.latest_ec>EC_ALERT_MS?'Too salty':s.latest_ec>EC_ALERT_MS*0.85?'Climbing':'Normal';
 
   document.getElementById('wq-kpis').innerHTML=`
-    <div class="kpi-card"><div class="label">Latest pH</div><div class="value" style="color:${ragC(phCls)}">${fmt(s.latest_ph,2)}</div><div class="sub">Target 6.8–7.2</div><span class="badge ${phCls==='good'?'good':phCls==='warn'?'warn':'bad'}">${phLbl}</span></div>
+    <div class="kpi-card"><div class="label">Latest pH</div><div class="value" style="color:${ragC(phCls)}">${fmt(s.latest_ph,2)}</div><div class="sub">Target 6.5–7.0</div><span class="badge ${phCls==='good'?'good':phCls==='warn'?'warn':'bad'}">${phLbl}</span></div>
     <div class="kpi-card"><div class="label">Latest Water Temp</div><div class="value" style="color:${ragC(wtCls)}">${fmt(s.latest_wtemp,1)}°C</div><div class="sub">Target 24–30°C</div><span class="badge ${wtCls==='good'?'good':wtCls==='warn'?'warn':'bad'}">${wtLbl}</span></div>
     <div class="kpi-card"><div class="label">Dissolved Oxygen</div><div class="value" style="color:${ragC(doCls)}">${s.latest_do!=null?fmt(s.latest_do,1):'—'}</div><div class="sub">mg/L · target &gt; 5</div><span class="badge ${doCls}">${doLbl}</span></div>
     <div class="kpi-card"><div class="label">Conductivity</div><div class="value" style="color:${ragC(ecCls)}">${s.latest_ec!=null?fmt(s.latest_ec,2):'—'}</div><div class="sub">mS/cm · limit ${EC_ALERT_MS}</div><span class="badge ${ecCls==='neutral'?'neutral':ecCls}">${ecLbl}</span></div>
     <div class="kpi-card"><div class="label">pH In-Range Days</div><div class="value" style="color:${pctOK>70?'var(--c-good)':pctOK>50?'var(--c-warn)':'var(--c-bad)'}">${pctOK}%</div><div class="sub">${inRangePH} of ${totalDays} days</div><span class="badge ${pctOK>70?'good':pctOK>50?'warn':'bad'}">${pctOK>70?'Good':'Needs attention'}</span></div>`;
 
-  document.getElementById('wq-alerts').innerHTML = s.latest_ph>7.2
-    ? `<div class="alert warn"><span class="alert-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></span><div><strong>pH Persistently Elevated</strong> — Only ${pctOK}% of days have been in the 6.8–7.2 ideal range. Consider investigating lime content in water source or gravel media.</div></div>` : '';
+  document.getElementById('wq-alerts').innerHTML = s.latest_ph>7.0
+    ? `<div class="alert warn"><span class="alert-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></span><div><strong>pH Persistently Elevated</strong> — Only ${pctOK}% of days have been in the 6.5–7.0 ideal range. Consider investigating lime content in water source or gravel media.</div></div>` : '';
 
   renderWQChart();
   renderWTChart();
@@ -2179,7 +2179,7 @@ function renderWQChart(){
   const data = filterByDays(D.wq_chart, wqDays);
   renderLineChart('ph-chart', data.map(r=>r[0]),
     [{label:'Daily Avg pH',data:data.map(r=>r[2]),color:'#1565C0',fill:false}],
-    {min:6.4,max:8.4,bands:[{from:6.8,to:7.2,color:'rgba(42,122,42,.1)',label:'Ideal'}]});
+    {min:6.2,max:8.2,bands:[{from:6.5,to:7.0,color:'rgba(42,122,42,.1)',label:'Ideal'}]});
 }
 function renderWTChart(){
   const data = filterByDays(D.wq_chart, wtDays);
@@ -2343,8 +2343,8 @@ const PHASES = [
    todos:['Read Delta Aquaponics Team Guide (all sections)','Set up daily check reminder schedule','Practice filling in the Google Form for each check type','Verify all 6 siphons are functioning and timed']},
   {id:'p1b',name:'Phase 1B — Fix the Foundation',start:'2026-06-10',end:'2026-06-24',color:'#1565C0',status:'current',
    desc:'System calibration, fish counting, pH stabilisation.',
-   goals:['pH stabilised in 6.8–7.2 range for 7 consecutive days','Accurate fish count confirmed','All siphons cycling within 15–18 min target','Row 6 decision made (fish or remove)'],
-   todos:['Count fish in each tank section','Calibrate pH meter (3-point calibration)','Adjust pH using pH-down if consistently above 7.2','Time each siphon cycle and adjust inflow valves as needed','Inspect and repair any broken grow pipes']},
+   goals:['pH stabilised in 6.5–7.0 range for 7 consecutive days','Accurate fish count confirmed','All siphons cycling within 15–18 min target','Row 6 decision made (fish or remove)'],
+   todos:['Count fish in each tank section','Calibrate pH meter (3-point calibration)','Adjust pH using pH-down if consistently above 7.0','Time each siphon cycle and adjust inflow valves as needed','Inspect and repair any broken grow pipes']},
   {id:'p2',name:'Phase 2 — System Stabilising',start:'2026-06-24',end:'2026-07-22',color:'#7B1FA2',status:'upcoming',
    desc:'Operational verification, consistent Monday reports, Row 6 decision.',
    goals:['First Monday Report submitted','System running stably for 4+ weeks','Plant germination and transplant schedule confirmed','Water quality within all target ranges'],
