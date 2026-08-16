@@ -702,7 +702,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="ops-nav" id="ops-nav-fish"></div>
     <div class="section-header">
       <h2>Fish Biomass</h2>
-      <p>Three-spotted tilapia — weekly sample weigh-in from the Friday summary. Growth benchmark 3–5 g per week; feed target 2–3% of body weight per day.</p>
+      <p>Three-spotted tilapia — weekly sample weigh-in from the Friday summary. The crew weighs one cage each week, rotating through Cage 1–7, so growth is always compared against the previous weigh-in of the <em>same</em> cage. Benchmark 3–5 g per week.</p>
     </div>
     <div class="kpi-row" id="fish-kpis"></div>
     <div class="card">
@@ -712,7 +712,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="card">
       <div class="card-header"><h3>Weekly Weigh-in Log</h3></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Week</th><th>Sampled</th><th>Avg weight (g)</th><th>Gain</th><th>Feed/day (g)</th><th>Feed type</th><th>Health</th></tr></thead>
+        <thead><tr><th>Week</th><th>Cage</th><th>Sampled</th><th>Avg weight (g)</th><th>Gain/week</th><th>Feed/day (g)</th><th>Feed type</th><th>Health</th></tr></thead>
         <tbody id="fish-tbody"></tbody>
       </table></div>
     </div>
@@ -1079,27 +1079,30 @@ function parseWebAppData(allData) {
     const dt = cleanDate(String(r[2] || r[0])); // week commencing date (col 2) or timestamp
     if (!dt) return;
 
-    // Fixed schema — Form3_Weekly, 16 cols (Kobo schema v2, 2026-08-05):
+    // Fixed schema — Form3_Weekly, 17 cols (Kobo schema v2, cage added 2026-08-16):
     //   3–8 chemistry (NH₃, Ca, Mg, K, Mn, Fe)
-    //   9 sampled · 10 avg weight · 11 feed type · 12 daily feed
-    //   13 visual health · 14 observations · 15 notes
+    //   9 cage sampled · 10 sampled · 11 avg weight · 12 feed type · 13 daily feed
+    //   14 visual health · 15 observations · 16 notes
     const nh3=fv(r[3]), ca=fv(r[4]), mg=fv(r[5]), kk=fv(r[6]), mn=fv(r[7]), fe=fv(r[8]);
     if([nh3,ca,mg,kk,mn,fe].some(v=>v!=null)) chem_rows.push([dt,nh3,ca,mg,kk,mn,fe]);
 
-    // Weekly fish biomass — [date, sampled, avg weight (g), feed type, daily feed (g), visual health]
-    const sampled = fv(r[9]), avgWt = fv(r[10]), feedType = sv(r[11]), dailyFeed = fv(r[12]);
-    const fishHealth = sv(r[13]);
+    // Weekly fish biomass — [date, sampled, avg weight (g), feed type, daily feed (g), visual health, cage]
+    // The crew weighs one cage per week, rotating through Cage 1–7, so the
+    // cage tag is what makes a weight comparable week-to-week.
+    const cage = sv(r[9]);
+    const sampled = fv(r[10]), avgWt = fv(r[11]), feedType = sv(r[12]), dailyFeed = fv(r[13]);
+    const fishHealth = sv(r[14]);
     if ([sampled, avgWt, dailyFeed].some(v => v != null) || fishHealth) {
-      biomass_rows.push([dt, sampled, avgWt, feedType, dailyFeed, fishHealth]);
+      biomass_rows.push([dt, sampled, avgWt, feedType, dailyFeed, fishHealth, cage]);
     }
 
     if (fishHealth && fishHealth !== 'Good') {
-      const note = [fishHealth, avgWt !== null ? `avg ${avgWt}g` : '', sampled !== null ? `n=${sampled}` : ''].filter(Boolean).join(' · ');
-      maint_rows.push([dt, 'Fish', 'Weekly weigh', note, sv(r[1]) || 'Staff', sv(r[14])]);
+      const note = [cage, fishHealth, avgWt !== null ? `avg ${avgWt}g` : '', sampled !== null ? `n=${sampled}` : ''].filter(Boolean).join(' · ');
+      maint_rows.push([dt, 'Fish', 'Weekly weigh', note, sv(r[1]) || 'Staff', sv(r[15])]);
       jNote(dt, null, 'Weekly Check', 'Fish health', note);
     }
-    jNote(dt, null, 'Weekly Check', 'Fish observations', sv(r[14]));
-    jNote(dt, null, 'Weekly Check', 'General', sv(r[15]));
+    jNote(dt, null, 'Weekly Check', 'Fish observations', sv(r[15]));
+    jNote(dt, null, 'Weekly Check', 'General', sv(r[16]));
   });
 
   // Convert comp_map → sorted array [{date, f1_morn, f1_mid, f1_eve, f2}]
@@ -1159,7 +1162,7 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   // Latest dissolved oxygen (Form1, 3× daily) and electrical conductivity (Form2, daily)
   const latest_do = _latestWQVal(7);
   const latest_ec = _latestWQVal(8);
-  // Weekly fish biomass — [date, sampled, avg weight (g), feed type, daily feed (g), visual health]
+  // Weekly fish biomass — [date, sampled, avg weight (g), feed type, daily feed (g), visual health, cage]
   const biomass = [...biomass_new].sort((a,b)=>a[0]>b[0]?1:-1);
   const lb = biomass.length ? biomass[biomass.length-1] : [];
 
@@ -1176,6 +1179,7 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
       latest_env_morn_out, latest_do, latest_ec,
       latest_fish_sampled:lb[1]??null, latest_fish_weight:lb[2]??null,
       latest_feed_type:lb[3]??null, latest_daily_feed:lb[4]??null, latest_fish_health:lb[5]??null,
+      latest_fish_cage:lb[6]??null,
       latest_nh3:lc[1]??null, latest_ca:lc[2]??null, latest_mg:lc[3]??null,
       latest_k:lc[4]??null, latest_mn:lc[5]??null, latest_fe:lc[6]??null,
       total_spend:Math.round(total_spend), last_wq_date:wq.slice(-1)[0]?.[0]||'N/A' }};
@@ -1869,24 +1873,34 @@ function renderScorecards(){
 
   // SC4: FISH GROWTH — weekly biomass sample (Form3)
   // Ops benchmark: 3–5 g gain per week.
+  //
+  // The crew weighs ONE cage per week, rotating through Cage 1–7, so the
+  // previous row is usually a different cage. Comparing across cages would
+  // report growth that never happened — always compare to the last weigh-in
+  // of the SAME cage, and show nothing if this cage has no prior reading.
   const bm = D.biomass || [];
   const lastBM = bm.length ? bm[bm.length-1] : null;
-  const prevBM = bm.length > 1 ? bm[bm.length-2] : null;
+  const prevBM = lastBM
+    ? [...bm].slice(0,-1).reverse().find(r => r[6] === lastBM[6] && r[2] != null) || null
+    : null;
+  const gainWeeks = (lastBM && prevBM)
+    ? Math.max(1, Math.round((new Date(lastBM[0]) - new Date(prevBM[0])) / 6048e5)) : null;
   const gain = (lastBM && prevBM && lastBM[2]!=null && prevBM[2]!=null)
-    ? Math.round((lastBM[2]-prevBM[2])*10)/10 : null;
+    ? Math.round((lastBM[2]-prevBM[2])/gainWeeks*10)/10 : null;
   const fishRAG = !lastBM ? 'neutral'
     : lastBM[5]==='Serious problem' ? 'bad'
     : lastBM[5]==='Some concerns' ? 'warn'
     : gain==null ? 'good'
     : gain>=3 ? 'good' : gain>0 ? 'warn' : 'bad';
   const fishPrimary = (lastBM && lastBM[2]!=null) ? lastBM[2]+'g' : '—';
-  const fishLabel = !lastBM ? 'No weigh-in' : (lastBM[5] || 'Logged');
+  const fishLabel = !lastBM ? 'No weigh-in' : (lastBM[6] || lastBM[5] || 'Logged');
   const fishSub = !lastBM
     ? 'No weekly weigh-in recorded yet'
     : [
-        gain!=null ? (gain>=0?'+':'')+gain+'g since last weigh-in (target 3–5g)' : 'First weigh-in',
+        gain!=null ? (gain>=0?'+':'')+gain+'g/week vs last '+(lastBM[6]||'same cage')+' weigh-in (target 3–5g)'
+                   : 'First weigh-in for '+(lastBM[6]||'this cage'),
         lastBM[1]!=null ? 'n='+lastBM[1] : '',
-        lastBM[4]!=null ? lastBM[4]+'g feed/day' : '',
+        lastBM[5] || '',
       ].filter(Boolean).join(' · ');
 
   const sc = (rag, icon, lbl, val, badge, sub, onclick, iconColor='var(--muted)') =>
@@ -2246,9 +2260,15 @@ function renderEnvTable(limit){
 function renderFish(){
   const bm = D.biomass || [];
   const last = bm.length ? bm[bm.length-1] : null;
-  const prev = bm.length > 1 ? bm[bm.length-2] : null;
+  // Compare to the previous weigh-in of the SAME cage — the crew rotates
+  // through Cage 1–7, so consecutive rows are usually different cages.
+  const prev = last
+    ? [...bm].slice(0,-1).reverse().find(r => r[6] === last[6] && r[2] != null) || null
+    : null;
+  const weeks = (last && prev)
+    ? Math.max(1, Math.round((new Date(last[0]) - new Date(prev[0])) / 6048e5)) : null;
   const gain = (last && prev && last[2]!=null && prev[2]!=null)
-    ? Math.round((last[2]-prev[2])*10)/10 : null;
+    ? Math.round((last[2]-prev[2])/weeks*10)/10 : null;
   // Ops guide benchmark: 3–5 g per week.
   const gainCls = gain==null?'':gain>=3?'good':gain>0?'warn':'bad';
   // NB the ops guide's "feed 2–3% of total body weight per day" target cannot
@@ -2258,23 +2278,31 @@ function renderFish(){
 
   document.getElementById('fish-kpis').innerHTML = !last
     ? `<div class="kpi-card"><div class="label">No weigh-in yet</div><div class="value">—</div><div class="sub">Submit the Friday weekly summary to populate this</div></div>`
-    : `<div class="kpi-card"><div class="label">Average Weight</div><div class="value">${last[2]!=null?last[2]+' g':'—'}</div><div class="sub">week of ${last[0]}</div>${last[5]?`<span class="badge ${last[5]==='Good'?'good':last[5]==='Some concerns'?'warn':'bad'}">${last[5]}</span>`:''}</div>
-    <div class="kpi-card"><div class="label">Weekly Gain</div><div class="value"${gainCls?` style="color:var(--c-${gainCls})"`:''}>${gain!=null?(gain>=0?'+':'')+gain+' g':'—'}</div><div class="sub">target 3–5 g/week</div>${gainCls?`<span class="badge ${gainCls}">${gain>=3?'On target':gain>0?'Slow':'No gain'}</span>`:''}</div>
+    : `<div class="kpi-card"><div class="label">Average Weight</div><div class="value">${last[2]!=null?last[2]+' g':'—'}</div><div class="sub">${last[6]?last[6]+' · ':''}week of ${last[0]}</div>${last[5]?`<span class="badge ${last[5]==='Good'?'good':last[5]==='Some concerns'?'warn':'bad'}">${last[5]}</span>`:''}</div>
+    <div class="kpi-card"><div class="label">Growth per Week</div><div class="value"${gainCls?` style="color:var(--c-${gainCls})"`:''}>${gain!=null?(gain>=0?'+':'')+gain+' g':'—'}</div><div class="sub">${gain!=null?`vs last ${last[6]||'same cage'} weigh-in`:`first ${last[6]||'cage'} weigh-in`} · target 3–5 g</div>${gainCls?`<span class="badge ${gainCls}">${gain>=3?'On target':gain>0?'Slow':'No gain'}</span>`:''}</div>
     <div class="kpi-card"><div class="label">Sample Size</div><div class="value">${last[1]!=null?last[1]:'—'}</div><div class="sub">fish weighed · min 10</div></div>
     <div class="kpi-card"><div class="label">Daily Feed</div><div class="value" style="font-size:16px">${last[4]!=null?last[4]+' g':'—'}</div><div class="sub">${last[3]||'—'}</div></div>`;
 
-  renderLineChart('fish-weight-chart', bm.map(r=>r[0]),
-    [{label:'Avg weight (g)', data:bm.map(r=>r[2]), color:'#f97316', fill:false}],
-    {min:0});
+  // One line per cage — a single line across all cages would zig-zag between
+  // different fish and read as wild weight swings.
+  const cages = [...new Set(bm.map(r=>r[6]).filter(Boolean))].sort();
+  const dates = [...new Set(bm.map(r=>r[0]))].sort();
+  const palette = ['#f97316','#0ea5e9','#8b5cf6','#22c55e','#eab308','#ec4899','#14b8a6'];
+  const datasets = cages.length
+    ? cages.map((c,i)=>({label:c, color:palette[i%palette.length], fill:false,
+        data:dates.map(d=>{ const hit=bm.find(r=>r[0]===d&&r[6]===c); return hit?hit[2]:null; })}))
+    : [{label:'Avg weight (g)', data:dates.map(d=>{const h=bm.find(r=>r[0]===d);return h?h[2]:null;}), color:'#f97316', fill:false}];
+  renderLineChart('fish-weight-chart', dates, datasets, {min:0});
 
   document.getElementById('fish-tbody').innerHTML = bm.length
-    ? [...bm].reverse().map((r,i,arr) => {
-        const earlier = arr[i+1];
-        const g = (earlier && r[2]!=null && earlier[2]!=null) ? Math.round((r[2]-earlier[2])*10)/10 : null;
+    ? [...bm].reverse().map(r => {
+        const earlier = bm.filter(x => x[6]===r[6] && x[0]<r[0] && x[2]!=null).pop();
+        const wks = earlier ? Math.max(1, Math.round((new Date(r[0])-new Date(earlier[0]))/6048e5)) : null;
+        const g = (earlier && r[2]!=null) ? Math.round((r[2]-earlier[2])/wks*10)/10 : null;
         const gCol = g==null?'inherit':g>=3?'var(--c-good)':g>0?'var(--c-warn)':'var(--c-bad)';
-        return `<tr><td>${r[0]||'—'}</td><td>${r[1]??'—'}</td><td>${r[2]??'—'}</td><td style="color:${gCol}">${g!=null?(g>=0?'+':'')+g:'—'}</td><td>${r[4]??'—'}</td><td>${r[3]||'—'}</td><td>${r[5]||'—'}</td></tr>`;
+        return `<tr><td>${r[0]||'—'}</td><td>${r[6]||'—'}</td><td>${r[1]??'—'}</td><td>${r[2]??'—'}</td><td style="color:${gCol}">${g!=null?(g>=0?'+':'')+g:'—'}</td><td>${r[4]??'—'}</td><td>${r[3]||'—'}</td><td>${r[5]||'—'}</td></tr>`;
       }).join('')
-    : '<tr><td colspan="7" style="color:var(--muted);padding:16px">No weekly weigh-ins recorded yet.</td></tr>';
+    : '<tr><td colspan="8" style="color:var(--muted);padding:16px">No weekly weigh-ins recorded yet.</td></tr>';
 }
 
 // ─── SIPHONS ─────────────────────────────────────────────────────────────────
