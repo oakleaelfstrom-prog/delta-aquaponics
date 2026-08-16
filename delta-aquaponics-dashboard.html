@@ -334,6 +334,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 #health-grid-new{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 @media(max-width:600px){#health-grid-new{grid-template-columns:1fr}}
 .sys-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:16px}
+/* Cards that navigate somewhere must read as interactive */
+.sys-card[onclick]{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.sys-card[onclick]:hover{border-color:var(--accent,#60a5fa);box-shadow:0 2px 12px rgba(0,0,0,.07);transform:translateY(-1px)}
+.sys-card[onclick]:focus-visible,.sc-card:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.sys-card[onclick] .sys-card-header::after{content:'›';margin-left:6px;color:var(--muted);font-size:15px;line-height:1}
+.sys-card[onclick] .sys-card-header span{margin-left:auto}
+@media(prefers-reduced-motion:reduce){.sys-card[onclick]{transition:none}.sys-card[onclick]:hover{transform:none}}
 .sys-card-header{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--text);margin-bottom:12px}
 .sys-card-header i{font-size:18px;color:var(--muted)}
 
@@ -634,28 +641,8 @@ tr:hover td{background:var(--surface-2)}
     <div id="wq-alerts"></div>
     <div class="kpi-row" id="wq-kpis"></div>
     <div class="card">
-      <div class="card-header">
-        <h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px;color:#a78bfa"></i>pH Over Time</h3>
-        <div class="card-actions range-btns" id="ph-range-btns">
-          <button class="range-btn active" data-days="7" onclick="setWQRange(7)">7d</button>
-          <button class="range-btn" data-days="30" onclick="setWQRange(30)">1m</button>
-          <button class="range-btn" data-days="90" onclick="setWQRange(90)">3m</button>
-          <button class="range-btn" data-days="365" onclick="setWQRange(365)">1yr</button>
-        </div>
-      </div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="ph-chart"></canvas></div></div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px;color:#a78bfa"></i>Water Temperature Over Time</h3>
-        <div class="card-actions range-btns" id="wt-range-btns">
-          <button class="range-btn active" data-days="7" onclick="setWTRange(7)">7d</button>
-          <button class="range-btn" data-days="30" onclick="setWTRange(30)">1m</button>
-          <button class="range-btn" data-days="90" onclick="setWTRange(90)">3m</button>
-          <button class="range-btn" data-days="365" onclick="setWTRange(365)">1yr</button>
-        </div>
-      </div>
-      <div class="card-body"><div class="chart-wrap"><canvas id="wtemp-chart"></canvas></div></div>
+      <div class="card-header"><h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px;color:#a78bfa"></i>All Water Metrics</h3></div>
+      <div id="wq-metrics"></div>
     </div>
     <div class="card">
       <div class="card-header"><h3>All Water Readings</h3><span id="wq-count" style="font-size:11px;color:var(--muted)"></span></div>
@@ -939,7 +926,7 @@ async function fetchWebAppData(webAppUrl) {
 // The Web App returns { tabName: { headers:[...], rows:[[...], ...] }, … }
 // We map each tab to the arrays that buildMergedData() expects.
 function parseWebAppData(allData) {
-  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [], biomass_rows = [], journal_rows = [];
+  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [], biomass_rows = [], journal_rows = [], feed_rows = [], cond_rows = [];
   const jNote = (date, time, src, cat, text) => {
     if (!text || text.length < 3 || /^(ok|n\/a|none|na|-|yes|no|good|normal)$/i.test(text.trim())) return;
     journal_rows.push([date, time, src, cat, text.trim()]);
@@ -1027,6 +1014,17 @@ function parseWebAppData(allData) {
     if (wt !== null || dox !== null) wq_rows.push([dt, tm, wt, null, f1notes, null, null, dox, null]);
     jNote(dt, tm, 'Daily Rounds', 'General', f1notes);
 
+    // Feeding (12 fed? · 13 amount · 14 clock time) — only rounds where the
+    // crew actually fed count. The round's submission time is NOT the feed
+    // time: staff often feed first and fill the form afterwards.
+    if (sv(r[12]) === 'Yes') {
+      feed_rows.push([dt, tm, fv(r[13]), sv(r[14])]);
+    }
+
+    // Greenhouse controls (8 fan · 9 evaporative cooler · 10/11 shade cloth)
+    cond_rows.push([dt, tm, sv(r[8]), sv(r[9]), sv(r[10]), sv(r[11])]);
+    if (sv(r[10]) === 'Yes') jNote(dt, tm, 'Daily Rounds', 'Shade cloth', sv(r[11]));
+
     // Gravel moisture (22) and algae (24) rows → journal
     const notDryRows = sv(r[22]);
     const algaeRows  = sv(r[24]);
@@ -1107,10 +1105,10 @@ function parseWebAppData(allData) {
 
   // Convert comp_map → sorted array [{date, f1_morn, f1_mid, f1_eve, f2}]
   const comp_rows = Object.entries(comp_map).sort().map(([date, v]) => ({date, ...v}));
-  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows, biomass_rows, journal_rows);
+  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows, biomass_rows, journal_rows, feed_rows, cond_rows);
 }
 
-function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[], biomass_new=[], journal_new=[]) {
+function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[], biomass_new=[], journal_new=[], feed_new=[], cond_new=[]) {
   function mergeByKey(hist, newRows, keyFn) {
     const map = new Map();
     [...hist, ...newRows].forEach(r => map.set(keyFn(r), r));
@@ -1166,6 +1164,20 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   const biomass = [...biomass_new].sort((a,b)=>a[0]>b[0]?1:-1);
   const lb = biomass.length ? biomass[biomass.length-1] : [];
 
+  // Feeding — [date, round, amount (g), clock time]. Only rounds where the
+  // crew answered "fed = Yes", so "last fed" means what it says.
+  const feeds = [...feed_new].sort((a,b)=> a[0]!==b[0] ? (a[0]<b[0]?-1:1) : _tOrd(a[1])-_tOrd(b[1]));
+  const lastFeed = feeds.length ? feeds[feeds.length-1] : null;
+  // Total fed on the most recent day that had any feeding at all
+  const lastFeedDay = lastFeed ? lastFeed[0] : null;
+  const feedToday = lastFeedDay
+    ? feeds.filter(f=>f[0]===lastFeedDay).reduce((s,f)=>s+(f[2]||0),0) : null;
+  const feedRoundsToday = lastFeedDay ? feeds.filter(f=>f[0]===lastFeedDay).length : 0;
+
+  // Greenhouse controls — [date, round, fan, cooler, shadeChanged, shadeHow]
+  const conds = [...cond_new].sort((a,b)=> a[0]!==b[0] ? (a[0]<b[0]?-1:1) : _tOrd(a[1])-_tOrd(b[1]));
+  const lastCond = conds.length ? conds[conds.length-1] : null;
+
   const monday = monday_new.sort((a,b)=>a.date>b.date?-1:1);
   const journal = [...journal_new].sort((a,b)=>a[0]>b[0]?1:-1);
   // `fish` and `plants` are retained only as historical record (legacy sheet
@@ -1174,12 +1186,17 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   return { wq, wq_chart, env, env_chart_morning:makeEnvByTime('Morning'), env_chart_midday:makeEnvByTime('Midday'), env_chart_evening:makeEnvByTime('Evening'),
     fish, plants, siphons:siph, siph_avgs, siph_latest, siph_chart_data,
     compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem, journal, biomass,
+    feeds, conditions:conds,
     stats:{
       latest_ph:_latestWQVal(3), latest_wtemp:_latestWQVal(2), latest_env_morn:latest_env[2]??null,
       latest_env_morn_out, latest_do, latest_ec,
       latest_fish_sampled:lb[1]??null, latest_fish_weight:lb[2]??null,
       latest_feed_type:lb[3]??null, latest_daily_feed:lb[4]??null, latest_fish_health:lb[5]??null,
       latest_fish_cage:lb[6]??null,
+      last_feed_date:lastFeed?.[0]??null, last_feed_round:lastFeed?.[1]??null,
+      last_feed_amount:lastFeed?.[2]??null, last_feed_time:lastFeed?.[3]??null,
+      feed_day_total:feedToday, feed_day_rounds:feedRoundsToday,
+      latest_fan:lastCond?.[2]??null, latest_cooler:lastCond?.[3]??null,
       latest_nh3:lc[1]??null, latest_ca:lc[2]??null, latest_mg:lc[3]??null,
       latest_k:lc[4]??null, latest_mn:lc[5]??null, latest_fe:lc[6]??null,
       total_spend:Math.round(total_spend), last_wq_date:wq.slice(-1)[0]?.[0]||'N/A' }};
@@ -1205,7 +1222,9 @@ const DEFAULT_DATA = {"wq":[["2025-11-07","Morning",26.0,7.6,null],["2025-11-07"
 // ─── RUNTIME STATE ───────────────────────────────────────────────────────────
 let D = buildMergedData([], [], [], [], [], [], []);
 const charts = {};
-let wqDays = 7, wtDays = 7, envDays = 7, siphDays = 7;
+// wqDays/wtDays retired 2026-08-16: the Water tab now renders the shared
+// water-metrics view, which shows a fixed 30-reading window per metric.
+let envDays = 7, siphDays = 7;
 let currentPeriod = 'week';
 
 const sectionTitles = {
@@ -1262,6 +1281,20 @@ function showSection(sec){
   document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
   const el = document.getElementById('sec-' + sec);
   if(el) el.classList.add('active');
+  // Chart.js measures its canvas at construction time, and a hidden section
+  // has zero size — charts built during the initial renderAll() come out
+  // blank. Rebuild the ones in this section now that it is visible.
+  redrawSectionCharts(sec);
+}
+
+// Sections whose charts must be (re)built once the section is on screen.
+function redrawSectionCharts(sec){
+  try{
+    if(sec === 'water')       renderWaterMetrics('wq-metrics', 'wmtab');
+    else if(sec === 'fish')   renderFish();
+    else if(sec === 'environment') renderEnvChart();
+    else if(sec === 'siphons')     renderSiphons();
+  }catch(e){ /* a section with no data yet must never break navigation */ }
 }
 document.querySelectorAll('.nav-link').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1471,16 +1504,18 @@ function closeDrillDown(){
 // (Form3) no longer exist on the KoboToolbox forms, so there is nothing to
 // build a bed timeline from. That detail now lives in a separate app view.
 
-// Drilldown from the "Water health" pillar — every water metric, ordered most →
-// least important: a card with the last 7 readings as a sparkline, plus a
-// 30-reading line chart. Water temp is logged 3×/day so it shows separate
-// Morning/Midday/Evening lines.
-function openWaterDrillDown() {
-  document.getElementById('drill-title').textContent = 'Water Health — Metrics';
-  document.getElementById('drill-modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  const body = document.getElementById('drill-body');
-  body.ontouchstart = null; body.ontouchend = null;
+// ── Water metrics view ───────────────────────────────────────────────────────
+// Every water metric, ordered most → least important: a card showing the
+// latest value with the last 7 readings as a sparkline, plus a 30-reading
+// trend chart. Water temp and dissolved oxygen are logged 3×/day so they
+// show separate Morning/Midday/Evening lines.
+//
+// ONE implementation, rendered into two places — the "Water health" pillar
+// drill-down and the Water Quality tab — so the two can never drift apart.
+// `idPrefix` keeps the canvas ids unique when both are in the DOM at once.
+function renderWaterMetrics(container, idPrefix) {
+  const body = typeof container === 'string' ? document.getElementById(container) : container;
+  if (!body) return;
 
   // col = column index into D.wq
   //   [date, slot, temp, pH, notes, NO₃, NO₂, dissolved O₂, EC]
@@ -1543,7 +1578,7 @@ function openWaterDrillDown() {
   const chartCards = METRICS.map((m,i)=>`
     <div class="wm-chart-card">
       <div class="wm-chart-title">${m.name}${m.unit?` (${m.unit})`:''}${m.good?` · target ${m.good[0]}–${m.good[1]}`:''}</div>
-      <div class="wm-chart-box"><canvas id="wm-chart-${i}"></canvas></div>
+      <div class="wm-chart-box"><canvas id="${idPrefix}-chart-${i}"></canvas></div>
     </div>`).join('');
 
   body.innerHTML = `
@@ -1554,10 +1589,20 @@ function openWaterDrillDown() {
   METRICS.forEach((m,i)=>{
     const s = series(m);
     const bands = m.good ? [{from:m.good[0], to:m.good[1], color:'rgba(42,122,42,.10)'}] : [];
-    renderLineChart('wm-chart-'+i, s.labels.map(fmtLbl),
+    renderLineChart(idPrefix+'-chart-'+i, s.labels.map(fmtLbl),
       s.datasets.map(d=>({label:d.label,data:d.data,color:d.color,fill:false})),
       {min:m.ymin, max:m.ymax, bands});
   });
+}
+
+// Drill-down from the "Water health" pillar — same view, in the modal.
+function openWaterDrillDown() {
+  document.getElementById('drill-title').textContent = 'Water Health — Metrics';
+  document.getElementById('drill-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  const body = document.getElementById('drill-body');
+  body.ontouchstart = null; body.ontouchend = null;
+  renderWaterMetrics(body, 'wmdrill');
 }
 
 // ─── ALERT SYSTEM ────────────────────────────────────────────────────────────
@@ -1777,27 +1822,33 @@ function renderScorecards(){
   const ragColor = r => r==='good'?'var(--c-good)':r==='warn'?'var(--c-warn)':r==='bad'?'var(--c-bad)':'var(--muted)';
   const badgeCls = r => r==='good'?'badge-good':r==='warn'?'badge-warn':r==='bad'?'badge-bad':'badge-neutral';
 
-  // SC1: WATER HEALTH — pH 30% · water temp 20% · NO₂ 20% · DO 20% · NO₃ 10%
-  // pH/NO₂/NO₃ come from the daily Form2 check; water temp and dissolved
+  // SC1: WATER HEALTH — pH 25% · temp 20% · NO₂ 18% · DO 18% · EC 12% · NO₃ 7%
+  // pH/NO₂/NO₃/EC come from the daily Form2 check; water temp and dissolved
   // oxygen from the 3× daily Form1 round.
+  //
+  // EC carries real weight because Shorobe has a source-water salinity
+  // problem. Before it was scored, an EC of 9.9 mS/cm — five times the
+  // limit — still left this pillar reading 100%.
   const wqP = D.wq.filter(r=>r[0]>=cutoff);
   const phVals  = wqP.map(r=>r[3]).filter(v=>v!=null);
   const tmpVals = wqP.map(r=>r[2]).filter(v=>v!=null);
   const no2Vals = wqP.map(r=>r[6]).filter(v=>v!=null);
   const no3Vals = wqP.map(r=>r[5]).filter(v=>v!=null);
   const doVals  = wqP.map(r=>r[7]).filter(v=>v!=null);
+  const ecVals  = wqP.map(r=>r[8]).filter(v=>v!=null);
   const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
   const avgPH  = avg(phVals);
   const avgTmp = avg(tmpVals);
   const avgNO2 = avg(no2Vals);
   const avgNO3 = avg(no3Vals);
   const avgDO  = avg(doVals);
+  const avgEC  = avg(ecVals);
   const issues = [];
   let wTotal=0, wScore=0;
   if(avgPH!=null){
     // ideal 6.5–7.0 | acceptable 6.3–7.3 | borderline 6.0–6.3 / 7.3–7.8 | alert otherwise
     const s=(avgPH>=6.5&&avgPH<=7.0)?1:(avgPH>=6.3&&avgPH<=7.3)?0.5:(avgPH>=6.0&&avgPH<=7.8)?0.25:0;
-    wTotal+=30; wScore+=s*30;
+    wTotal+=25; wScore+=s*25;
     if(s<1){const dir=avgPH>7.0?'too high':'too low'; issues.push('pH — '+(s===0?dir+' (critical)':s===0.25?dir:'slightly '+dir));}
   }
   if(avgTmp!=null){
@@ -1809,19 +1860,25 @@ function renderScorecards(){
   if(avgNO2!=null){
     // ideal <0.5 | acceptable 0.5–1.0 | borderline 1.0–1.5 | alert >1.5
     const s=avgNO2<0.5?1:avgNO2<1.0?0.5:avgNO2<1.5?0.25:0;
-    wTotal+=20; wScore+=s*20;
+    wTotal+=18; wScore+=s*18;
     if(s<1) issues.push('Nitrite — '+(s===0?'dangerously high':s===0.25?'too high':'slightly elevated'));
   }
   if(avgDO!=null){
     // Tilapia: ideal >5 mg/L | acceptable 4–5 | borderline 3–4 | alert <3 (suffocation risk)
     const s=avgDO>=5?1:avgDO>=4?0.5:avgDO>=3?0.25:0;
-    wTotal+=20; wScore+=s*20;
+    wTotal+=18; wScore+=s*18;
     if(s<1) issues.push('Dissolved O₂ — '+(s===0?'critically low':s===0.25?'too low':'slightly low'));
+  }
+  if(avgEC!=null){
+    // Source-water salinity: ideal < 1.7 | borderline up to the 2.0 limit | alert above
+    const s=avgEC<=EC_ALERT_MS*0.85?1:avgEC<=EC_ALERT_MS?0.5:avgEC<=EC_ALERT_MS*1.25?0.25:0;
+    wTotal+=12; wScore+=s*12;
+    if(s<1) issues.push('Salinity — '+(s===0?'far above the 2.0 limit':s===0.25?'above the 2.0 limit':'climbing'));
   }
   if(avgNO3!=null){
     // ideal 10–50 | acceptable 5–80 | borderline 2–5 / 80–100 | alert otherwise
     const s=(avgNO3>=10&&avgNO3<=50)?1:(avgNO3>=5&&avgNO3<=80)?0.5:(avgNO3>=2&&avgNO3<=100)?0.25:0;
-    wTotal+=10; wScore+=s*10;
+    wTotal+=7; wScore+=s*7;
     if(s<1){const dir=avgNO3<10?'too low':'too high'; issues.push('Nitrate — '+(s===0?dir+' (critical)':s===0.25?dir:'slightly '+dir));}
   }
   const waterScore = wTotal>0 ? Math.round(wScore/wTotal*100) : null;
@@ -1829,7 +1886,7 @@ function renderScorecards(){
   const waterLabel = {good:'Good',warn:'Watch',bad:'Alert',neutral:'No data'}[waterRAG];
   const waterSub = wqP.length===0 ? 'No readings in period'
     : issues.length ? issues.join(' · ')
-    : 'pH, temp, NO₂, DO &amp; NO₃ on target';
+    : 'pH, temp, NO₂, DO, salinity &amp; NO₃ on target';
 
   // SC2: CHECK ROUNDS COMPLIANCE
   // Expected: Form1 × 3 slots/day (morning, midday, evening) + Form2 × 1/day
@@ -1913,7 +1970,7 @@ function renderScorecards(){
 
   document.getElementById('scorecard-row').innerHTML =
     sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `openWaterDrillDown()`, '#60a5fa') +
-    sc(compRAG, 'checklist', 'Check rounds', compPct!=null?compPct+'%':'—', compLabel, compSub, `navTo('overview')`, '#a78bfa') +
+    sc(compRAG, 'checklist', 'Check rounds', compPct!=null?compPct+'%':'—', compLabel, compSub, `jumpTo('anc-analytics')`, '#a78bfa') +
     sc(fishRAG, 'fish', 'Fish growth', fishPrimary, fishLabel, fishSub, `navTo('fish')`, '#f97316') +
     sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalPage()', '#fbbf24');
 }
@@ -2023,8 +2080,10 @@ function renderHealthRow(){
   const lastEnvDate    = _latestEnv ? _latestEnv[0] : '—';
   const lastEnvSlot    = _latestEnv ? _latestEnv[1] : null;
 
-  const card = (icon, title, rows, footer, freq='', iconColor='var(--muted)') =>
-    `<div class="sys-card">
+  // Every card opens the section that owns its numbers. `onclick` is what
+  // makes the card look interactive too — see .sys-card[onclick] in the CSS.
+  const card = (icon, title, rows, footer, freq='', iconColor='var(--muted)', action='') =>
+    `<div class="sys-card"${action?` onclick="${action}" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${action}}"`:''}>
       <div class="sys-card-header"><i class="ti ti-${icon}" style="color:${iconColor}"></i>${title}${freq?`<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">${freq}</span>`:''}
       </div>
       ${rows}
@@ -2032,11 +2091,20 @@ function renderHealthRow(){
       <div style="font-size:11px;color:var(--muted)">${footer}</div>
     </div>`;
 
-  // Card 1: Climate
+  // Card 1: Climate — temps plus the two controls the crew can actually act
+  // on. Fan/cooler state is only interesting against the temperature: the
+  // ops guide says open up and run the fan above 40°C, so a fan reading Off
+  // on a hot round is the thing worth seeing.
+  const hot = s.latest_env_morn!=null && s.latest_env_morn>=35;
+  const fanV = s.latest_fan, coolV = s.latest_cooler;
+  const fanRAG  = fanV==null?'neutral':(hot && fanV==='Off')?'bad':fanV==='On'?'good':'neutral';
+  const coolRAG = coolV==null?'neutral':(hot && coolV==='Off')?'warn':coolV==='On'?'good':'neutral';
   const climateRows =
     mr(airRAG,  'Inside air temp',  s.latest_env_morn!=null?s.latest_env_morn+'°C':noData(lastInsideDate)) +
     mr(outRAG,  'Outside air temp', outsideTemp!=null?outsideTemp+'°C':noData(lastOutsideDate)) +
-    mr(diffRAG, 'Differential',     diff!=null?diff+'°C':noData(lastOutsideDate));
+    mr(diffRAG, 'Differential',     diff!=null?diff+'°C':noData(lastOutsideDate)) +
+    mr(fanRAG,  'Greenhouse fan',   fanV||'—') +
+    mr(coolRAG, 'Evap cooler',      coolV||'—');
 
   // Card 2: Water vitals — 2-column layout
   //   left  = frequent readings (per round / daily)
@@ -2057,14 +2125,30 @@ function renderHealthRow(){
     mrW(feRAG, 'Fe', fe!=null?fe+' ppm':'—');
   const waterFooter = 'Last reading: '+lastWQDate+(lastWQSlot?' · '+lastWQSlot:'');
 
-  // Card 3: Fish — weekly biomass sample (Form3)
+  // Card 3: Fish — weekly biomass sample (Form3) + actual feeding (Form1)
+  //
+  // "Last fed" reads the rounds where the crew answered fed = Yes, with the
+  // clock time they entered. It is NOT the form submission time: staff feed
+  // first and fill the form afterwards, and they may submit a round having
+  // not fed at all.
+  const fedDate = s.last_feed_date, fedTime = s.last_feed_time;
+  const fedVal = fedDate
+    ? fmtDate(fedDate) + (fedTime ? ' · ' + String(fedTime).slice(0,5) : (s.last_feed_round ? ' · '+s.last_feed_round : ''))
+    : 'Not recorded';
+  // Ops guide: 3 feeds a day. Fewer on the most recent feeding day is worth a flag.
+  const fedRAG = !fedDate ? 'neutral' : s.feed_day_rounds>=3 ? 'good' : 'warn';
+  // Ops guide: weigh a minimum of 10 fish.
+  const sampRAG = lastBM && lastBM[1]!=null ? (lastBM[1]>=10?'good':'warn') : 'neutral';
+
   const fishRows = !lastBM
     ? mr('neutral', 'No weekly weigh-in yet', '') +
-      mr('neutral', 'Last fed', lastRoundDate!=='—'?fmtDate(lastRoundDate)+(lastRoundFeedTime?' · '+lastRoundFeedTime:lastRoundSlot?' · '+lastRoundSlot:''):'—')
+      mr(fedRAG, 'Last fed', fedVal) +
+      mr('neutral', 'Fed that day', s.feed_day_total!=null?s.feed_day_total+' g · '+s.feed_day_rounds+'× ':'—')
     : mr(bmHealthRAG, 'Avg weight', lastBM[2]!=null?lastBM[2]+' g':'—') +
-      mr('neutral', 'Sampled', lastBM[1]!=null?String(lastBM[1])+' fish':'—') +
-      mr('neutral', 'Feed/day', lastBM[4]!=null?lastBM[4]+' g'+(lastBM[3]?' · '+lastBM[3]:''):'—') +
-      mr('neutral', 'Last fed', lastRoundDate!=='—'?fmtDate(lastRoundDate)+(lastRoundFeedTime?' · '+lastRoundFeedTime:lastRoundSlot?' · '+lastRoundSlot:''):'—');
+      mr(sampRAG, 'Sampled', lastBM[1]!=null?String(lastBM[1])+' fish':'—') +
+      mr('neutral', 'Planned feed', lastBM[4]!=null?lastBM[4]+' g/day'+(lastBM[3]?' · '+lastBM[3]:''):'—') +
+      mr(fedRAG, 'Last fed', fedVal) +
+      mr('neutral', 'Fed that day', s.feed_day_total!=null?s.feed_day_total+' g · '+s.feed_day_rounds+'×':'—');
 
   // Card 4: Siphon health — 2-column 3×3 layout
   const siphRAGi = v => v==null?'neutral':v>=15&&v<=18?'good':v>18&&v<=20?'warn':'bad';
@@ -2080,12 +2164,19 @@ function renderHealthRow(){
     mr(midDot,  'Midday round',   midVal) +
     mr(eveDot,  'Evening round',  eveVal);
 
+  const waterCard =
+    `<div class="sys-card" onclick="openWaterDrillDown()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openWaterDrillDown()}">
+      <div class="sys-card-header"><i class="ti ti-droplet" style="color:#60a5fa"></i>Water vitals<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">3× daily · 1× daily · weekly</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div>
+      <hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div>
+    </div>`;
+
   document.getElementById('health-grid-new').innerHTML =
-    card('sun',      'Climate',       climateRows, 'Last reading: '+lastEnvDate+(lastEnvSlot?' · '+lastEnvSlot:''),     '3× daily', '#fbbf24') +
-    `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet" style="color:#60a5fa"></i>Water vitals<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">3× daily · 1× daily · weekly</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
-    card('fish',     'Fish biomass',  fishRows,    'Last weigh-in: '+lastBiomassDate,                                            'weekly',   '#f97316') +
-    card('activity', 'Siphon health', siphRows,    'Last reading: '+lastSiphDate+(lastSiphSlot?' · '+lastSiphSlot:''),           '3× daily', '#a78bfa') +
-    card('calendar', 'Daily rounds',  checkRows,   'Last reading: '+lastRoundDate+(lastRoundSlot?' · '+lastRoundSlot:''),        '3× daily', '#5eead4');
+    card('sun',      'Climate',       climateRows, 'Last reading: '+lastEnvDate+(lastEnvSlot?' · '+lastEnvSlot:''),     '3× daily', '#fbbf24', "navTo('environment')") +
+    waterCard +
+    card('fish',     'Fish biomass',  fishRows,    'Last weigh-in: '+lastBiomassDate,                                   'weekly',   '#f97316', "navTo('fish')") +
+    card('activity', 'Siphon health', siphRows,    'Last reading: '+lastSiphDate+(lastSiphSlot?' · '+lastSiphSlot:''),  '3× daily', '#a78bfa', "navTo('siphons')") +
+    card('calendar', 'Daily rounds',  checkRows,   'Last reading: '+lastRoundDate+(lastRoundSlot?' · '+lastRoundSlot:''),'3× daily', '#5eead4', "openJournalPage()");
 }
 
 // ─── OVERVIEW ───────────────────────────────────────────────────────────────
@@ -2183,26 +2274,13 @@ function renderWater(){
   document.getElementById('wq-alerts').innerHTML = s.latest_ph>7.0
     ? `<div class="alert warn"><span class="alert-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></span><div><strong>pH Persistently Elevated</strong> — Only ${pctOK}% of days have been in the 6.5–7.0 ideal range. Consider investigating lime content in water source or gravel media.</div></div>` : '';
 
-  renderWQChart();
-  renderWTChart();
+  // The full metric grid — the same view the Water health pillar opens, so
+  // the tab and the drill-down can never show different things.
+  renderWaterMetrics('wq-metrics', 'wmtab');
+
   renderWQTable(30);
   document.getElementById('wq-count').textContent = `${D.wq.length} total readings`;
 }
-
-function renderWQChart(){
-  const data = filterByDays(D.wq_chart, wqDays);
-  renderLineChart('ph-chart', data.map(r=>r[0]),
-    [{label:'Daily Avg pH',data:data.map(r=>r[2]),color:'#1565C0',fill:false}],
-    {min:6.2,max:8.2,bands:[{from:6.5,to:7.0,color:'rgba(42,122,42,.1)',label:'Ideal'}]});
-}
-function renderWTChart(){
-  const data = filterByDays(D.wq_chart, wtDays);
-  renderLineChart('wtemp-chart', data.map(r=>r[0]),
-    [{label:'Water Temp (°C)',data:data.map(r=>r[1]),color:'#B45309',fill:false}],
-    {min:14,max:38,bands:[{from:24,to:30,color:'rgba(42,122,42,.1)',label:'Ideal'}]});
-}
-function setWQRange(d){ wqDays=d; document.querySelectorAll('#ph-range-btns .range-btn').forEach(b=>b.classList.toggle('active',+b.dataset.days===d)); renderWQChart(); }
-function setWTRange(d){ wtDays=d; document.querySelectorAll('#wt-range-btns .range-btn').forEach(b=>b.classList.toggle('active',+b.dataset.days===d)); renderWTChart(); }
 
 function renderWQTable(limit){
   // Order by date AND round so the newest reading of a day sits on top —
