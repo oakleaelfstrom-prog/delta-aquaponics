@@ -93,8 +93,6 @@ html.boss-theme .period-btn.active{background:#1a3d1b;border-color:#1a3d1b}
 /* Section header bands */
 html.boss-theme .ov-hd-pillars{background:rgba(200,168,75,.08);color:#7a5c0a;border-left-color:#c8a84b}
 html.boss-theme .ov-hd-analytics{background:rgba(44,95,46,.08);color:#2c5f2e;border-left-color:#2c5f2e}
-html.boss-theme .ov-hd-beds{background:rgba(44,95,46,.08);color:#2c5f2e;border-left-color:#2c5f2e}
-html.boss-theme .ov-hd-dwc{background:rgba(200,168,75,.08);color:#7a5c0a;border-left-color:#c8a84b}
 /* Quickjump active pills */
 html.boss-theme .qj-btn[data-sec="pillars"].active{background:rgba(200,168,75,.1);color:#7a5c0a;border-color:rgba(200,168,75,.35)}
 html.boss-theme .qj-btn[data-sec="analytics"].active{background:rgba(44,95,46,.1);color:#2c5f2e;border-color:rgba(44,95,46,.3)}
@@ -134,13 +132,13 @@ html.boss-theme .section-header h2,html.boss-theme .ov-hd{font-weight:800}
 html.boss-theme .kpi-card .value,html.boss-theme .sc-value,html.boss-theme .exec-kpi .ek-val{font-weight:800}
 html.boss-theme .kpi-card .label,html.boss-theme .exec-row-label,html.boss-theme .metric-value,html.boss-theme .card-header h3,html.boss-theme .sys-card-header,html.boss-theme .bed-card-new-header,html.boss-theme .exec-card-head h3,html.boss-theme #drill-title,html.boss-theme .modal h3,html.boss-theme th{font-weight:700}
 html.boss-theme .qj-btn,html.boss-theme .period-btn,html.boss-theme .ops-btn,html.boss-theme .range-btn,html.boss-theme .chip,html.boss-theme .badge,html.boss-theme .btn-primary,html.boss-theme .btn-secondary{font-weight:700}
-html.boss-theme .plant-card .crop-name,html.boss-theme .tl-content h4,html.boss-theme .phase-tl-name,html.boss-theme .journal-pg-title,html.boss-theme .journal-week-row-label,html.boss-theme .gantt-label{font-weight:700}
+html.boss-theme .tl-content h4,html.boss-theme .phase-tl-name,html.boss-theme .journal-pg-title,html.boss-theme .journal-week-row-label,html.boss-theme .gantt-label{font-weight:700}
 
 /* Vivid section-header bands + quick-jump pills (match boss site — replace the faint .08 colours) */
-html.boss-theme .ov-hd-pillars,html.boss-theme .ov-hd-dwc{background:rgba(200,168,75,.20);color:#6b5207;border-left:4px solid #c8a84b}
-html.boss-theme .ov-hd-pillars i,html.boss-theme .ov-hd-dwc i{color:#a07d14}
-html.boss-theme .ov-hd-analytics,html.boss-theme .ov-hd-beds{background:rgba(44,95,46,.16);color:#163a17;border-left:4px solid #2c5f2e}
-html.boss-theme .ov-hd-analytics i,html.boss-theme .ov-hd-beds i{color:#2c5f2e}
+html.boss-theme .ov-hd-pillars{background:rgba(200,168,75,.20);color:#6b5207;border-left:4px solid #c8a84b}
+html.boss-theme .ov-hd-pillars i{color:#a07d14}
+html.boss-theme .ov-hd-analytics{background:rgba(44,95,46,.16);color:#163a17;border-left:4px solid #2c5f2e}
+html.boss-theme .ov-hd-analytics i{color:#2c5f2e}
 html.boss-theme .qj-btn[data-sec="pillars"].active,html.boss-theme .qj-btn[data-sec="dwc"].active{background:rgba(200,168,75,.22);color:#6b5207;border-color:#c8a84b}
 html.boss-theme .qj-btn[data-sec="analytics"].active,html.boss-theme .qj-btn[data-sec="beds"].active{background:rgba(44,95,46,.18);color:#163a17;border-color:#2c5f2e}
 
@@ -260,8 +258,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ov-hd i{font-size:16px}
 .ov-hd-pillars{background:rgba(99,102,241,.1);color:#a5b4fc;border-left:3px solid #6366f1}
 .ov-hd-analytics{background:rgba(20,184,166,.1);color:#5eead4;border-left:3px solid #14b8a6}
-.ov-hd-beds{background:rgba(74,222,128,.1);color:#4ade80;border-left:3px solid #22c55e}
-.ov-hd-dwc{background:rgba(251,191,36,.1);color:#fcd34d;border-left:3px solid #f59e0b}
 
 /* ── JOURNAL PAGES ── */
 .journal-page{position:fixed;inset:0;z-index:600;background:var(--bg);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
@@ -316,6 +312,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .badge.warn{background:var(--c-warn-bg);color:var(--c-warn)}
 .badge.bad{background:var(--c-bad-bg);color:var(--c-bad)}
 .badge.info{background:var(--blue-pale);color:var(--blue)}
+.badge.neutral{background:var(--c-neutral-bg);color:var(--c-neutral)}
 
 /* ── DOTS ── */
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
@@ -341,9 +338,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sys-card-header i{font-size:18px;color:var(--muted)}
 
 /* ── GROWING BEDS GRID ── */
-#beds-grid,#dwc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-@media(max-width:900px){#beds-grid,#dwc-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:500px){#beds-grid,#dwc-grid{grid-template-columns:1fr}}
 .bed-card-new{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;min-height:44px}
 .bed-card-new-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:13px;font-weight:500}
 .bed-obs-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
@@ -397,17 +391,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* ── DRILL-DOWN BOTTOM SHEET ── */
 #drill-modal{position:fixed;inset:0;z-index:500;display:none;flex-direction:column;background:var(--surface)}
 #drill-modal.open{display:flex}
-#harvest-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px;align-items:start}
-#harvest-grid .bed-cell{border:0.5px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
-#harvest-grid .bed-cell-title{padding:12px 16px;font-size:14px;font-weight:700;color:var(--text);background:var(--surface-2);border-bottom:0.5px solid var(--border)}
-@media(max-width:760px){#harvest-grid{grid-template-columns:1fr}}
 .bed-overdue{display:flex;align-items:center;gap:5px;margin:10px 0 0;padding:6px 10px;border-radius:7px;background:var(--c-bad-bg);border:1px solid var(--c-bad);color:var(--c-bad);font-size:11px;font-weight:800;letter-spacing:.01em}
 #drill-sheet{flex:1;display:flex;flex-direction:column;overflow:hidden}
 #drill-header{padding:14px 16px 12px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
 #drill-title{font-size:15px;font-weight:600;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #drill-close{background:var(--surface-2);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0}
-.bed-nav-btn{background:var(--surface-2);border:0.5px solid var(--border);border-radius:16px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text);flex-shrink:0;white-space:nowrap;line-height:1.2;transition:opacity .2s}
 #drill-body{overflow-y:auto;flex:1;transition:opacity .15s}
+/* Water-health drill-down: metric cards + per-metric trend charts */
+.wm-note{padding:14px 16px 4px;font-size:12px;color:var(--muted);line-height:1.5}
+.wm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:14px}
+.wm-card{border:0.5px solid var(--border);border-radius:10px;padding:11px 12px;background:var(--surface-2)}
+.wm-name{font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:4px}
+.wm-unit{font-weight:400;color:var(--muted)}
+.wm-val{font-size:21px;font-weight:700;line-height:1.15}
+.wm-spark{height:28px;margin:5px 0 3px}
+.wm-spark svg{width:100%;height:100%;display:block}
+.wm-target{font-size:10px;color:var(--muted)}
+.wm-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 14px 24px}
+.wm-chart-card{border:0.5px solid var(--border);border-radius:12px;background:var(--surface);overflow:hidden}
+.wm-chart-title{padding:10px 14px;font-size:12px;font-weight:600;color:var(--text);background:var(--surface-2);border-bottom:0.5px solid var(--border)}
+.wm-chart-box{height:190px;padding:10px}
+@media(max-width:760px){.wm-charts{grid-template-columns:1fr}}
 
 /* ── CARDS (legacy for other tabs) ── */
 .card{background:var(--surface);border-radius:var(--r);margin-bottom:14px;overflow:hidden;border:0.5px solid var(--border)}
@@ -458,11 +462,6 @@ tr:hover td{background:var(--surface-2)}
 @media(min-width:700px){.grid-2{grid-template-columns:1fr 1fr}}
 
 /* ── PLANTS GRID ── */
-.plant-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:14px}
-.plant-card{border:0.5px solid var(--border);border-radius:var(--r-sm);padding:12px;background:var(--surface-2)}
-.plant-card .crop-name{font-size:13px;font-weight:500;margin-bottom:3px}
-.plant-card .crop-date{font-size:11px;color:var(--muted)}
-.plant-card .crop-status{font-size:11px;margin-top:6px;padding:3px 7px;border-radius:4px;display:inline-block}
 
 /* ── MAINTENANCE TIMELINE ── */
 .timeline{padding:14px 16px}
@@ -472,13 +471,6 @@ tr:hover td{background:var(--surface-2)}
 .evt-photo-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--text-2);background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;line-height:1.3;white-space:nowrap}
 .evt-photo-btn:hover{background:var(--surface-2);color:var(--text)}
 .evt-photo-btn i{color:#60a5fa}
-#photo-lightbox{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;padding:24px}
-#photo-lightbox.open{display:flex}
-#photo-lightbox .plb-inner{position:relative;max-width:92vw;max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:10px;align-items:center}
-#photo-lightbox img{max-width:88vw;max-height:82vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
-#photo-lightbox .plb-close{position:fixed;top:16px;right:20px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:26px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
-#photo-lightbox .plb-close:hover{background:rgba(255,255,255,.28)}
-#photo-lightbox .plb-broken{color:#fff;background:rgba(255,255,255,.08);padding:28px 36px;border-radius:8px;font-size:13px}
 .tl-dot{width:30px;height:30px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:0.5px solid var(--border)}
 .tl-content{flex:1}
 .tl-content h4{font-size:13px;font-weight:500;margin-bottom:2px}
@@ -559,7 +551,6 @@ tr:hover td{background:var(--surface-2)}
   <button class="nav-link" data-section="water"><i class="ti ti-droplet icon" style="color:#60a5fa"></i>Water Quality</button>
   <button class="nav-link" data-section="environment"><i class="ti ti-sun icon"></i>Environment</button>
   <button class="nav-link" data-section="fish"><i class="ti ti-fish icon" style="color:#f97316"></i>Fish</button>
-  <button class="nav-link" data-section="plants"><i class="ti ti-plant-2 icon" style="color:#4ade80"></i>Plants</button>
   <button class="nav-link" data-section="siphons"><i class="ti ti-settings icon" style="color:#a78bfa"></i>Siphons</button>
   <button class="nav-link" data-section="maintenance"><i class="ti ti-tool icon" style="color:#fbbf24"></i>Maintenance</button>
 </div>
@@ -569,11 +560,7 @@ tr:hover td{background:var(--surface-2)}
   <div id="drill-sheet">
     <div id="drill-header">
       <button id="drill-close" onclick="closeDrillDown()">✕</button>
-      <span id="drill-title">Row</span>
-      <div id="bed-nav-area" style="display:none;gap:6px">
-        <button class="bed-nav-btn" id="bed-nav-prev" onclick="navigateBedTimeline(-1)">←</button>
-        <button class="bed-nav-btn" id="bed-nav-next" onclick="navigateBedTimeline(1)">→</button>
-      </div>
+      <span id="drill-title">Details</span>
     </div>
     <div id="drill-body"></div>
   </div>
@@ -630,17 +617,11 @@ tr:hover td{background:var(--surface-2)}
     <div id="quickjump">
       <button class="qj-btn active" data-sec="pillars" onclick="jumpTo('anc-pillars',this)"><i class="ti ti-chart-bar" style="font-size:12px;margin-right:3px"></i>Pillars</button>
       <button class="qj-btn" data-sec="analytics" onclick="jumpTo('anc-analytics',this)"><i class="ti ti-activity" style="font-size:12px;margin-right:3px"></i>System Analytics</button>
-      <button class="qj-btn" data-sec="beds" onclick="jumpTo('anc-beds',this)"><i class="ti ti-plant-2" style="font-size:12px;margin-right:3px"></i>Growing Beds</button>
-      <button class="qj-btn" data-sec="dwc" onclick="jumpTo('anc-dwc',this)"><i class="ti ti-droplet" style="font-size:12px;margin-right:3px"></i>DWC Tanks</button>
     </div>
     <div class="ov-hd ov-hd-pillars" id="anc-pillars" data-sec="pillars"><i class="ti ti-chart-bar"></i>Pillars</div>
     <div id="scorecard-row"></div>
     <div class="ov-hd ov-hd-analytics" id="anc-analytics" data-sec="analytics"><i class="ti ti-activity"></i>Current System Analytics</div>
     <div id="health-grid-new"></div>
-    <div class="ov-hd ov-hd-beds" id="anc-beds" data-sec="beds"><i class="ti ti-plant-2"></i>Growing Beds</div>
-    <div id="beds-grid"></div>
-    <div class="ov-hd ov-hd-dwc" id="anc-dwc" data-sec="dwc"><i class="ti ti-droplet"></i>DWC Tanks</div>
-    <div id="dwc-grid"></div>
   </div>
 
   <!-- WATER QUALITY -->
@@ -648,7 +629,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="ops-nav" id="ops-nav-water"></div>
     <div class="section-header">
       <h2>Water Quality</h2>
-      <p>pH and temperature from the fish tank — ideal pH 6.8–7.2, ideal water temp 24–30°C.</p>
+      <p>Fish tank readings — ideal pH 6.8–7.2, water temp 24–30°C, dissolved oxygen above 5 mg/L. Temperature and dissolved oxygen are logged 3× daily; pH, nitrite, nitrate and conductivity once daily.</p>
     </div>
     <div id="wq-alerts"></div>
     <div class="kpi-row" id="wq-kpis"></div>
@@ -679,7 +660,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="card">
       <div class="card-header"><h3>All Water Readings</h3><span id="wq-count" style="font-size:11px;color:var(--muted)"></span></div>
       <div class="tbl-wrap" style="max-height:260px"><table>
-        <thead><tr><th>Date</th><th>Time</th><th>Temp °C</th><th>pH</th><th>Status</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Date</th><th>Time</th><th>Temp °C</th><th>pH</th><th>DO mg/L</th><th>EC</th><th>Status</th><th>Notes</th></tr></thead>
         <tbody id="wq-tbody"></tbody>
       </table></div>
       <button class="view-all-btn" onclick="openDrillDown('wq')">View all readings</button>
@@ -720,46 +701,19 @@ tr:hover td{background:var(--surface-2)}
   <div class="section" id="sec-fish">
     <div class="ops-nav" id="ops-nav-fish"></div>
     <div class="section-header">
-      <h2>Fish Stock</h2>
-      <p>Three-spotted tilapia — stocked Oct 2025, target harvest weight 400g+.</p>
+      <h2>Fish Biomass</h2>
+      <p>Three-spotted tilapia — weekly sample weigh-in from the Friday summary. Growth benchmark 3–5 g per week; feed target 2–3% of body weight per day.</p>
     </div>
     <div class="kpi-row" id="fish-kpis"></div>
-    <div id="fish-alerts"></div>
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-header"><h3>Stock Level Over Time</h3></div>
-        <div class="card-body"><div class="chart-wrap"><canvas id="fish-stock-chart"></canvas></div></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><h3>Mortality by Cause</h3></div>
-        <div class="card-body"><div class="chart-wrap"><canvas id="fish-cause-chart"></canvas></div></div>
-      </div>
+    <div class="card">
+      <div class="card-header"><h3><i class="ti ti-chart-line" style="margin-right:6px;font-size:14px;color:#a78bfa"></i>Average Fish Weight Over Time</h3></div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="fish-weight-chart"></canvas></div></div>
     </div>
     <div class="card">
-      <div class="card-header"><h3>Mortality Log</h3></div>
+      <div class="card-header"><h3>Weekly Weigh-in Log</h3></div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Date</th><th>Deaths</th><th>Cause</th><th>Remaining Stock</th><th>Health Notes</th></tr></thead>
+        <thead><tr><th>Week</th><th>Sampled</th><th>Avg weight (g)</th><th>Gain</th><th>Feed/day (g)</th><th>Feed type</th><th>Health</th></tr></thead>
         <tbody id="fish-tbody"></tbody>
-      </table></div>
-    </div>
-  </div>
-
-  <!-- PLANTS -->
-  <div class="section" id="sec-plants">
-    <div class="ops-nav" id="ops-nav-plants"></div>
-    <div class="section-header">
-      <h2>Plants</h2>
-      <p>Current and historical crop records across all growing beds.</p>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>Current Active Crops (No Harvest Date)</h3></div>
-      <div class="plant-grid" id="plant-grid"></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><h3>Full Plant History</h3></div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Date</th><th>Crop</th><th>Stage</th><th>Growth Notes</th><th>Pests</th><th>Harvest</th><th>Remarks</th></tr></thead>
-        <tbody id="plant-tbody"></tbody>
       </table></div>
     </div>
   </div>
@@ -969,10 +923,10 @@ async function fetchWebAppData(webAppUrl) {
 // The Web App returns { tabName: { headers:[...], rows:[[...], ...] }, … }
 // We map each tab to the arrays that buildMergedData() expects.
 function parseWebAppData(allData) {
-  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [], equip_rows = [], journal_rows = [];
-  const jNote = (date, time, src, cat, text, photos) => {
+  let wq_rows = [], env_rows = [], siph_rows = [], fish_rows = [], plant_rows = [], maint_rows = [], chem_rows = [], biomass_rows = [], journal_rows = [];
+  const jNote = (date, time, src, cat, text) => {
     if (!text || text.length < 3 || /^(ok|n\/a|none|na|-|yes|no|good|normal)$/i.test(text.trim())) return;
-    journal_rows.push([date, time, src, cat, text.trim(), (photos || []).filter(Boolean)]);
+    journal_rows.push([date, time, src, cat, text.trim()]);
   };
   // compliance_map: date → {f1_morn, f1_mid, f1_eve, f2}
   const comp_map = {};
@@ -1022,15 +976,17 @@ function parseWebAppData(allData) {
   });
 
   // ── Form 1 — 3× daily round ───────────────────────────────────────────────
-  // Extracts: siphon cycle times, air temps, water temp, compliance slot
+  // Extracts: siphon cycle times, air temps, water temp, dissolved oxygen,
+  // compliance slot
   histTab('Form1_DailyRounds', r => {
     if (!r[0]) return;
     const dt = cleanDate(String(r[0]));
     if (!dt) return;
 
-    // Fixed schema — Form1_DailyRounds, 28 cols (KoboToolbox sync):
-    //   2 Round · 3 inside temp · 4 outside temp · 5 water temp · 6 weather
-    //   16–21 siphon rows 1–6 · 24 rows-not-dry · 26 rows-with-algae · 27 notes
+    // Fixed schema — Form1_DailyRounds, 26 cols (Kobo schema v2, 2026-08-05):
+    //   2 Round · 3 inside temp · 4 outside temp · 5 water temp
+    //   6 dissolved oxygen · 7 weather
+    //   15–20 siphon rows 1–6 · 22 rows-not-dry · 24 rows-with-algae · 25 notes
     const tm = sv(r[2]) || timeLabel(String(r[0])) || 'Morning';
 
     // Compliance
@@ -1041,161 +997,101 @@ function parseWebAppData(allData) {
     else if (tm === 'Midday') comp_map[dt].f1_mid = submitTime || true;
     else comp_map[dt].f1_eve = submitTime || true;
 
-    // Siphon rows 1–6 (cols 16–21)
-    const s = [0,1,2,3,4,5].map(i => fv(r[16+i]));
+    // Siphon rows 1–6 (cols 15–20)
+    const s = [0,1,2,3,4,5].map(i => fv(r[15+i]));
     if (s.some(v => v !== null)) siph_rows.push([dt, tm, ...s]);
 
-    // Environment (inside 3, outside 4, weather 6)
-    const ai = fv(r[3]), ao = fv(r[4]), wx = sv(r[6]);
+    // Environment (inside 3, outside 4, weather 7)
+    const ai = fv(r[3]), ao = fv(r[4]), wx = sv(r[7]);
     if (ai !== null || ao !== null) env_rows.push([dt, tm, ai, ao, wx]);
 
-    // Water temp (5) + notes (27)
-    const wt = fv(r[5]);
-    const f1notes = sv(r[27]);
-    if (wt !== null) wq_rows.push([dt, tm, wt, null, f1notes]);
+    // Water temp (5) + dissolved oxygen (6) + notes (25)
+    const wt = fv(r[5]), dox = fv(r[6]);
+    const f1notes = sv(r[25]);
+    if (wt !== null || dox !== null) wq_rows.push([dt, tm, wt, null, f1notes, null, null, dox, null]);
     jNote(dt, tm, 'Daily Rounds', 'General', f1notes);
 
-    // Gravel moisture (24) and algae (26) rows → journal, with the gravel
-    // surface photo (22, holds the wet-pot + algae close-ups, comma-joined)
-    const notDryRows = sv(r[24]);
-    const algaeRows  = sv(r[26]);
-    const gravelPhotos = String(r[22]||'').split(',').map(s=>s.trim()).filter(Boolean);
-    if (notDryRows) jNote(dt, tm, 'Daily Rounds', 'Gravel moisture', 'Top layer not dry: ' + notDryRows, gravelPhotos);
-    if (algaeRows)  jNote(dt, tm, 'Daily Rounds', 'Algae', 'Algae visible on: ' + algaeRows, gravelPhotos);
+    // Gravel moisture (22) and algae (24) rows → journal
+    const notDryRows = sv(r[22]);
+    const algaeRows  = sv(r[24]);
+    if (notDryRows) jNote(dt, tm, 'Daily Rounds', 'Gravel moisture', 'Top layer not dry: ' + notDryRows);
+    if (algaeRows)  jNote(dt, tm, 'Daily Rounds', 'Algae', 'Algae visible on: ' + algaeRows);
   });
 
-  // ── Form 2 — daily full check ─────────────────────────────────────────────
-  // Extracts: pH/nitrate/nitrite, plant health per bed, fish deaths
-  // Fish stock: running total calculated from ALL Form2 rows in date order
-  {
-    const f2 = allData['Form2_DailyCheck'];
-    if (f2 && f2.rows) {
-      // Sort rows by timestamp so running stock accumulates correctly
-      const sorted = [...f2.rows]
-        .filter(r => r[0])
-        .sort((a, b) => new Date(a[0]) - new Date(b[0]));
+  // ── Form 2 — daily water chemistry ────────────────────────────────────────
+  // Fixed schema — Form2_DailyCheck, 8 cols (Kobo schema v2, 2026-08-05):
+  //   2 date · 3 pH · 4 nitrate · 5 nitrite · 6 electrical conductivity · 7 notes
+  //
+  // This form used to carry the per-row plant inspection, the daily fish
+  // block and the equipment checklist. Those questions were removed from
+  // the form — that detail now lives in a separate app view — so the
+  // dashboard no longer derives plant rows, fish stock or equipment status
+  // from here.
+  histTab('Form2_DailyCheck', r => {
+    if (!r[0]) return;
+    const dt = cleanDate(String(r[0]));
+    if (!dt) return;
 
-      // Seed running stock from last Fish_Records entry's running_total (r[6]), so restocks are picked up automatically
-      const histLastStock = fish_rows.length ? (Number(fish_rows[fish_rows.length-1][6]) || 1295) : 1295;
-      let runningStock = histLastStock;
+    // Compliance: mark daily check submitted
+    if (!comp_map[dt]) comp_map[dt] = {f1_morn:false, f1_mid:false, f1_eve:false, f2:false};
+    comp_map[dt].f2 = true;
 
-      sorted.forEach(r => {
-        const dt = cleanDate(String(r[0]));
-        if (!dt) return;
-
-        // Compliance: mark daily check submitted
-        if (!comp_map[dt]) comp_map[dt] = {f1_morn:false, f1_mid:false, f1_eve:false, f2:false};
-        comp_map[dt].f2 = true;
-
-        // WQ chemistry (cols 3=pH, 4=NO₃, 5=NO₂)
-        const ph = fv(r[3]), no3 = fv(r[4]), no2 = fv(r[5]);
-        if (ph !== null) {
-          const note = [no3 !== null ? `NO₃ ${no3}` : '', no2 !== null ? `NO₂ ${no2}` : ''].filter(Boolean).join(' · ');
-          // [dt, source, water_temp, pH, note, NO₃, NO₂]
-          wq_rows.push([dt, 'Form2', null, ph, note || null, no3, no2]);
-        }
-
-        // Fixed schema — Form2_DailyCheck, 106 cols (KoboToolbox sync):
-        //   84 fish active · 85 listing/gasping · 86 disease · 87 dead count · 88 dead removed
-        //   98–104 equip (pumps, sump, leaks, clean, biowaste, nutrient, clarity) · 105 notes
-        const f2notes = sv(r[105]);
-        const fishPhoto = sv(r[89]);   // fish tank photo
-
-        const deaths = Math.max(0, fv(r[87]) || 0);
-        runningStock -= deaths;
-        const fishOk  = sv(r[84]) !== 'No';
-        const gasping  = sv(r[85]) === 'Yes';
-        const disease  = sv(r[86]) === 'Yes';
-        const healthNote = !fishOk ? 'Concerns' : gasping ? 'Gasping observed' : disease ? 'Disease signs' : 'OK';
-        fish_rows.push([dt, 'Three-spotted tilapia', 1295, deaths, f2notes || '', healthNote, Math.round(runningStock)]);
-        jNote(dt, null, 'Daily Check', 'General', f2notes, fishPhoto?[fishPhoto]:[]);
-        if (healthNote !== 'OK') jNote(dt, null, 'Daily Check', 'Fish health', healthNote, fishPhoto?[fishPhoto]:[]);
-
-        equip_rows.push([dt, {
-          pump:      sv(r[98]),  level:     sv(r[99]),  leaks:    sv(r[100]),
-          clean:     sv(r[101]), biowaste:  sv(r[102]), nutrients:sv(r[103]),
-          clarity:   sv(r[104])
-        }]);
-
-        // Plant health per gravel row — 6 rows, 13 fields each, base = 6 + i*13:
-        //   +0 health +1 yellowing +2 wilting +3 pests +8 harvested +9 weight +10 notes
-        for (let i = 0; i < 6; i++) {
-          const b = 6 + i * 13;
-          const health = sv(r[b]);
-          if (!health) continue;
-          const harvested = sv(r[b+8]) === 'Yes';
-          const wt = fv(r[b+9]);
-          const bedNote = sv(r[b+10]);
-          const bedPests = sv(r[b+3]);
-          const issuePhoto   = sv(r[b+12]);   // aggregated concern close-ups (health/yellowing/wilting/pests)
-          const routinePhoto = sv(r[b+11]);   // daily routine overview photo
-          plant_rows.push([
-            dt, `Row ${i+1}`,
-            harvested ? 'Harvest' : 'Inspection',
-            `Health: ${health}`,
-            bedPests,
-            null,
-            [bedNote, wt !== null ? `Weight: ${wt}kg` : ''].filter(Boolean).join(' · ') || null,
-            sv(r[b+1]),
-            sv(r[b+2]),
-            null,
-            null,            // 10 reserved (cropName — Form3 only)
-            null,            // 11 reserved (plantedDate — Form3 only)
-            issuePhoto,      // 12 concern close-up photo(s), comma-separated
-            routinePhoto     // 13 routine overview photo
-          ]);
-          const issuePhotos   = String(issuePhoto||'').split(',').map(s=>s.trim()).filter(Boolean);
-          const rowPhotos     = [...issuePhotos, ...String(routinePhoto||'').split(',').map(s=>s.trim()).filter(Boolean)];
-          jNote(dt, null, 'Daily Check', `Row ${i+1}`, bedNote, rowPhotos);
-          jNote(dt, null, 'Daily Check', `Row ${i+1} — pests`, bedPests, issuePhotos);
-        }
-      });
+    const ph = fv(r[3]), no3 = fv(r[4]), no2 = fv(r[5]), ec = fv(r[6]);
+    if (ph !== null || no3 !== null || no2 !== null || ec !== null) {
+      const note = [
+        no3 !== null ? `NO₃ ${no3}` : '',
+        no2 !== null ? `NO₂ ${no2}` : '',
+        ec  !== null ? `EC ${ec}`   : '',
+      ].filter(Boolean).join(' · ');
+      // [dt, source, water_temp, pH, note, NO₃, NO₂, dissolved O₂, EC]
+      // The source slot doubles as the merge key suffix, so it must stay
+      // distinct from the Morning/Midday/Evening rounds Form1 writes.
+      wq_rows.push([dt, 'Daily check', null, ph, note || null, no3, no2, null, ec]);
     }
-  }
+
+    jNote(dt, null, 'Daily Check', 'General', sv(r[7]));
+  });
 
   // ── Form 3 — weekly check ─────────────────────────────────────────────────
-  // Extracts: harvest dates per bed, weekly fish health note
+  // Extracts: weekly water chemistry panel, fish biomass + health note
+  //
+  // The six per-row crop blocks (crop type / date planted / expected harvest
+  // date) were removed from this form on 2026-08-05, so the dashboard no
+  // longer has a source for crop identity or harvest scheduling.
   histTab('Form3_Weekly', r => {
     if (!r[0]) return;
     const dt = cleanDate(String(r[2] || r[0])); // week commencing date (col 2) or timestamp
     if (!dt) return;
 
-    // Fixed schema — Form3_Weekly, 45 cols (KoboToolbox sync):
-    //   per row block = 4 fields, row i base = 16 + i*4:
-    //     +0 crop · +1 planted date · +2 expected harvest date · +3 weekly photo
-    for (let i = 0; i < 6; i++) {
-      const base = 16 + i * 4;
-      const cropVal = sv(r[base]) || null;
-      const cropName = (cropVal && cropVal !== 'Empty — nothing planted') ? cropVal : null;
-      const plantedDate = cleanDate(String(r[base+1] || ''));
-      const hd = cleanDate(String(r[base+2] || ''));
-      if (cropName) plant_rows.push([dt, `Row ${i+1}`, 'Planted', cropName, null, hd||null, null, null, null, null, cropName, plantedDate||null]);
-      else if (hd)  plant_rows.push([dt, `Row ${i+1}`, 'Harvest date update', '', null, hd, null, null, null, null, null, null]);
-    }
-
-    // Weekly chemistry: cols 3–8 (NH₃, Ca, Mg, K, Mn, Fe)
+    // Fixed schema — Form3_Weekly, 16 cols (Kobo schema v2, 2026-08-05):
+    //   3–8 chemistry (NH₃, Ca, Mg, K, Mn, Fe)
+    //   9 sampled · 10 avg weight · 11 feed type · 12 daily feed
+    //   13 visual health · 14 observations · 15 notes
     const nh3=fv(r[3]), ca=fv(r[4]), mg=fv(r[5]), kk=fv(r[6]), mn=fv(r[7]), fe=fv(r[8]);
     if([nh3,ca,mg,kk,mn,fe].some(v=>v!=null)) chem_rows.push([dt,nh3,ca,mg,kk,mn,fe]);
 
-    // Weekly fish health note (col 13 = visual health, 10 = avg weight, 9 = sampled) — EC removed, cols shifted
+    // Weekly fish biomass — [date, sampled, avg weight (g), feed type, daily feed (g), visual health]
+    const sampled = fv(r[9]), avgWt = fv(r[10]), feedType = sv(r[11]), dailyFeed = fv(r[12]);
     const fishHealth = sv(r[13]);
-    const f3FishPhoto = sv(r[15]);   // weekly fish tank photo
-    const f3FishPhotos = f3FishPhoto ? [f3FishPhoto] : [];
-    if (fishHealth && fishHealth !== 'Good') {
-      const wt = fv(r[10]), n = fv(r[9]);
-      const note = [fishHealth, wt !== null ? `avg ${wt}g` : '', n !== null ? `n=${n}` : ''].filter(Boolean).join(' · ');
-      maint_rows.push([dt, 'Fish', 'Weekly weigh', note, sv(r[1]) || 'Staff', sv(r[14])]);
-      jNote(dt, null, 'Weekly Check', 'Fish health', note, f3FishPhotos);
+    if ([sampled, avgWt, dailyFeed].some(v => v != null) || fishHealth) {
+      biomass_rows.push([dt, sampled, avgWt, feedType, dailyFeed, fishHealth]);
     }
-    jNote(dt, null, 'Weekly Check', 'General', sv(r[14]), f3FishPhotos);
+
+    if (fishHealth && fishHealth !== 'Good') {
+      const note = [fishHealth, avgWt !== null ? `avg ${avgWt}g` : '', sampled !== null ? `n=${sampled}` : ''].filter(Boolean).join(' · ');
+      maint_rows.push([dt, 'Fish', 'Weekly weigh', note, sv(r[1]) || 'Staff', sv(r[14])]);
+      jNote(dt, null, 'Weekly Check', 'Fish health', note);
+    }
+    jNote(dt, null, 'Weekly Check', 'Fish observations', sv(r[14]));
+    jNote(dt, null, 'Weekly Check', 'General', sv(r[15]));
   });
 
   // Convert comp_map → sorted array [{date, f1_morn, f1_mid, f1_eve, f2}]
   const comp_rows = Object.entries(comp_map).sort().map(([date, v]) => ({date, ...v}));
-  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows, equip_rows, journal_rows);
+  return buildMergedData(wq_rows, env_rows, siph_rows, fish_rows, plant_rows, maint_rows, [], [], comp_rows, chem_rows, biomass_rows, journal_rows);
 }
 
-function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[], equip_new=[], journal_new=[]) {
+function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[], biomass_new=[], journal_new=[]) {
   function mergeByKey(hist, newRows, keyFn) {
     const map = new Map();
     [...hist, ...newRows].forEach(r => map.set(keyFn(r), r));
@@ -1215,10 +1111,6 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
 
   const makeEnvByTime = (t) => { const m={}; env.filter(r=>r[1]===t).forEach(r=>{if(!m[r[0]])m[r[0]]=[];if(r[2]!=null)m[r[0]].push(r[2]);}); return Object.entries(m).sort().map(([d,v])=>[d,v.length?+(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1):null]); };
 
-  const stock_chart = fish.filter(r=>r[6]!=null).map(r=>[r[0],+r[6]]);
-  const cause_map = {}; fish.forEach(r=>{if(r[4]&&r[3]!=null){cause_map[r[4]]=(cause_map[r[4]]||0)+r[3];}});
-  const cause_data = Object.entries(cause_map).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,Math.round(v)]);
-
   const siphCols = ['s1','s2','s3','s4','s5','s6'];
   const siph_avgs = [2,3,4,5,6,7].map(i=>{const vs=siph.map(r=>r[i]).filter(v=>v!=null);return vs.length?+(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1):null;});
   const siph_chart_data = {}; siphCols.forEach((k,i)=>{siph_chart_data[k]=siph.filter(r=>r[i+2]!=null).map(r=>[r[0],r[i+2]]);});
@@ -1228,31 +1120,46 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   let cumul=0; const fin_cumul=[...fin].filter(r=>r[5]!=null&&r[0]).sort((a,b)=>a[0]>b[0]?1:-1).map(r=>{cumul+=r[5];return[r[0],Math.round(cumul)];});
 
   const total_spend = fin.reduce((s,r)=>s+(r[5]||0),0);
-  const latest_wq      = [...wq].reverse().find(r=>r[3]!=null) || {};   // latest pH row (Form2)
-  const latest_wtemp_r = [...wq].reverse().find(r=>r[2]!=null);          // latest temp row (Form1)
   const _tOrd = t => t==='Evening'?3:t==='Midday'?2:1; // sort helper: Evening > Midday > Morning
+  // "Latest" must respect the round within a day, not just the date: Form1
+  // writes three rows per day (Morning/Midday/Evening) and mergeByKey only
+  // orders by date, so a plain reverse().find() can return the morning
+  // reading as the newest. That matters most for dissolved oxygen, which
+  // typically bottoms out in the evening.
+  const _wqOrd = r => (r[1]==='Morning'||r[1]==='Midday'||r[1]==='Evening') ? _tOrd(r[1]) : 0;
+  const _wqSorted = [...wq].sort((a,b) => a[0]!==b[0] ? (a[0]<b[0]?-1:1) : _wqOrd(a)-_wqOrd(b));
+  const _latestWQVal = idx => {
+    for (let i=_wqSorted.length-1; i>=0; i--) if (_wqSorted[i][idx]!=null) return _wqSorted[i][idx];
+    return null;
+  };
   const _envSorted = [...env].sort((a,b) => a[0]!==b[0]?(a[0]<b[0]?-1:1):_tOrd(a[1])-_tOrd(b[1]));
   const latest_env = _envSorted[_envSorted.length-1] || [];
-  const cur_stock = stock_chart.length ? stock_chart[stock_chart.length-1][1] : DEFAULT_DATA.stats.current_stock;
   const chem = [...chem_new].sort((a,b)=>a[0]>b[0]?1:-1);
   const lc = chem.length ? chem[chem.length-1] : [];
   // Latest siphon reading per row (most recent entry, not all-time average)
   const siph_latest = [2,3,4,5,6,7].map(i => { const vs=siph.filter(r=>r[i]!=null); return vs.length?vs[vs.length-1][i]:null; });
   // Outside air temp from latest morning env entry
   const latest_env_morn_out = _envSorted.filter(r=>r[3]!=null).pop()?.[3]??null;
-  // Latest equipment check
-  const equip_sorted = [...equip_new].sort((a,b)=>a[0]>b[0]?1:-1);
-  const latest_equip = equip_sorted.length ? equip_sorted[equip_sorted.length-1][1] : null;
-  const latest_equip_date = equip_sorted.length ? equip_sorted[equip_sorted.length-1][0] : null;
+  // Latest dissolved oxygen (Form1, 3× daily) and electrical conductivity (Form2, daily)
+  const latest_do = _latestWQVal(7);
+  const latest_ec = _latestWQVal(8);
+  // Weekly fish biomass — [date, sampled, avg weight (g), feed type, daily feed (g), visual health]
+  const biomass = [...biomass_new].sort((a,b)=>a[0]>b[0]?1:-1);
+  const lb = biomass.length ? biomass[biomass.length-1] : [];
 
   const monday = monday_new.sort((a,b)=>a.date>b.date?-1:1);
   const journal = [...journal_new].sort((a,b)=>a[0]>b[0]?1:-1);
+  // `fish` and `plants` are retained only as historical record (legacy sheet
+  // tabs + baked-in DEFAULT_DATA). The Kobo forms no longer feed them and no
+  // view renders them — fish tracking is now the weekly `biomass` series.
   return { wq, wq_chart, env, env_chart_morning:makeEnvByTime('Morning'), env_chart_midday:makeEnvByTime('Midday'), env_chart_evening:makeEnvByTime('Evening'),
-    fish, stock_chart, cause_data, plants, siphons:siph, siph_avgs, siph_latest, siph_chart_data,
-    compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem, journal,
-    stats:{ current_stock:cur_stock, stocked:1295, total_mortality:1295-cur_stock, survival_pct:Math.round(cur_stock/1295*1000)/10,
-      latest_ph:latest_wq[3]??null, latest_wtemp:latest_wtemp_r?.[2]??null, latest_env_morn:latest_env[2]??null,
-      latest_env_morn_out, latest_equip, latest_equip_date,
+    fish, plants, siphons:siph, siph_avgs, siph_latest, siph_chart_data,
+    compliance:comp_new, maintenance:maint, financial:fin, fin_by_cat, fin_cumul, monday, weekly_chem:chem, journal, biomass,
+    stats:{
+      latest_ph:_latestWQVal(3), latest_wtemp:_latestWQVal(2), latest_env_morn:latest_env[2]??null,
+      latest_env_morn_out, latest_do, latest_ec,
+      latest_fish_sampled:lb[1]??null, latest_fish_weight:lb[2]??null,
+      latest_feed_type:lb[3]??null, latest_daily_feed:lb[4]??null, latest_fish_health:lb[5]??null,
       latest_nh3:lc[1]??null, latest_ca:lc[2]??null, latest_mg:lc[3]??null,
       latest_k:lc[4]??null, latest_mn:lc[5]??null, latest_fe:lc[6]??null,
       total_spend:Math.round(total_spend), last_wq_date:wq.slice(-1)[0]?.[0]||'N/A' }};
@@ -1283,7 +1190,7 @@ let currentPeriod = 'week';
 
 const sectionTitles = {
   overview:'Overview', water:'Water Quality', environment:'Environment',
-  fish:'Fish', plants:'Plants', siphons:'Siphons', maintenance:'Maintenance',
+  fish:'Fish', siphons:'Siphons', maintenance:'Maintenance',
   phases:'Timeline'
 };
 let navStack = [];
@@ -1380,7 +1287,6 @@ function openDrillDown(type) {
   };
   const cfg = configs[type];
   if(!cfg) return;
-  document.getElementById('bed-nav-area').style.display = 'none';
   document.getElementById('drill-title').textContent = cfg.title();
   document.getElementById('drill-body').innerHTML = '<div style="padding:14px">' + cfg.html() + '</div>';
   document.getElementById('drill-modal').classList.add('open');
@@ -1417,10 +1323,9 @@ function closeDrillDown(){
     return 'background:rgba(255,255,255,.08);color:var(--muted)';
   }
   function entryHtml(e, hl='') {
-    const [date,time,src,cat,text,photos]=e;
+    const [date,time,src,cat,text]=e;
     let t=text;
     if(hl){const re=new RegExp('('+hl.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');t=text.replace(re,'<mark>$1</mark>');}
-    const ps=_regPhotos(photos);
     return `<div class="journal-entry">
       <div class="journal-entry-meta">
         <span class="journal-tag" style="${tagStyle(src)}">${src}</span>
@@ -1428,7 +1333,6 @@ function closeDrillDown(){
         <span class="journal-entry-cat">${cat}</span>
       </div>
       <div class="journal-entry-text">${t}</div>
-      ${ps?`<button class="evt-photo-btn" style="margin-top:7px" onclick="showPhotoSet('${ps}')"><i class="ti ti-photo" style="font-size:12px"></i>${photos.length>1?' Show '+photos.length+' pictures':' Show picture'}</button>`:''}
     </div>`;
   }
 
@@ -1538,395 +1442,104 @@ function closeDrillDown(){
 })();
 
 // ─── BED TIMELINE ────────────────────────────────────────────────────────────
-let _bedTimelineIdx = 0;
-let _bedSwipeStartX = 0;
+// Photo lightbox removed 2026-08-16: the KoboToolbox form rewrite dropped
+// every image question, so no submission carries photos any more.
+// Photos now live in a separate app view.
 
-// ── Event photo lightbox ──────────────────────────────────────────
-// Photos are stored as public Drive links in the sheet (re-hosted from
-// KoboToolbox during sync). showPhotoSet opens them in a full overlay.
-// Shared, persistent registry used by BOTH the bed timeline and the
-// journal — each photo set gets a globally unique id so they never clash.
-function _regPhotos(urls){
-  const list=(urls||[]).filter(Boolean);
-  if(!list.length) return null;
-  window._photoSets = window._photoSets || {};
-  const id = 'ps' + (window._psSeq = (window._psSeq||0) + 1);
-  window._photoSets[id] = list;
-  return id;
-}
-function showPhotoSet(id){
-  const urls=(window._photoSets&&window._photoSets[id])||[];
-  if(!urls.length)return;
-  let ov=document.getElementById('photo-lightbox');
-  if(!ov){
-    ov=document.createElement('div');
-    ov.id='photo-lightbox';
-    ov.addEventListener('click',e=>{if(e.target===ov)closePhotoLightbox();});
-    document.body.appendChild(ov);
-  }
-  ov.innerHTML=`<div class="plb-inner">
-    <button class="plb-close" onclick="closePhotoLightbox()" aria-label="Close">&times;</button>
-    ${urls.map(u=>`<img src="${u}" loading="lazy" alt="Event photo" referrerpolicy="no-referrer" onerror="_plbImgError(this)"/>`).join('')}
-  </div>`;
-  ov.classList.add('open');
-  document.body.style.overflow='hidden';
-}
-// Graceful fallback when an image can't load (e.g. a not-yet-rehosted
-// Kobo link, which needs a login, or a Drive link still propagating).
-function _plbImgError(img){
-  img.style.display='none';
-  const d=document.createElement('div');
-  d.className='plb-broken';
-  d.textContent='Photo could not be loaded';
-  img.insertAdjacentElement('afterend', d);
-}
-function closePhotoLightbox(){
-  const ov=document.getElementById('photo-lightbox');
-  if(ov)ov.classList.remove('open');
-  // keep the body locked if the bed drill-down is still open underneath
-  const drill=document.getElementById('drill-modal');
-  if(!drill||!drill.classList.contains('open'))document.body.style.overflow='';
-}
-// Capture-phase Escape: close the lightbox first without also closing the bed modal
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){
-    const ov=document.getElementById('photo-lightbox');
-    if(ov&&ov.classList.contains('open')){closePhotoLightbox();e.stopImmediatePropagation();}
-  }
-},true);
+// Bed drill-downs and the harvest timeline grid were removed on 2026-08-16:
+// the per-row plant inspection (Form2) and the crop/harvest-date blocks
+// (Form3) no longer exist on the KoboToolbox forms, so there is nothing to
+// build a bed timeline from. That detail now lives in a separate app view.
 
-function openBedDrillDown(rowLabel, bedIdx) {
-  _bedTimelineIdx = bedIdx;
-  document.getElementById('bed-nav-area').style.display = 'flex';
-  document.getElementById('drill-modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  renderBedTimeline(bedIdx);
-}
-
-function navigateBedTimeline(dir) {
-  const newIdx = _bedTimelineIdx + dir;
-  if (newIdx < 0 || newIdx > 5) return;
-  _bedTimelineIdx = newIdx;
-  const body = document.getElementById('drill-body');
-  body.style.opacity = '0';
-  setTimeout(() => { renderBedTimeline(newIdx); body.style.opacity = '1'; }, 150);
-}
-
-// Drilldown from the "Next harvest" pillar — the actual growing rows only (same
-// data as the Growing Beds section), each with its full timeline, two per row.
-function openHarvestDrillDown() {
-  document.getElementById('bed-nav-area').style.display = 'none';
-  document.getElementById('drill-title').textContent = 'Growing Beds — Timelines';
+// Drilldown from the "Water health" pillar — every water metric, ordered most →
+// least important: a card with the last 7 readings as a sparkline, plus a
+// 30-reading line chart. Water temp is logged 3×/day so it shows separate
+// Morning/Midday/Evening lines.
+function openWaterDrillDown() {
+  document.getElementById('drill-title').textContent = 'Water Health — Metrics';
   document.getElementById('drill-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
   const body = document.getElementById('drill-body');
-  body.ontouchstart = null;
-  body.ontouchend = null;
-  body.innerHTML = '<div id="harvest-grid"></div>';
-  const grid = document.getElementById('harvest-grid');
-  for (let i = 0; i < 6; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'bed-cell';
-    grid.appendChild(cell);
-    renderBedTimeline(i, cell);
-  }
-}
+  body.ontouchstart = null; body.ontouchend = null;
 
-function renderBedTimeline(bedIdx, targetEl) {
-  const ROWS = ['Row 1','Row 2','Row 3','Row 4','Row 5','Row 6'];
-  const rowLabel = ROWS[bedIdx];
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0,10);
+  // col = column index into D.wq
+  //   [date, slot, temp, pH, notes, NO₃, NO₂, dissolved O₂, EC]
+  // or D.weekly_chem
+  //   [date, NH₃, Ca, Mg, K, Mn, Fe]
+  const METRICS = [
+    {name:'pH',           unit:'',     color:'#1565C0', good:[6.8,7.2], ymin:6.4, ymax:8.4,  src:'wq',  col:3, mode:'daily'},
+    {name:'Water temp',   unit:'°C',   color:'#B45309', good:[24,30],   ymin:14,  ymax:38,   src:'wq',  col:2, mode:'rounds'},
+    {name:'Dissolved O₂', unit:'mg/L', color:'#0891b2', good:[5,12],    ymin:0,   ymax:null, src:'wq',  col:7, mode:'rounds'},
+    {name:'Ammonia',      unit:'ppm',  color:'#c0392b', good:[0,0.5],   ymin:0,   ymax:null, src:'chem',col:1, mode:'weekly'},
+    {name:'Nitrite',      unit:'ppm',  color:'#e67e22', good:[0,0.5],   ymin:0,   ymax:null, src:'wq',  col:6, mode:'daily'},
+    {name:'Nitrate',      unit:'ppm',  color:'#8e44ad', good:[25,50],   ymin:0,   ymax:null, src:'wq',  col:5, mode:'daily'},
+    // No agreed EC target range for this farm yet, and the form carries no
+    // unit — charted without a good-range band until that is confirmed.
+    {name:'Conductivity', unit:'EC',   color:'#0d9488', good:null,      ymin:0,   ymax:null, src:'wq',  col:8, mode:'daily'},
+    {name:'Calcium',      unit:'ppm',  color:'#16a085', good:null,      ymin:0,   ymax:null, src:'chem',col:2, mode:'weekly'},
+    {name:'Magnesium',    unit:'ppm',  color:'#27ae60', good:null,      ymin:0,   ymax:null, src:'chem',col:3, mode:'weekly'},
+    {name:'Potassium',    unit:'ppm',  color:'#2980b9', good:null,      ymin:0,   ymax:null, src:'chem',col:4, mode:'weekly'},
+    {name:'Iron',         unit:'ppm',  color:'#d35400', good:null,      ymin:0,   ymax:null, src:'chem',col:6, mode:'weekly'},
+    {name:'Manganese',    unit:'ppm',  color:'#7f8c8d', good:null,      ymin:0,   ymax:null, src:'chem',col:5, mode:'weekly'},
+  ];
+  const SLOTS = ['Morning','Midday','Evening'];
+  const SLOT_COLORS = {Morning:'#f59e0b', Midday:'#0ea5e9', Evening:'#8b5cf6'};
+  const ord = t => t==='Evening'?'3':t==='Midday'?'2':'1';
+  const fmtLbl = d => { try { return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch(e){ return d; } };
 
-  const normDate = v => {
-    if (!v) return null;
-    const s = String(v).trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    try { return new Date(new Date(s).getTime()+2*3600000).toISOString().slice(0,10); } catch(e) { return null; }
+  const series = m => {
+    if (m.mode === 'rounds') {
+      const rows = D.wq.filter(r => r[m.col]!=null && SLOTS.includes(r[1]));
+      const dates = [...new Set(rows.map(r=>r[0]))].sort().slice(-30);
+      const map = {}; rows.forEach(r => { (map[r[0]] = map[r[0]]||{})[r[1]] = r[m.col]; });
+      const datasets = SLOTS.map(s => ({label:s, color:SLOT_COLORS[s], data:dates.map(d => (map[d] && map[d][s]!=null) ? map[d][s] : null)}));
+      const flat = rows.slice().sort((a,b)=>(a[0]+ord(a[1]))<(b[0]+ord(b[1]))?-1:1).map(r=>r[m.col]);
+      return {labels:dates, datasets, flat};
+    }
+    const arr = (m.src==='chem' ? (D.weekly_chem||[]) : D.wq).filter(r => r[m.col]!=null).sort((a,b)=>a[0]<b[0]?-1:1);
+    const last = arr.slice(-30);
+    return {labels:last.map(r=>r[0]), datasets:[{label:(m.mode==='weekly'?'Weekly':'Morning'), color:m.color, data:last.map(r=>r[m.col])}], flat:arr.map(r=>r[m.col])};
   };
 
-  // Crop info — planted date only appears in the FIRST week's Form3 row (p[11]),
-  // later weeks leave it blank. Harvest date is most accurate from the latest row.
-  const allRow = D.plants.filter(p => p[1] === rowLabel);
-  const allPlanted = allRow.filter(p => p[2]==='Planted' && p[10])
-    .sort((a,b)=>(a[0]||'')<(b[0]||'')?-1:1); // oldest first
-  const entryWithDate   = allPlanted.find(p => p[11]);
-  const mostRecentEntry = allPlanted[allPlanted.length-1] || null;
-  const plantedEntry    = entryWithDate || mostRecentEntry;
-  const cropName   = plantedEntry ? plantedEntry[10] : null;
-  const plantedStr = normDate(entryWithDate ? entryWithDate[11] : null);
-  const harvestStr = normDate(mostRecentEntry ? mostRecentEntry[5] : null);
-  const plantedDate = plantedStr ? new Date(plantedStr+'T12:00:00') : null;
-  const harvestDate = harvestStr ? new Date(harvestStr+'T12:00:00') : null;
-  const daysIn    = plantedDate ? Math.round((today-plantedDate)/864e5) : null;
-  const totalDays = (plantedDate&&harvestDate) ? Math.round((harvestDate-plantedDate)/864e5) : null;
-  const pct       = (daysIn!=null&&totalDays) ? Math.min(100,Math.max(0,Math.round(daysIn/totalDays*100))) : null;
-  const overdueDays = (harvestDate && today > harvestDate) ? Math.round((today-harvestDate)/864e5) : 0;
+  const spark = (vals, color) => {
+    const v = vals.filter(x=>x!=null);
+    if (v.length < 2) return '<span style="color:var(--muted);font-size:10px">not enough data</span>';
+    const w=100, h=28, mn=Math.min(...v), mx=Math.max(...v), rng=(mx-mn)||1;
+    const pts = v.map((y,i)=>`${(i/(v.length-1))*w},${(h-3)-((y-mn)/rng)*(h-6)}`).join(' ');
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  };
+  const statusColor = (val,good) => (val==null||!good) ? 'var(--text)' : (val>=good[0]&&val<=good[1] ? 'var(--c-good)' : 'var(--c-bad)');
 
-  // Title — used by single-bed mode (modal title) and grid mode (cell header)
-  const titleText = rowLabel + (cropName ? ' — '+cropName : ' — Empty');
-  if (!targetEl) {
-    // Single-bed mode only: wire up the prev/next nav and the modal title.
-    const prevBtn = document.getElementById('bed-nav-prev');
-    const nextBtn = document.getElementById('bed-nav-next');
-    prevBtn.style.opacity = bedIdx===0?'0.3':'1';
-    prevBtn.style.pointerEvents = bedIdx===0?'none':'auto';
-    nextBtn.style.opacity = bedIdx===5?'0.3':'1';
-    nextBtn.style.pointerEvents = bedIdx===5?'none':'auto';
-    prevBtn.textContent = bedIdx>0 ? '← '+ROWS[bedIdx-1] : '←';
-    nextBtn.textContent = bedIdx<5 ? ROWS[bedIdx+1]+' →' : '→';
-    document.getElementById('drill-title').textContent = titleText;
-  }
-
-  // Siphon
-  const siphCol = bedIdx+2;
-  const latestSiph = D.siphons.slice().reverse().map(s=>s[siphCol]).find(v=>v!=null&&v>0)??null;
-  const siphColor = latestSiph==null?'var(--muted)':latestSiph>=15&&latestSiph<=18?'#4ade80':latestSiph>20?'#f87171':'#fbbf24';
-
-  // ── Build events ─────────────────────────────────────────────────────────────
-  const events = [];
-  if (plantedStr)
-    events.push({date:plantedStr,type:'planted',label:'Planted',detail:cropName,color:'#4ade80',icon:'ti-plant-2'});
-
-  const splitPhotos = v => String(v||'').split(',').map(s=>s.trim()).filter(Boolean);
-
-  allRow.filter(p=>p[2]==='Inspection'||p[2]==='Harvest')
-    .sort((a,b)=>(a[0]||'')<(b[0]||'')?-1:1)
-    .forEach(p => {
-      const date=normDate(p[0]); if(!date) return;
-      const health=(p[3]||'').replace(/^Health:\s*/i,'').trim();
-      const pests=p[4],notes=p[6],yellowing=p[7],wilting=p[8];
-      const issuePhotos=splitPhotos(p[12]);     // concern close-ups (pests/yellowing/wilting/health)
-      const routinePhoto=String(p[13]||'').trim();
-      const isHarvest=p[2]==='Harvest';
-      if(isHarvest){
-        const wm=(notes||'').match(/Weight:\s*([\d.]+)/i);
-        const cleanNote=(notes||'').replace(/\s*·?\s*Weight:[\s\d.]+kg\.?/gi,'').trim();
-        events.push({date,type:'harvest',label:wm?`Harvested — ${wm[1]} kg`:'Harvested',detail:cleanNote||null,color:'#4ade80',icon:'ti-scissors',photos:routinePhoto?[routinePhoto]:[]});
-      }
-      if(yellowing==='Yes') events.push({date,type:'yellowing',label:'Yellowing observed',detail:null,color:'#fbbf24',icon:'ti-alert-triangle',photos:issuePhotos});
-      if(wilting==='Yes')   events.push({date,type:'wilting',label:'Wilting observed',detail:null,color:'#fb923c',icon:'ti-droplet-off',photos:issuePhotos});
-      if(pests&&pests!=='No'){
-        const confirmed=pests==='Yes';
-        events.push({date,type:confirmed?'pests_yes':'pests_poss',label:confirmed?'Pests confirmed':'Possible pests',detail:null,color:confirmed?'#f87171':'#fbbf24',icon:'ti-bug',photos:issuePhotos});
-      }
-      if(health==='Serious problem') events.push({date,type:'health_bad',label:'Serious health problem',detail:null,color:'#f87171',icon:'ti-alert-circle',photos:issuePhotos});
-      if(!isHarvest&&notes){
-        const clean=(notes||'').replace(/Weight:[\s\d.]+kg\s*·?\s*/gi,'').trim();
-        if(clean) events.push({date,type:'note_'+date,label:'Note',detail:clean,color:'#60a5fa',icon:'ti-note',photos:routinePhoto?[routinePhoto]:[]});
-      }
-    });
-
-  (D.journal||[]).filter(j=>{
-    const cat=(j[3]||'').toLowerCase(),text=(j[4]||'').trim();
-    return text&&text!=='No'&&cat===rowLabel.toLowerCase();
-  }).forEach(j=>{
-    const date=normDate(j[0]),text=j[4];
-    if(date&&!events.some(ev=>ev.date===date&&ev.type.startsWith('note_')))
-      events.push({date,type:'note_'+date,label:'Observation',detail:text,color:'#60a5fa',icon:'ti-note'});
-  });
-
-  // Merge consecutive same-type runs
-  events.sort((a,b)=>a.date<b.date?-1:1);
-  const MERGEABLE=new Set(['yellowing','wilting','pests_yes','pests_poss','health_bad']);
-  const byType={},nonMerge=[];
-  events.forEach(ev=>{ if(MERGEABLE.has(ev.type)){if(!byType[ev.type])byType[ev.type]=[];byType[ev.type].push(ev);}else nonMerge.push(ev); });
-  const merged=[...nonMerge];
-  Object.values(byType).forEach(arr=>{
-    arr.sort((a,b)=>a.date<b.date?-1:1);
-    let i=0;
-    while(i<arr.length){
-      const ev={...arr[i]};ev.photos=[...(arr[i].photos||[])];let j=i+1;
-      while(j<arr.length){
-        if((new Date(arr[j].date+'T12:00:00')-new Date(arr[j-1].date+'T12:00:00'))/864e5<=2){ev.dateEnd=arr[j].date;ev.photos.push(...(arr[j].photos||[]));j++;}else break;
-      }
-      merged.push(ev);i=j;
-    }
-  });
-  merged.sort((a,b)=>a.date<b.date?-1:1);
-
-  // Add expected harvest anchor — always green, always the final node
-  if (harvestStr)
-    merged.push({date:harvestStr,type:'expected_harvest',label:'Expected harvest',detail:null,color:'#4ade80',icon:'ti-flag-2'});
-
-  // ── Render ────────────────────────────────────────────────────────────────────
-  const fmtD = d => { try{ return new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }catch(e){return d;} };
-  const fmtRange = ev => ev.dateEnd&&ev.dateEnd!==ev.date ? fmtD(ev.date)+' – '+fmtD(ev.dateEnd) : fmtD(ev.date);
-
-  // Progress bar
-  const progressHTML = cropName ? `
-    <div style="padding:16px 20px 14px;background:var(--surface);border-bottom:0.5px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
-        <div>
-          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#4ade80">🌱 Planted</div>
-          <div style="font-size:12px;color:var(--text);font-weight:500;margin-top:1px">${plantedStr?fmtD(plantedStr):'—'}</div>
-        </div>
-        <div style="text-align:center">
-          ${overdueDays>0
-            ? `<div style="font-size:16px;font-weight:800;color:#ef4444">${overdueDays} day${overdueDays!==1?'s':''} past</div><div style="font-size:10px;color:#ef4444;font-weight:700">OVERDUE harvest</div>`
-            : pct!==null?`<div style="font-size:16px;font-weight:700;color:var(--text)">Day ${daysIn}</div><div style="font-size:10px;color:var(--muted)">of ${totalDays} days (${pct}%)</div>`:''}
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#4ade80">🏁 Harvest</div>
-          <div style="font-size:12px;color:var(--text);font-weight:500;margin-top:1px">${harvestStr?fmtD(harvestStr):'—'}</div>
-        </div>
-      </div>
-      ${pct!==null?`
-      <div style="height:6px;background:var(--border);border-radius:3px;position:relative;overflow:visible">
-        <div style="width:${pct}%;height:100%;background:linear-gradient(to right,#22c55e,#4ade80);border-radius:3px;position:relative;transition:width .4s">
-          <div style="position:absolute;right:-6px;top:-3px;width:12px;height:12px;background:#111827;border-radius:50%;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:5px">
-        <span style="font-size:9px;color:var(--muted)">Planted</span>
-        <span style="font-size:9px;font-weight:700;color:var(--text)">TODAY</span>
-        <span style="font-size:9px;color:var(--muted)">Expected harvest</span>
-      </div>`:''}
-      ${latestSiph!==null?`<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);display:flex;align-items:center;gap:6px">
-        <span style="font-size:10px;color:var(--muted)">Siphon S${bedIdx+1}:</span>
-        <span style="font-size:13px;font-weight:600;color:${siphColor}">${latestSiph}m</span>
-      </div>`:''}
-    </div>` : '';
-
-  // ── Timeline — per-event connectors so the line ends exactly at the last dot ──
-  // Layout: [left flex:1] [center-col 14px: dot + optional line] [right flex:1]
-  // align-items:stretch means the center col fills the height of the tallest side column.
-  // padding-bottom on the side columns creates the inter-event gap (filled by the line).
-
-  let side = 0;
-  let todayInserted = false;
-  const BG = 'var(--surface-2)';
-
-  const centerCol = (color, showLine, lineMinH='28px', lineColor='var(--border)') => `
-    <div style="display:flex;flex-direction:column;align-items:center;width:14px;flex-shrink:0;">
-      <div style="width:13px;height:13px;border-radius:50%;background:${color};border:2px solid ${color};margin-top:10px;flex-shrink:0;box-shadow:0 0 0 3px ${color}30"></div>
-      ${showLine?`<div style="width:${lineColor==='var(--border)'?'2px':'3px'};background:${lineColor};flex:1;min-height:${lineMinH}"></div>`:''}
+  const cards = METRICS.map(m => {
+    const recent = series(m).flat.filter(v=>v!=null);
+    const last7 = recent.slice(-7);
+    const latest = recent.length ? recent[recent.length-1] : null;
+    return `<div class="wm-card">
+      <div class="wm-name">${m.name}${m.unit?` <span class="wm-unit">${m.unit}</span>`:''}</div>
+      <div class="wm-val" style="color:${statusColor(latest,m.good)}">${latest!=null?latest:'—'}</div>
+      <div class="wm-spark">${spark(last7, m.color)}</div>
+      <div class="wm-target">${m.good?`target ${m.good[0]}–${m.good[1]}`:'last 7 readings'}</div>
     </div>`;
+  }).join('');
 
-  const todayCol = showLine => `
-    <div style="display:flex;flex-direction:column;align-items:center;width:14px;flex-shrink:0;">
-      <div style="width:18px;height:18px;border-radius:50%;background:var(--text);margin-top:0;flex-shrink:0;margin-left:-2px;border:3px solid white;box-shadow:0 0 0 4px rgba(0,0,0,.12)"></div>
-      ${showLine?`<div style="width:2px;background:var(--border);flex:1;min-height:60px"></div>`:''}
-    </div>`;
+  const chartCards = METRICS.map((m,i)=>`
+    <div class="wm-chart-card">
+      <div class="wm-chart-title">${m.name}${m.unit?` (${m.unit})`:''}${m.good?` · target ${m.good[0]}–${m.good[1]}`:''}</div>
+      <div class="wm-chart-box"><canvas id="wm-chart-${i}"></canvas></div>
+    </div>`).join('');
 
-  const tlRows = [];
+  body.innerHTML = `
+    <div class="wm-note">Ordered most → least important. <b>Water temp</b> and <b>dissolved O₂</b> are logged 3×/day (Morning · Midday · Evening). pH, nitrite, nitrate &amp; conductivity are once daily; the mineral panel is weekly.</div>
+    <div class="wm-cards">${cards}</div>
+    <div class="wm-charts">${chartCards}</div>`;
 
-  merged.forEach((ev, evIdx) => {
-    const isPast           = ev.date <= todayStr;
-    const isHarvest        = ev.type === 'expected_harvest';
-    const isLast           = evIdx === merged.length - 1;
-    const hasNextEvent     = evIdx < merged.length - 1;
-
-    // Insert TODAY before the first future event
-    if (!isPast && !todayInserted && merged[0]?.date <= todayStr) {
-      todayInserted = true;
-      // Large padding-bottom on side cols creates the gap between TODAY and harvest
-      tlRows.push(`
-        <div style="display:flex;align-items:stretch;">
-          <div style="flex:1;display:flex;justify-content:flex-end;padding-right:8px;padding-bottom:64px;align-items:flex-start;padding-top:2px;">
-            <span style="font-size:10px;font-weight:700;color:var(--text);">TODAY</span>
-          </div>
-          ${todayCol(true)}
-          <div style="flex:1;padding-left:8px;padding-bottom:64px;padding-top:2px;">
-            <span style="font-size:10px;color:var(--muted);">${fmtD(todayStr)}</span>
-          </div>
-        </div>`);
-    }
-
-    const evColor  = ev.color;
-    const opacity  = (isPast || isHarvest) ? '1' : '0.5';
-    const cardBg   = isHarvest ? 'rgba(74,222,128,0.08)' : BG;
-    const cardBdr  = isHarvest ? '0.5px solid rgba(74,222,128,0.35)' : '0.5px solid transparent';
-    const isLeft   = side % 2 === 0;
-    // When the crop is overdue, draw a red line down from the (past) expected-harvest node
-    const overdueLine = isHarvest && overdueDays > 0;
-    const showLine    = !isLast || overdueLine;
-    const lineColor   = overdueLine ? '#ef4444' : 'var(--border)';
-    const padBot   = (isLast && !overdueLine) ? '0' : (overdueLine ? '52px' : '22px');
-    side++;
-
-    const evPhotos = (ev.photos || []).filter(Boolean);
-    const psid = _regPhotos(evPhotos);
-    const photoBtn = psid
-      ? `<button class="evt-photo-btn" onclick="showPhotoSet('${psid}')"><i class="ti ti-photo" style="font-size:12px"></i>${evPhotos.length>1?' Show '+evPhotos.length+' pictures':' Show picture'}</button>`
-      : '';
-
-    const cardContent = `
-      <div style="display:inline-block;font-size:11px;font-weight:600;color:var(--text-2);background:var(--bg);border-radius:5px;padding:2px 6px;margin-bottom:5px;white-space:nowrap">${fmtRange(ev)}</div>
-      <div style="font-size:12px;font-weight:600;color:${evColor};display:flex;align-items:center;gap:4px;${isLeft?'justify-content:flex-end':''}">
-        ${isLeft
-          ? `${ev.label}&nbsp;<i class="ti ${ev.icon}" style="font-size:13px"></i>`
-          : `<i class="ti ${ev.icon}" style="font-size:13px"></i>&nbsp;${ev.label}`}
-      </div>
-      ${ev.detail?`<div style="font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4">${ev.detail}</div>`:''}
-      ${photoBtn?`<div style="margin-top:6px;${isLeft?'text-align:right':''}">${photoBtn}</div>`:''}`;
-
-    if (isLeft) {
-      tlRows.push(`
-        <div style="display:flex;align-items:stretch;opacity:${opacity}">
-          <div style="flex:1;display:flex;justify-content:flex-end;align-items:flex-start;padding-right:0;padding-bottom:${padBot}">
-            <div style="background:${cardBg};border:${cardBdr};border-radius:10px 10px 0 10px;padding:8px 10px;text-align:right;max-width:148px">${cardContent}</div>
-            <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid ${cardBg};margin-top:14px;flex-shrink:0"></div>
-          </div>
-          ${centerCol(evColor, showLine, '28px', lineColor)}
-          <div style="flex:1;padding-bottom:${padBot}"></div>
-        </div>`);
-    } else {
-      tlRows.push(`
-        <div style="display:flex;align-items:stretch;opacity:${opacity}">
-          <div style="flex:1;padding-bottom:${padBot}"></div>
-          ${centerCol(evColor, showLine, '28px', lineColor)}
-          <div style="flex:1;display:flex;justify-content:flex-start;align-items:flex-start;padding-left:0;padding-bottom:${padBot}">
-            <div style="width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:6px solid ${cardBg};margin-top:14px;flex-shrink:0"></div>
-            <div style="background:${cardBg};border:${cardBdr};border-radius:10px 10px 10px 0;padding:8px 10px;text-align:left;max-width:148px">${cardContent}</div>
-          </div>
-        </div>`);
-    }
+  METRICS.forEach((m,i)=>{
+    const s = series(m);
+    const bands = m.good ? [{from:m.good[0], to:m.good[1], color:'rgba(42,122,42,.10)'}] : [];
+    renderLineChart('wm-chart-'+i, s.labels.map(fmtLbl),
+      s.datasets.map(d=>({label:d.label,data:d.data,color:d.color,fill:false})),
+      {min:m.ymin, max:m.ymax, bands});
   });
-
-  // If all events are in the past (no expected harvest or harvest already passed), cap with TODAY
-  if (!todayInserted) {
-    tlRows.push(overdueDays > 0 ? `
-      <div style="display:flex;align-items:stretch;">
-        <div style="flex:1;display:flex;justify-content:flex-end;padding-right:8px;align-items:flex-start;padding-top:2px;">
-          <span style="font-size:11px;font-weight:800;color:#ef4444;text-align:right;line-height:1.3">${overdueDays} day${overdueDays!==1?'s':''}<br>past harvest</span>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;width:14px;flex-shrink:0;">
-          <div style="width:18px;height:18px;border-radius:50%;background:#ef4444;flex-shrink:0;margin-left:-2px;border:3px solid white;box-shadow:0 0 0 4px rgba(239,68,68,.18)"></div>
-        </div>
-        <div style="flex:1;padding-left:8px;padding-top:2px;">
-          <span style="font-size:10px;font-weight:700;color:#ef4444;">TODAY</span>
-          <div style="font-size:10px;color:var(--muted)">${fmtD(todayStr)}</div>
-        </div>
-      </div>` : `
-      <div style="display:flex;align-items:stretch;">
-        <div style="flex:1;display:flex;justify-content:flex-end;padding-right:8px;align-items:flex-start;padding-top:2px;">
-          <span style="font-size:10px;font-weight:700;color:var(--text);">TODAY</span>
-        </div>
-        ${todayCol(false)}
-        <div style="flex:1;padding-left:8px;padding-top:2px;">
-          <span style="font-size:10px;color:var(--muted);">${fmtD(todayStr)}</span>
-        </div>
-      </div>`);
-  }
-
-  const emptyMsg = `<div style="text-align:center;padding:60px 20px;color:var(--muted)">
-    <i class="ti ti-plant-off" style="font-size:40px;display:block;margin-bottom:12px;opacity:.3"></i>
-    <div style="font-size:14px">No crop planted in this row</div>
-  </div>`;
-
-  const body = targetEl || document.getElementById('drill-body');
-  const cellHeader = targetEl ? `<div class="bed-cell-title">${titleText}</div>` : '';
-  body.innerHTML = cellHeader + progressHTML + (merged.length ? `
-    <div style="padding:28px 16px 48px">${tlRows.join('')}</div>` : emptyMsg);
-
-  if (!targetEl) {
-    body.ontouchstart = e => { _bedSwipeStartX = e.touches[0].clientX; };
-    body.ontouchend   = e => {
-      const dx = e.changedTouches[0].clientX - _bedSwipeStartX;
-      if(Math.abs(dx)>60) navigateBedTimeline(dx<0?1:-1);
-    };
-  }
 }
 
 // ─── ALERT SYSTEM ────────────────────────────────────────────────────────────
@@ -1954,9 +1567,13 @@ function computeAlerts(){
   else if(wt!=null && wt<20) alerts.push({id:'wt-cold',cls:'warn',icon:'temperature',title:'Water Temperature Low',msg:`Water temp ${wt}°C below 20°C — fish feeding slows. Close all greenhouse sides and monitor closely.`,active:true});
   else if(wt!=null && wt>32) alerts.push({id:'wt-emergency-hot',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Overheating',msg:`Water temp ${wt}°C exceeds 32°C. Risk of mass mortality. Open all sides, run fan at maximum, contact management.`,active:true});
   else if(wt!=null && wt>30) alerts.push({id:'wt-warm',cls:'warn',icon:'temperature',title:'Water Temperature High',msg:`Water temp ${wt}°C above 30°C — heat stress, oxygen dropping. Increase aeration and check evaporative cooler.`,active:true});
+  // Dissolved oxygen (Form1, 3× daily) — tilapia suffocate below ~3 mg/L.
+  const dox = s.latest_do;
+  if(dox!=null && dox<3) alerts.push({id:'do-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Dissolved Oxygen Critical',msg:`Dissolved oxygen ${dox} mg/L is below 3 mg/L. Fish are suffocating. Increase aeration immediately and contact management.`,active:true});
+  else if(dox!=null && dox<5) alerts.push({id:'do-low',cls:'warn',icon:'alert-triangle',title:'Dissolved Oxygen Low',msg:`Dissolved oxygen ${dox} mg/L is below the 5 mg/L target. Check the air blower and increase aeration.`,active:true});
   const slowSiph = D.siph_avgs.map((v,i)=>({s:i+1,v})).filter(x=>x.v!=null&&x.v>20);
   if(slowSiph.length) alerts.push({id:'siph-slow',cls:'warn',icon:'settings',title:'Siphon Cycle Slow',msg:`Row${slowSiph.length>1?'s':''} ${slowSiph.map(x=>`S${x.s} (${x.v}min)`).join(', ')} above 20min target. Roots may be oxygen-deprived. Adjust inflow valves.`,active:true});
-  alerts.push({id:'jan-event',cls:'info',icon:'calendar',title:'Past Incident — Jan 15–16, 2026',msg:`247 fish died from a ventilation failure (~145 days ago). Ventilation corrected. Current stock stable.`,active:false});
+  alerts.push({id:'jan-event',cls:'info',icon:'calendar',title:'Past Incident — Jan 15–16, 2026',msg:`247 fish died from a ventilation failure. Ventilation was corrected after the incident.`,active:false});
   return alerts;
 }
 function renderAlerts(){
@@ -2050,11 +1667,14 @@ function renderExecutiveSummary(){
   const tmpVals = wqWeek.map(r=>r[2]).filter(v=>v!=null);
   const avgPH = phVals.length ? (phVals.reduce((a,b)=>a+b,0)/phVals.length).toFixed(2) : null;
   const avgTmp = tmpVals.length ? (tmpVals.reduce((a,b)=>a+b,0)/tmpVals.length).toFixed(1) : null;
-  const deathsWeek = D.fish.filter(r=>r[0]>=weekStart).reduce((s,r)=>s+(r[3]||0),0);
+  const doVals = wqWeek.map(r=>r[7]).filter(v=>v!=null);
+  const avgDO = doVals.length ? (doVals.reduce((a,b)=>a+b,0)/doVals.length).toFixed(1) : null;
   const checks = wqWeek.length;
   const [,phC] = pHStatus(avgPH); const [,tC] = tempStatus(avgTmp);
+  // Tilapia need >5 mg/L; below 3 is an emergency.
+  const doC = avgDO==null ? 'neutral' : avgDO>=5 ? 'good' : avgDO>=3 ? 'warn' : 'bad';
 
-  const kpiColor = c => c==='good'?'#4ADE80':c==='warn'?'#FFB74D':'#EF9A9A';
+  const kpiColor = c => c==='good'?'#4ADE80':c==='warn'?'#FFB74D':c==='bad'?'#EF9A9A':'var(--muted)';
 
   if (latestReport) {
     const row = r => r ? `<div class="exec-row"><div class="exec-row-label">${r.label}</div><div class="exec-row-val ${r.cls||''}">${r.val}</div></div>` : '';
@@ -2067,7 +1687,7 @@ function renderExecutiveSummary(){
         <div class="exec-kpis">
           <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(phC)}">${avgPH||'—'}</div><div class="ek-lbl">Avg pH</div></div>
           <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(tC)}">${avgTmp!=null?avgTmp+'°':'—'}</div><div class="ek-lbl">Avg Temp</div></div>
-          <div class="exec-kpi"><div class="ek-val" style="color:${deathsWeek>0?'#EF9A9A':'#4ADE80'}">${deathsWeek}</div><div class="ek-lbl">Fish Deaths</div></div>
+          <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(doC)}">${avgDO!=null?avgDO:'—'}</div><div class="ek-lbl">Dissolved O₂</div></div>
           <div class="exec-kpi"><div class="ek-val">${checks}</div><div class="ek-lbl">Checks</div></div>
         </div>
         <hr class="exec-divider">
@@ -2088,7 +1708,6 @@ function renderExecutiveSummary(){
         </div>
       </div>`;
   } else {
-    const activePlants = D.plants.filter(r=>!r[5]).length;
     const badSiph = D.siph_avgs.filter(v=>v!=null&&v>20).length; // red threshold: >20 min
     document.getElementById('exec-summary').innerHTML = `
       <div class="exec-card">
@@ -2099,13 +1718,13 @@ function renderExecutiveSummary(){
         <div class="exec-kpis">
           <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(phC)}">${avgPH||'—'}</div><div class="ek-lbl">Avg pH</div><div class="ek-sub">target 6.8–7.2</div></div>
           <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(tC)}">${avgTmp!=null?avgTmp+'°':'—'}</div><div class="ek-lbl">Water Temp</div><div class="ek-sub">target 25–28°C</div></div>
-          <div class="exec-kpi"><div class="ek-val" style="color:${deathsWeek>0?'#EF9A9A':'#4ADE80'}">${deathsWeek}</div><div class="ek-lbl">Fish Deaths</div><div class="ek-sub">${s.current_stock.toLocaleString()} alive</div></div>
+          <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(doC)}">${avgDO!=null?avgDO:'—'}</div><div class="ek-lbl">Dissolved O₂</div><div class="ek-sub">target &gt; 5 mg/L</div></div>
           <div class="exec-kpi"><div class="ek-val">${checks}</div><div class="ek-lbl">Checks Logged</div><div class="ek-sub">this week</div></div>
         </div>
         <hr class="exec-divider">
         <div class="exec-rows">
-          <div class="exec-row"><div class="exec-row-label">SYSTEM</div><div class="exec-row-val ${badSiph>0?'warn':'highlight'}">${badSiph===0?'All siphons cycling OK':badSiph+' siphon row(s) running slow — check inflow valves'} · ${activePlants} active crop beds</div></div>
-          <div class="exec-row"><div class="exec-row-label">FISH</div><div class="exec-row-val">${s.current_stock.toLocaleString()} fish · ${s.survival_pct}% survival · ${deathsWeek===0?'No deaths this week':''+deathsWeek+' deaths this week'}</div></div>
+          <div class="exec-row"><div class="exec-row-label">SYSTEM</div><div class="exec-row-val ${badSiph>0?'warn':'highlight'}">${badSiph===0?'All siphons cycling OK':badSiph+' siphon row(s) running slow — check inflow valves'}</div></div>
+          <div class="exec-row"><div class="exec-row-label">FISH</div><div class="exec-row-val">${s.latest_fish_weight!=null?`avg ${s.latest_fish_weight}g · ${s.latest_fish_sampled!=null?'n='+s.latest_fish_sampled+' · ':''}${s.latest_fish_health||'—'}`:'No weekly weigh-in logged yet'}</div></div>
         </div>
         <div class="exec-no-report">No Monday Report submitted yet this week. The team should fill in the Monday Report form every Monday morning after the farm walk — it takes about 10 minutes and keeps management informed.</div>
       </div>`;
@@ -2135,42 +1754,51 @@ function renderScorecards(){
   const ragColor = r => r==='good'?'var(--c-good)':r==='warn'?'var(--c-warn)':r==='bad'?'var(--c-bad)':'var(--muted)';
   const badgeCls = r => r==='good'?'badge-good':r==='warn'?'badge-warn':r==='bad'?'badge-bad':'badge-neutral';
 
-  // SC1: WATER HEALTH — pH 35% · water temp 25% · NO₂ 25% · NO₃ 15%
-  // All parameters sourced from daily Form2 check readings
+  // SC1: WATER HEALTH — pH 30% · water temp 20% · NO₂ 20% · DO 20% · NO₃ 10%
+  // pH/NO₂/NO₃ come from the daily Form2 check; water temp and dissolved
+  // oxygen from the 3× daily Form1 round.
   const wqP = D.wq.filter(r=>r[0]>=cutoff);
   const phVals  = wqP.map(r=>r[3]).filter(v=>v!=null);
   const tmpVals = wqP.map(r=>r[2]).filter(v=>v!=null);
   const no2Vals = wqP.map(r=>r[6]).filter(v=>v!=null);
   const no3Vals = wqP.map(r=>r[5]).filter(v=>v!=null);
+  const doVals  = wqP.map(r=>r[7]).filter(v=>v!=null);
   const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
   const avgPH  = avg(phVals);
   const avgTmp = avg(tmpVals);
   const avgNO2 = avg(no2Vals);
   const avgNO3 = avg(no3Vals);
+  const avgDO  = avg(doVals);
   const issues = [];
   let wTotal=0, wScore=0;
   if(avgPH!=null){
     // ideal 6.8–7.2 | acceptable 6.5–7.5 | borderline 6.2–6.5 / 7.5–8.0 | alert otherwise
     const s=(avgPH>=6.8&&avgPH<=7.2)?1:(avgPH>=6.5&&avgPH<=7.5)?0.5:(avgPH>=6.2&&avgPH<=8.0)?0.25:0;
-    wTotal+=35; wScore+=s*35;
+    wTotal+=30; wScore+=s*30;
     if(s<1){const dir=avgPH>7.2?'too high':'too low'; issues.push('pH — '+(s===0?dir+' (critical)':s===0.25?dir:'slightly '+dir));}
   }
   if(avgTmp!=null){
     // ideal 24–26 | acceptable 22–28 | borderline 20–22 / 28–30 | alert <20 or >30
     const s=(avgTmp>=24&&avgTmp<=26)?1:(avgTmp>=22&&avgTmp<=28)?0.5:(avgTmp>=20&&avgTmp<=30)?0.25:0;
-    wTotal+=25; wScore+=s*25;
+    wTotal+=20; wScore+=s*20;
     if(s<1){const dir=avgTmp<24?'too cold':'too warm'; issues.push('Water temp — '+(s===0?dir+' (critical)':s===0.25?dir:'slightly '+dir));}
   }
   if(avgNO2!=null){
     // ideal <0.5 | acceptable 0.5–1.0 | borderline 1.0–1.5 | alert >1.5
     const s=avgNO2<0.5?1:avgNO2<1.0?0.5:avgNO2<1.5?0.25:0;
-    wTotal+=25; wScore+=s*25;
+    wTotal+=20; wScore+=s*20;
     if(s<1) issues.push('Nitrite — '+(s===0?'dangerously high':s===0.25?'too high':'slightly elevated'));
+  }
+  if(avgDO!=null){
+    // Tilapia: ideal >5 mg/L | acceptable 4–5 | borderline 3–4 | alert <3 (suffocation risk)
+    const s=avgDO>=5?1:avgDO>=4?0.5:avgDO>=3?0.25:0;
+    wTotal+=20; wScore+=s*20;
+    if(s<1) issues.push('Dissolved O₂ — '+(s===0?'critically low':s===0.25?'too low':'slightly low'));
   }
   if(avgNO3!=null){
     // ideal 10–50 | acceptable 5–80 | borderline 2–5 / 80–100 | alert otherwise
     const s=(avgNO3>=10&&avgNO3<=50)?1:(avgNO3>=5&&avgNO3<=80)?0.5:(avgNO3>=2&&avgNO3<=100)?0.25:0;
-    wTotal+=15; wScore+=s*15;
+    wTotal+=10; wScore+=s*10;
     if(s<1){const dir=avgNO3<10?'too low':'too high'; issues.push('Nitrate — '+(s===0?dir+' (critical)':s===0.25?dir:'slightly '+dir));}
   }
   const waterScore = wTotal>0 ? Math.round(wScore/wTotal*100) : null;
@@ -2178,7 +1806,7 @@ function renderScorecards(){
   const waterLabel = {good:'Good',warn:'Watch',bad:'Alert',neutral:'No data'}[waterRAG];
   const waterSub = wqP.length===0 ? 'No readings in period'
     : issues.length ? issues.join(' · ')
-    : 'pH, temp, NO₂ & NO₃ on target';
+    : 'pH, temp, NO₂, DO &amp; NO₃ on target';
 
   // SC2: CHECK ROUNDS COMPLIANCE
   // Expected: Form1 × 3 slots/day (morning, midday, evening) + Form2 × 1/day
@@ -2216,75 +1844,31 @@ function renderScorecards(){
     : missedChecks>0 ? missedChecks+' daily check'+(missedChecks>1?'s':'')+' missed'
     : 'All rounds submitted';
 
-  // SC3: HARVEST — primary source: Form3 harvest dates per row
-  // Find the most recent harvest-date record per bed/row
-  const bedHarvest = {};
-  D.plants.forEach(r => {
-    if (!r[1] || !r[5]) return;
-    if (!bedHarvest[r[1]] || r[0] > bedHarvest[r[1]][0]) bedHarvest[r[1]] = r;
-  });
-  // Map all rows with harvest dates to days from today (negative = already past due)
-  const allScheduled = Object.values(bedHarvest)
-    .map(r => ({ name: r[1], daysLeft: Math.round((new Date(r[5]) - now) / 864e5) }))
-    .sort((a,b) => a.daysLeft - b.daysLeft);
-  const upcomingAll = allScheduled.filter(e => e.daysLeft >= 0);
-  const overdueAll  = allScheduled.filter(e => e.daysLeft < 0);
-  // Primary metric = next upcoming harvest
-  let soonestDays = upcomingAll.length ? upcomingAll[0].daysLeft : null;
-  let soonestName = upcomingAll.length ? upcomingAll[0].name : '';
-  // Sub-label: only gravel rows (Row 1–6), overdue first then upcoming
-  const isRowBed = name => /^Row \d+$/i.test(name);
-  const rowOverdue  = overdueAll.slice().reverse().filter(e => isRowBed(e.name));
-  const rowUpcoming = upcomingAll.filter(e => isRowBed(e.name) && e.daysLeft <= 10);
-  const upcomingSoon = [
-    ...rowOverdue.map(e => e.name+' ready '+Math.abs(e.daysLeft)+'d ago'),
-    ...rowUpcoming.map(e => e.daysLeft === 0 ? e.name+' ready now' : e.name+' in '+e.daysLeft+'d')
-  ];
-  // Fallback: if no Form3 harvest dates exist, use HARVEST_WINDOWS on planted-date records
-  if (allScheduled.length === 0) {
-    const byBed = {};
-    [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r => {
-      if (!r[1] || !isRowBed(r[1])) return;
-      byBed[r[1]] = r;
-    });
-    Object.values(byBed).filter(r => !r[5]).forEach(r => {
-      const nm = r[1];
-      const cropNm = (r[10]||'').toLowerCase();
-      const wKey = Object.keys(HARVEST_WINDOWS).find(k=>cropNm.includes(k))||'lettuce';
-      const [mn] = HARVEST_WINDOWS[wKey];
-      const dateRef = r[11] || r[0];
-      if (!dateRef) return;
-      const daysIn = Math.round((now - new Date(dateRef)) / 864e5);
-      const daysLeft = Math.max(0, mn - daysIn);
-      if (soonestDays===null||daysLeft<soonestDays) { soonestDays=daysLeft; soonestName=nm; }
-      if (daysLeft<=10) upcomingSoon.push(daysLeft===0 ? nm+' ready now' : nm+' in '+daysLeft+'d');
-    });
-  }
-  const harvestRAG = soonestDays===null?'neutral':soonestDays===0?'good':soonestDays<=3?'warn':'neutral';
-  const harvestPrimary = soonestDays===null?'No data':soonestDays===0?'Ready now':'In '+soonestDays+'d';
-  const harvestLabel = soonestDays===null?'No crops':soonestDays===0?'Harvest now':soonestDays<=3?'Coming up':'On track';
-  const harvestSub = upcomingSoon.length ? upcomingSoon.slice(0,3).join(' · ')
-    : soonestName ? 'Next: '+soonestName+(soonestDays?' in '+soonestDays+'d':'')
-    : 'No row harvest dates set';
+  // SC3: CHECK ROUNDS — how much of the expected form cadence was submitted
+  const compRAG = compPct==null?'neutral':compPct>=90?'good':compPct>=70?'warn':'bad';
+  const compLabel = compPct==null?'No data':compPct>=90?'On track':compPct>=70?'Some gaps':'Behind';
 
-  // SC4: FISH
-  const fishP = D.fish.filter(r=>r[0]>=cutoff);
-  const deaths = fishP.reduce((s,r)=>s+(r[3]||0),0);
-  const stock = D.stats.current_stock||0;
-  // "Started with" = original stocking quantity (index 2 of first fish record)
-  const stockAtStart = D.fish.length ? D.fish[0][2] : stock;
-  const prevCutoff = new Date(new Date(cutoff)-daysElapsed*864e5).toISOString().slice(0,10);
-  const prevDeaths = D.fish.filter(r=>r[0]>=prevCutoff&&r[0]<cutoff).reduce((s,r)=>s+(r[3]||0),0);
-  const trend = deaths>prevDeaths?'up':deaths<prevDeaths?'down':'flat';
-  const trendIcon = {'up':'↑','down':'↓','flat':'—'}[trend];
-  const trendColor = {'up':'var(--c-bad)','down':'var(--c-good)','flat':'var(--muted)'}[trend];
-  const fishRAG = D.fish.length===0?'neutral':deaths===0?'good':deaths/stockAtStart>0.01?'bad':'warn';
-  const fishLabel = D.fish.length===0?'No data':deaths===0?'No losses':fishRAG==='bad'?'Alert':'Monitor';
-  const fishSub = D.fish.length===0
-    ? 'No fish records yet'
-    : deaths===0
-      ? 'Started '+stockAtStart.toLocaleString()+' · '+stock.toLocaleString()+' alive · no losses in period'
-      : 'Started '+stockAtStart.toLocaleString()+' · Lost '+deaths+' · '+stock.toLocaleString()+' remaining';
+  // SC4: FISH GROWTH — weekly biomass sample (Form3)
+  // Ops benchmark: 3–5 g gain per week.
+  const bm = D.biomass || [];
+  const lastBM = bm.length ? bm[bm.length-1] : null;
+  const prevBM = bm.length > 1 ? bm[bm.length-2] : null;
+  const gain = (lastBM && prevBM && lastBM[2]!=null && prevBM[2]!=null)
+    ? Math.round((lastBM[2]-prevBM[2])*10)/10 : null;
+  const fishRAG = !lastBM ? 'neutral'
+    : lastBM[5]==='Serious problem' ? 'bad'
+    : lastBM[5]==='Some concerns' ? 'warn'
+    : gain==null ? 'good'
+    : gain>=3 ? 'good' : gain>0 ? 'warn' : 'bad';
+  const fishPrimary = (lastBM && lastBM[2]!=null) ? lastBM[2]+'g' : '—';
+  const fishLabel = !lastBM ? 'No weigh-in' : (lastBM[5] || 'Logged');
+  const fishSub = !lastBM
+    ? 'No weekly weigh-in recorded yet'
+    : [
+        gain!=null ? (gain>=0?'+':'')+gain+'g since last weigh-in (target 3–5g)' : 'First weigh-in',
+        lastBM[1]!=null ? 'n='+lastBM[1] : '',
+        lastBM[4]!=null ? lastBM[4]+'g feed/day' : '',
+      ].filter(Boolean).join(' · ');
 
   const sc = (rag, icon, lbl, val, badge, sub, onclick, iconColor='var(--muted)') =>
     `<div class="sc-card" onclick="${onclick}">
@@ -2295,9 +1879,9 @@ function renderScorecards(){
     </div>`;
 
   document.getElementById('scorecard-row').innerHTML =
-    sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `navTo('water')`, '#60a5fa') +
-    sc(harvestRAG, 'plant-2', 'Next harvest', harvestPrimary, harvestLabel, harvestSub, `openHarvestDrillDown()`, '#4ade80') +
-    sc(fishRAG, 'fish', 'Fish mortality', deaths+' death'+(deaths!==1?'s':'')+(deaths>0?` <span style="font-size:16px;font-weight:400;vertical-align:middle;color:${trendColor}">${trendIcon}</span>`:''), fishLabel, fishSub, `navTo('fish')`, '#f97316') +
+    sc(waterRAG, 'droplet', 'Water health', waterScore!=null?waterScore+'%':'—', waterLabel, waterSub, `openWaterDrillDown()`, '#60a5fa') +
+    sc(compRAG, 'checklist', 'Check rounds', compPct!=null?compPct+'%':'—', compLabel, compSub, `navTo('overview')`, '#a78bfa') +
+    sc(fishRAG, 'fish', 'Fish growth', fishPrimary, fishLabel, fishSub, `navTo('fish')`, '#f97316') +
     sc(journalRAG, 'notebook', 'Journal', journalCount>0?journalCount+(journalCount===1?' entry':' entries'):'—', journalLabel, journalSub, 'openJournalPage()', '#fbbf24');
 }
 
@@ -2340,9 +1924,18 @@ function renderHealthRow(){
   const mnRAG  = mn==null?'neutral':(mn>=0.5&&mn<=5)?'good':(mn>=0.1&&mn<=8)?'warn':'bad';
   const feRAG  = fe==null?'neutral':(fe>=1&&fe<=5)?'good':(fe>=0.5&&fe<=8)?'warn':'bad';
 
-  // Deaths today
-  const deathsToday = D.fish.filter(r=>r[0]===today).reduce((s,r)=>s+(r[3]||0),0);
-  const stockRAG = s.current_stock>=1560?'good':s.current_stock>=1210?'warn':'bad';
+  // Dissolved oxygen (Form1, 3× daily) — tilapia need >5 mg/L; <3 is critical.
+  const dox = s.latest_do;
+  const doRAG = dox==null?'neutral':dox>=5?'good':dox>=3?'warn':'bad';
+  // Electrical conductivity (Form2, daily). No agreed target range for this
+  // farm yet and the form carries no unit, so it is reported without a RAG.
+  const ecv = s.latest_ec;
+
+  // Weekly fish biomass (Form3)
+  const lastBM = (D.biomass||[]).slice(-1)[0] || null;
+  const bmHealthRAG = !lastBM ? 'neutral'
+    : lastBM[5]==='Serious problem' ? 'bad'
+    : lastBM[5]==='Some concerns' ? 'warn' : 'good';
 
   // Siphon — latest readings per row (not all-time averages)
   const sl = D.siph_latest || [];
@@ -2355,11 +1948,6 @@ function renderHealthRow(){
   const diff = s.latest_env_morn!=null&&outsideTemp!=null ? (s.latest_env_morn-outsideTemp).toFixed(1) : null;
   const outRAG = outsideTemp==null?'neutral':outsideTemp>=15&&outsideTemp<=35?'good':outsideTemp<10||outsideTemp>40?'bad':'warn';
   const diffRAG = diff==null?'neutral':Math.abs(diff)<=15?'good':Math.abs(diff)<=25?'warn':'bad';
-
-  // Equipment — latest Form2 checklist
-  const eq = s.latest_equip || {};
-  const eqDot = v => v==null?'neutral':v==='OK'||v==='Yes'?'good':v==='Issue'?'bad':'neutral';
-  const eqVal = v => v==null?'—':v;
 
   // Daily rounds — from compliance data
   const todayComp = (D.compliance||[]).find(r=>r.date===today) || {};
@@ -2387,8 +1975,9 @@ function renderHealthRow(){
   const _latestSiph = D.siphons.length ? _byTime(D.siphons).pop() : null;
   const lastSiphDate = _latestSiph ? _latestSiph[0] : '—';
   const lastSiphSlot = _latestSiph ? _latestSiph[1] : null;
-  const latestFishDate = D.fish.length ? D.fish[D.fish.length-1][0] : '—';
-  const lastEquipDate  = s.latest_equip_date||'—';
+  const lastBiomassDate = lastBM ? lastBM[0] : '—';
+  const lastDoDate      = D.wq.filter(r=>r[7]!=null).slice(-1)[0]?.[0]||null;
+  const lastEcDate      = D.wq.filter(r=>r[8]!=null).slice(-1)[0]?.[0]||null;
   const lastRoundEntry = [...(D.compliance||[])].reverse().find(r=>r.f1_morn||r.f1_mid||r.f1_eve)||null;
   const lastRoundDate  = lastRoundEntry ? lastRoundEntry.date : '—';
   const lastRoundSlot  = lastRoundEntry ? (lastRoundEntry.f1_eve?'Evening':lastRoundEntry.f1_mid?'Midday':'Morning') : null;
@@ -2416,14 +2005,18 @@ function renderHealthRow(){
     mr(outRAG,  'Outside air temp', outsideTemp!=null?outsideTemp+'°C':noData(lastOutsideDate)) +
     mr(diffRAG, 'Differential',     diff!=null?diff+'°C':noData(lastOutsideDate));
 
-  // Card 2: Water vitals — 2-column layout (5 metrics each)
+  // Card 2: Water vitals — 2-column layout
+  //   left  = frequent readings (per round / daily)
+  //   right = weekly mineral panel
   const waterCol1 =
     mrW(phRAG,  'pH',   s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
     mrW(wtRAG,  'Temp', s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
+    mrW(doRAG,  'DO',   dox!=null?dox+' mg/L':noData(lastDoDate)) +
     mrW(no2RAG, 'NO₂',  latestNO2!=null?latestNO2+' ppm':'—') +
     mrW(no3RAG, 'NO₃',  latestNO3!=null?latestNO3+' ppm':'—') +
-    mrW(nh3RAG, 'NH₃',  nh3!=null?nh3+' ppm':'—');
+    mrW('neutral', 'EC', ecv!=null?String(ecv):noData(lastEcDate));
   const waterCol2 =
+    mrW(nh3RAG, 'NH₃', nh3!=null?nh3+' ppm':'—') +
     mrW(caRAG, 'Ca', ca!=null?ca+' ppm':'—') +
     mrW(mgRAG, 'Mg', mg!=null?mg+' ppm':'—') +
     mrW(kRAG,  'K',  kk!=null?kk+' ppm':'—') +
@@ -2431,11 +2024,14 @@ function renderHealthRow(){
     mrW(feRAG, 'Fe', fe!=null?fe+' ppm':'—');
   const waterFooter = 'Last reading: '+lastWQDate+(lastWQSlot?' · '+lastWQSlot:'');
 
-  // Card 3: Fish tank
-  const fishRows =
-    mr(stockRAG, 'Stock', s.current_stock.toLocaleString()) +
-    mr(deathsToday>0?'bad':'good', 'Deaths today', deathsToday===0?'None':String(deathsToday)) +
-    mr('neutral', 'Last fed', lastRoundDate!=='—'?fmtDate(lastRoundDate)+(lastRoundFeedTime?' · '+lastRoundFeedTime:lastRoundSlot?' · '+lastRoundSlot:''):'—');
+  // Card 3: Fish — weekly biomass sample (Form3)
+  const fishRows = !lastBM
+    ? mr('neutral', 'No weekly weigh-in yet', '') +
+      mr('neutral', 'Last fed', lastRoundDate!=='—'?fmtDate(lastRoundDate)+(lastRoundFeedTime?' · '+lastRoundFeedTime:lastRoundSlot?' · '+lastRoundSlot:''):'—')
+    : mr(bmHealthRAG, 'Avg weight', lastBM[2]!=null?lastBM[2]+' g':'—') +
+      mr('neutral', 'Sampled', lastBM[1]!=null?String(lastBM[1])+' fish':'—') +
+      mr('neutral', 'Feed/day', lastBM[4]!=null?lastBM[4]+' g'+(lastBM[3]?' · '+lastBM[3]:''):'—') +
+      mr('neutral', 'Last fed', lastRoundDate!=='—'?fmtDate(lastRoundDate)+(lastRoundFeedTime?' · '+lastRoundFeedTime:lastRoundSlot?' · '+lastRoundSlot:''):'—');
 
   // Card 4: Siphon health — 2-column 3×3 layout
   const siphRAGi = v => v==null?'neutral':v>=15&&v<=18?'good':v>18&&v<=20?'warn':'bad';
@@ -2445,21 +2041,7 @@ function renderHealthRow(){
     ? mr('neutral','No siphon data yet', lastSiphDate!=='—'?`<span style="font-size:10px;color:var(--muted)">last ${fmtDate(lastSiphDate)}</span>`:'')
     : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${siphCol1}</div><div>${siphCol2}</div></div>`;
 
-  // Card 5: Equipment — 2-column layout like Water vitals (4 left · 3 right; DWC blowers removed for now)
-  const equipCol1 =
-    mrW(eqDot(eq.pump),  'Circulation pump', eqVal(eq.pump)) +
-    mrW(eqDot(eq.level), 'Sump water level', eqVal(eq.level)) +
-    mrW(eqDot(eq.leaks), 'No leaks',         eqVal(eq.leaks)) +
-    mrW(eqDot(eq.clean), 'System clean',     eqVal(eq.clean));
-  const equipCol2 =
-    mrW(eqDot(eq.biowaste),  'Biowaste bin',  eqVal(eq.biowaste)) +
-    mrW(eqDot(eq.nutrients), 'Nutrient bins', eqVal(eq.nutrients)) +
-    mrW(eqDot(eq.clarity),   'Water clarity', eqVal(eq.clarity));
-  const equipRows = !eq.pump
-    ? mr('neutral','No equipment check yet','')
-    : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${equipCol1}</div><div>${equipCol2}</div></div>`;
-
-  // Card 6: Daily rounds — Form1 submission times
+  // Card 5: Daily rounds — Form1 submission times
   const checkRows =
     mr(mornDot, 'Morning round',  mornVal) +
     mr(midDot,  'Midday round',   midVal) +
@@ -2468,227 +2050,9 @@ function renderHealthRow(){
   document.getElementById('health-grid-new').innerHTML =
     card('sun',      'Climate',       climateRows, 'Last reading: '+lastEnvDate+(lastEnvSlot?' · '+lastEnvSlot:''),     '3× daily', '#fbbf24') +
     `<div class="sys-card"><div class="sys-card-header"><i class="ti ti-droplet" style="color:#60a5fa"></i>Water vitals<span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:400;white-space:nowrap">3× daily · 1× daily · weekly</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"><div>${waterCol1}</div><div>${waterCol2}</div></div><hr class="card-divider"><div style="font-size:11px;color:var(--muted)">${waterFooter}</div></div>` +
-    card('fish',     'Fish tank',     fishRows,    'Last reading: '+latestFishDate,                                               '1× daily', '#f97316') +
+    card('fish',     'Fish biomass',  fishRows,    'Last weigh-in: '+lastBiomassDate,                                            'weekly',   '#f97316') +
     card('activity', 'Siphon health', siphRows,    'Last reading: '+lastSiphDate+(lastSiphSlot?' · '+lastSiphSlot:''),           '3× daily', '#a78bfa') +
-    card('settings', 'Equipment',     equipRows,   'Last reading: '+lastEquipDate,                                               '1× daily', '#94a3b8') +
     card('calendar', 'Daily rounds',  checkRows,   'Last reading: '+lastRoundDate+(lastRoundSlot?' · '+lastRoundSlot:''),        '3× daily', '#5eead4');
-}
-
-// ─── GROWING BEDS ────────────────────────────────────────────────────────────
-function renderCropGrid(){
-  const today = new Date();
-  const grid = document.getElementById('beds-grid');
-  if(!grid) return;
-
-  const SPRAY_RE = /spray|neem|foliar|pesticide|treat/i;
-
-  // Build lookup: latest active plant record per crop name
-  const byType = {};
-  [...D.plants].sort((a,b)=>(a[0]||'')>(b[0]||'')?1:-1).forEach(r=>{
-    if(!r[1]) return;
-    const k = r[1].toLowerCase().split(' ').slice(0,3).join(' ');
-    byType[k] = r; // ascending sort → last written = newest per bed
-  });
-  // Active crops sorted by harvest urgency
-  const activeSorted = Object.values(byType)
-    .filter(r=>!r[5])
-    .sort((a,b)=>{
-      const urgency = r => {
-        const nm = (r[10]||r[1]||'').toLowerCase();
-        const wKey = Object.keys(HARVEST_WINDOWS).find(k=>nm.includes(k))||'tomato';
-        const mx = HARVEST_WINDOWS[wKey][1];
-        return r[0] ? Math.round((today-new Date(r[0]))/864e5)/mx : 0;
-      };
-      return urgency(b)-urgency(a);
-    });
-
-  // Separate DWC from gravel rows
-  const isDWC = r => /dwc|tank|deep water/i.test(r[1]||'');
-  const gravelCrops = activeSorted.filter(r=>!isDWC(r));
-  const dwcCrops    = activeSorted.filter(r=>isDWC(r));
-
-  // Helpers shared across all bed cards
-  const yn = v => v==='Yes'?'bad':v==='No'?'good':'neutral'; // Yes=bad(problem), No=good, null=neutral
-  const healthDot = h => h==='Good'?'good':h==='Fair'?'warn':h?'bad':'neutral';
-  const eq = (D.stats&&D.stats.latest_equip)||{};
-  const fmtBedDate = dt => { try { const d=new Date(dt+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch(e){ return dt; } };
-
-  // Latest Form 2 submission date per named bed (Row 1…6, DWC Tank 1…4)
-  const lastBedDate = {};
-  D.plants.forEach(p => {
-    if(!p[1]||!p[0]) return;
-    if(!lastBedDate[p[1]] || p[0] > lastBedDate[p[1]]) lastBedDate[p[1]] = p[0];
-  });
-
-  // Latest crop name per bed from Form 3 weekly records (stored in r[10])
-  const bedCrop = {};
-  D.plants.forEach(p => {
-    if(!p[1]||!p[10]) return;
-    if(!bedCrop[p[1]] || p[0] > (bedCrop[p[1]].date||'')) bedCrop[p[1]] = {name:p[10], date:p[0]};
-  });
-  // Most recent planted date per bed (p[11] = date planted, from new Form 3 format)
-  const bedPlanted = {};
-  D.plants.forEach(p => {
-    if(!p[1]||!p[11]) return;
-    if(!bedPlanted[p[1]] || p[0] > (bedPlanted[p[1]].recordedOn||''))
-      bedPlanted[p[1]] = {plantedDate: p[11], recordedOn: p[0]};
-  });
-  // Actual expected harvest date per bed (p[5] = harvestDate recorded in Form3_Weekly)
-  const bedHarvestDate = {};
-  D.plants.forEach(p => {
-    if(!p[1]||!p[5]) return;
-    if(!bedHarvestDate[p[1]] || p[0] > (bedHarvestDate[p[1]].recordedOn||''))
-      bedHarvestDate[p[1]] = {date: p[5], recordedOn: p[0]};
-  });
-
-  // Render one bed card (gravel or DWC)
-  const bedCard = (label, isDwc, r, rowIdx) => {
-    // r may be null (empty slot)
-    const name = r ? r[1] : '';
-    const nameLower = name.toLowerCase();
-    const cropDisplay = bedCrop[label] ? bedCrop[label].name : null;
-    const headerLabel = cropDisplay ? `${label} — ${cropDisplay}` : `${label} — Empty`;
-
-    // New health fields from Form 2
-    const yellowing  = r ? (r[7]||null) : null;
-    const wilting    = r ? (r[8]||null) : null;
-    const bitterness = r ? (r[9]||null) : null;
-    const healthRaw  = r ? (r[3]||'').replace(/^Health:\s*/i,'').trim()||null : null;
-
-    // Harvest — prefer actual recorded harvest date from Form3, fall back to HARVEST_WINDOWS estimate
-    const plantedInfo = bedPlanted[label];
-    const plantedDate = plantedInfo ? plantedInfo.plantedDate : null;
-    const cropKey = cropDisplay ? Object.keys(HARVEST_WINDOWS).find(k=>cropDisplay.toLowerCase().includes(k)) : null;
-    const [mn, mx] = cropKey ? HARVEST_WINDOWS[cropKey] : [0, 0];
-    const actualHarvestDate = bedHarvestDate[label] ? bedHarvestDate[label].date : null;
-    let harvestText = '—', harvestColor = 'var(--muted)', bdgCls = 'badge-neutral', bdgLabel = r ? 'Growing' : 'Empty';
-    let plantedDaysAgo = null;
-    if (actualHarvestDate) {
-      const daysLeft = Math.round((new Date(actualHarvestDate) - today) / 864e5);
-      const isReady = daysLeft <= 0;
-      if (plantedDate) {
-        plantedDaysAgo = Math.round((today - new Date(plantedDate)) / 864e5);
-        const totalDays = Math.round((new Date(actualHarvestDate) - new Date(plantedDate)) / 864e5);
-        const pct = totalDays > 0 ? Math.min(100, Math.round(plantedDaysAgo / totalDays * 100)) : (isReady ? 100 : 0);
-        const isNear = pct >= 75 && !isReady;
-        harvestText  = isReady ? 'Ready now' : 'In ~' + Math.max(0, daysLeft) + 'd';
-        harvestColor = isReady ? 'var(--c-good)' : isNear ? 'var(--c-warn)' : 'var(--muted)';
-        bdgCls   = isReady ? 'badge-good' : isNear ? 'badge-warn' : 'badge-neutral';
-        bdgLabel = isReady ? 'Ready now' : isNear ? 'Near harvest' : 'Growing';
-      } else {
-        const isNear = daysLeft > 0 && daysLeft <= 7;
-        harvestText  = isReady ? 'Ready now' : 'In ~' + daysLeft + 'd';
-        harvestColor = isReady ? 'var(--c-good)' : isNear ? 'var(--c-warn)' : 'var(--muted)';
-        bdgCls   = isReady ? 'badge-good' : isNear ? 'badge-warn' : 'badge-neutral';
-        bdgLabel = isReady ? 'Ready now' : isNear ? 'Near harvest' : 'Growing';
-      }
-    } else if (plantedDate && mx > 0) {
-      const daysIn = Math.round((today - new Date(plantedDate)) / 864e5);
-      plantedDaysAgo = daysIn;
-      const daysLeft = Math.max(0, mn - daysIn);
-      const pct = Math.min(100, Math.round(daysIn / mx * 100));
-      const isReady = pct >= 100, isNear = pct >= 75 && !isReady;
-      harvestText  = isReady ? 'Ready now' : daysLeft > 0 ? 'In ~' + daysLeft + 'd' : 'In harvest window';
-      harvestColor = isReady ? 'var(--c-good)' : isNear ? 'var(--c-warn)' : 'var(--muted)';
-      bdgCls   = isReady ? 'badge-good' : isNear ? 'badge-warn' : 'badge-neutral';
-      bdgLabel = isReady ? 'Ready now' : isNear ? 'Near harvest' : 'Growing';
-    } else if (r) {
-      bdgLabel = cropDisplay ? 'Growing' : 'Empty';
-    }
-
-    // Days past the recorded expected-harvest date → red overdue alert
-    let overdueDays = 0;
-    if (actualHarvestDate) overdueDays = Math.max(0, Math.round((today - new Date(actualHarvestDate)) / 864e5));
-    else if (plantedDate && mx > 0) overdueDays = Math.max(0, Math.round((today - new Date(plantedDate)) / 864e5) - mx);
-    if (overdueDays > 0) {
-      bdgCls = 'badge-bad'; bdgLabel = overdueDays + 'd overdue';
-      harvestColor = 'var(--c-bad)'; harvestText = 'Past harvest';
-    }
-
-    // Obs: pests & spray
-    let pestNote = null;
-    if(r){
-      const cropRecords = [...D.plants]
-        .filter(p=>p[1]&&p[1].toLowerCase()===nameLower)
-        .sort((a,b)=>(a[0]||'')>(b[0]||'')?-1:1);
-      const latestNotes = cropRecords.find(p=>p[3]||p[4]);
-      pestNote = latestNotes ? latestNotes[4] : null;
-      const sprayPlant = cropRecords.find(p=>SPRAY_RE.test(p[2]||'')||SPRAY_RE.test(p[3]||'')||SPRAY_RE.test(p[6]||''));
-      const sprayMaint = [...D.maintenance].sort((a,b)=>(a[0]||'')>(b[0]||'')?-1:1).find(m=>SPRAY_RE.test((m[3]||'')+(m[5]||'')));
-      const sprayEvent = sprayPlant||sprayMaint;
-      const sprayDate = sprayEvent?sprayEvent[0]:null;
-      const sprayDaysAgo = sprayDate?Math.round((today-new Date(sprayDate))/864e5):null;
-      var sprayDot = !sprayDate?'warn':sprayDaysAgo>14?'warn':'neutral';
-      var sprayLabel = !sprayDate?'No spray on record':sprayDaysAgo===0?'Today':sprayDaysAgo+'d ago';
-    } else {
-      var sprayDot = 'neutral', sprayLabel = '—';
-    }
-
-    // Footer: latest siphon reading for gravel rows; DWC bubbles for tanks
-    let footer = '';
-    if(!isDwc){
-      const siphCol = rowIdx + 2; // S1=col2 … S6=col7
-      const latestSiph = D.siphons.slice().reverse().map(s=>s[siphCol]).find(v=>v!=null&&v>0) ?? null;
-      const siphOk = latestSiph!=null&&latestSiph>=15&&latestSiph<=18;
-      const siphBad = latestSiph!=null&&latestSiph>20;
-      const siphDot = latestSiph==null?'neutral':siphOk?'good':siphBad?'bad':'warn';
-      const siphMark = siphOk?'<i class="ti ti-check" style="font-size:11px;color:var(--c-good)"></i>':'<i class="ti ti-alert-triangle" style="font-size:11px;color:var(--c-warn)"></i>';
-      footer = `<span style="color:var(--muted)"><span class="dot dot-${siphDot}" style="margin-right:4px;display:inline-block"></span>S${rowIdx+1}: ${latestSiph!=null?latestSiph+'m ':' — '}${latestSiph!=null?siphMark:''}</span>`;
-    } else {
-      const bubVal = rowIdx===0?eq.bubbles1:rowIdx===1?eq.bubbles2:rowIdx===2?eq.bubbles3:rowIdx===3?eq.bubbles4:null;
-      const bubDot = bubVal==='Yes'?'good':bubVal==='No'?'bad':'neutral';
-      footer = `<span style="color:var(--muted)"><span class="dot dot-${bubDot}" style="margin-right:4px;display:inline-block"></span>Bubbles: ${bubVal||'—'}</span>`;
-    }
-
-    const onclick = r ? `onclick="openBedDrillDown(${JSON.stringify(name).replace(/"/g,'&quot;')},${rowIdx})"` : '';
-    return `<div class="bed-card-new" ${onclick} style="${r?'cursor:pointer':'opacity:0.6'}">
-      <div class="bed-card-new-header">
-        <span>${headerLabel}</span>
-        <span class="badge ${bdgCls}">${bdgLabel}</span>
-      </div>
-      ${overdueDays > 0 ? `<div class="bed-overdue"><i class="ti ti-alert-triangle" style="font-size:13px"></i>${overdueDays} day${overdueDays!==1?'s':''} past harvest date</div>` : ''}
-      <div class="bed-obs-grid">
-        <div class="bed-obs-item"><span class="dot dot-${yn(yellowing)}"></span><span>${yellowing==='Yes'?'Yellowing':'No yellowing'}</span></div>
-        <div class="bed-obs-item"><span class="dot dot-${yn(wilting)}"></span><span>${wilting==='Yes'?'Wilting':'No wilting'}</span></div>
-        <div class="bed-obs-item"><span class="dot dot-${pestNote&&pestNote!=='No'?'bad':'good'}"></span><span>${pestNote&&pestNote!=='No'?'Pests noted':'No pests'}</span></div>
-        ${isDwc
-          ? `<div class="bed-obs-item"><span class="dot dot-${yn(bitterness)}"></span><span>${bitterness==='Yes'?'Bitter taste':'No bitterness'}</span></div>`
-          : `<div class="bed-obs-item"><span class="dot dot-${sprayDot}"></span><span>Spray: ${sprayLabel}</span></div>`}
-      </div>
-      <hr class="card-divider">
-      <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
-        <span style="color:${harvestColor};font-weight:500">${harvestText}</span>
-        ${footer}
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">${
-        plantedDaysAgo !== null
-          ? `Planted ${plantedDaysAgo}d ago · ${actualHarvestDate ? 'harvest ' + fmtBedDate(actualHarvestDate) : 'target ' + mn + '–' + mx + 'd'}`
-          : plantedDate
-            ? `Planted ${plantedDate}`
-            : lastBedDate[label] ? 'Last reading: '+fmtBedDate(lastBedDate[label]) : 'No planting date recorded'
-      }</div>
-    </div>`;
-  };
-
-  // Build one card per row using the latest non-harvested record for THAT
-  // specific row — not the urgency-sorted list, which would show the wrong
-  // row's health data in each card.
-  const bedCards = [];
-  for(let i=0;i<6;i++){
-    const label = `Row ${i+1}`;
-    const rowRecord = D.plants
-      .filter(p => p[1] === label && !p[5])
-      .sort((a,b) => (a[0]||'') > (b[0]||'') ? -1 : 1)[0] || null;
-    bedCards.push(bedCard(label, false, rowRecord, i));
-  }
-  grid.innerHTML = bedCards.join('');
-
-  const dwcGrid = document.getElementById('dwc-grid');
-  if(dwcGrid){
-    const dwcCards = [];
-    for(let i=0;i<4;i++) dwcCards.push(bedCard(`DWC Tank ${i+1}`, true, dwcCrops[i]||null, i));
-    dwcGrid.innerHTML = dwcCards.join('');
-  }
 }
 
 // ─── OVERVIEW ───────────────────────────────────────────────────────────────
@@ -2699,13 +2063,12 @@ function renderOverview(){
   renderAlerts();
   renderScorecards();
   renderHealthRow();
-  renderCropGrid();
 }
 
 // ─── OPS NAV ────────────────────────────────────────────────────────────────
-const OPS_SECTIONS = ['water','environment','fish','plants','siphons','maintenance'];
-const OPS_NAV_LABELS = {water:'Water',environment:'Environ.',fish:'Fish',plants:'Plants',siphons:'Siphons',maintenance:'Maint.'};
-const OPS_NAV_ICONS = {water:'droplet',environment:'sun',fish:'fish',plants:'plant-2',siphons:'settings',maintenance:'tool'};
+const OPS_SECTIONS = ['water','environment','fish','siphons','maintenance'];
+const OPS_NAV_LABELS = {water:'Water',environment:'Environ.',fish:'Fish',siphons:'Siphons',maintenance:'Maint.'};
+const OPS_NAV_ICONS = {water:'droplet',environment:'sun',fish:'fish',siphons:'settings',maintenance:'tool'};
 
 function renderOpsNav(current) {
   OPS_SECTIONS.forEach(thisSec => {
@@ -2761,21 +2124,6 @@ function renderLineChart(id, labels, datasets, opts={}){
   });
 }
 
-function renderStepChart(id, stockData){
-  destroyChart(id);
-  if(!stockData||!stockData.length) return;
-  charts[id] = new Chart(document.getElementById(id).getContext('2d'),{
-    type:'line',
-    data:{labels:stockData.map(r=>r[0]),datasets:[{label:'Fish Count',data:stockData.map(r=>r[1]),borderColor:'var(--c-good)',backgroundColor:'transparent',fill:false,stepped:true,pointRadius:2,pointHoverRadius:5,borderWidth:1.5}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{intersect:false,mode:'index'}},
-      scales:{
-        x:{ticks:{maxTicksLimit:6,font:{size:12},color:'#6B7280'},grid:{display:false},border:{display:false}},
-        y:{ticks:{font:{size:12},color:'#6B7280'},min:800,grid:{color:'rgba(0,0,0,0.04)',drawBorder:false},border:{display:false}}
-      },interaction:{intersect:false,mode:'index'}}
-  });
-}
-
 // ─── WATER QUALITY ──────────────────────────────────────────────────────────
 function renderWater(){
   const s = D.stats;
@@ -2784,13 +2132,17 @@ function renderWater(){
   const inRangePH = D.wq_chart.filter(r=>r[2]!=null&&r[2]>=6.8&&r[2]<=7.2).length;
   const totalDays = D.wq_chart.filter(r=>r[2]!=null).length;
   const pctOK = totalDays?Math.round(inRangePH/totalDays*100):0;
-  const ragC = c => c==='good'?'var(--c-good)':c==='warn'?'var(--c-warn)':'var(--c-bad)';
+  const ragC = c => c==='good'?'var(--c-good)':c==='warn'?'var(--c-warn)':c==='bad'?'var(--c-bad)':'var(--text)';
+  // Dissolved oxygen — tilapia need >5 mg/L; below 3 is a suffocation risk.
+  const doCls = s.latest_do==null?'neutral':s.latest_do>=5?'good':s.latest_do>=3?'warn':'bad';
+  const doLbl = s.latest_do==null?'No data':s.latest_do>=5?'Healthy':s.latest_do>=3?'Low':'Critical';
 
   document.getElementById('wq-kpis').innerHTML=`
     <div class="kpi-card"><div class="label">Latest pH</div><div class="value" style="color:${ragC(phCls)}">${fmt(s.latest_ph,2)}</div><div class="sub">Target 6.8–7.2</div><span class="badge ${phCls==='good'?'good':phCls==='warn'?'warn':'bad'}">${phLbl}</span></div>
     <div class="kpi-card"><div class="label">Latest Water Temp</div><div class="value" style="color:${ragC(wtCls)}">${fmt(s.latest_wtemp,1)}°C</div><div class="sub">Target 24–30°C</div><span class="badge ${wtCls==='good'?'good':wtCls==='warn'?'warn':'bad'}">${wtLbl}</span></div>
-    <div class="kpi-card"><div class="label">pH In-Range Days</div><div class="value" style="color:${pctOK>70?'var(--c-good)':pctOK>50?'var(--c-warn)':'var(--c-bad)'}">${pctOK}%</div><div class="sub">${inRangePH} of ${totalDays} days</div><span class="badge ${pctOK>70?'good':pctOK>50?'warn':'bad'}">${pctOK>70?'Good':'Needs attention'}</span></div>
-    <div class="kpi-card"><div class="label">Data Period</div><div class="value" style="font-size:16px;color:var(--text)">${D.wq_chart.length}</div><div class="sub">days of readings (Nov 2025–now)</div><span class="badge good">Daily 3× checks</span></div>`;
+    <div class="kpi-card"><div class="label">Dissolved Oxygen</div><div class="value" style="color:${ragC(doCls)}">${s.latest_do!=null?fmt(s.latest_do,1):'—'}</div><div class="sub">mg/L · target &gt; 5</div><span class="badge ${doCls}">${doLbl}</span></div>
+    <div class="kpi-card"><div class="label">Conductivity</div><div class="value" style="font-size:20px;color:var(--text)">${s.latest_ec!=null?fmt(s.latest_ec,0):'—'}</div><div class="sub">EC · no target range set</div><span class="badge neutral">Tracking</span></div>
+    <div class="kpi-card"><div class="label">pH In-Range Days</div><div class="value" style="color:${pctOK>70?'var(--c-good)':pctOK>50?'var(--c-warn)':'var(--c-bad)'}">${pctOK}%</div><div class="sub">${inRangePH} of ${totalDays} days</div><span class="badge ${pctOK>70?'good':pctOK>50?'warn':'bad'}">${pctOK>70?'Good':'Needs attention'}</span></div>`;
 
   document.getElementById('wq-alerts').innerHTML = s.latest_ph>7.2
     ? `<div class="alert warn"><span class="alert-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></span><div><strong>pH Persistently Elevated</strong> — Only ${pctOK}% of days have been in the 6.8–7.2 ideal range. Consider investigating lime content in water source or gravel media.</div></div>` : '';
@@ -2817,12 +2169,17 @@ function setWQRange(d){ wqDays=d; document.querySelectorAll('#ph-range-btns .ran
 function setWTRange(d){ wtDays=d; document.querySelectorAll('#wt-range-btns .range-btn').forEach(b=>b.classList.toggle('active',+b.dataset.days===d)); renderWTChart(); }
 
 function renderWQTable(limit){
-  const rows = limit ? D.wq.slice(-limit*3) : D.wq;
+  // Order by date AND round so the newest reading of a day sits on top —
+  // Form1 writes three rows per day and the merge only sorts by date.
+  const ord = r => r[1]==='Evening'?3:r[1]==='Midday'?2:r[1]==='Morning'?1:0;
+  const sorted = [...D.wq].sort((a,b)=> a[0]!==b[0] ? (a[0]<b[0]?-1:1) : ord(a)-ord(b));
+  const rows = limit ? sorted.slice(-limit*3) : sorted;
   const tbody = document.getElementById('wq-tbody');
   tbody.innerHTML = [...rows].reverse().map(r=>{
     const [lbl,cls]=pHStatus(r[3]);
     const dot = cls==='good'?'good':cls==='warn'?'warn':'bad';
-    return `<tr><td>${r[0]||'—'}</td><td>${r[1]||'—'}</td><td>${fmt(r[2],1)}</td><td>${fmt(r[3],2)}</td><td><span class="status-dot dot-${dot}"></span>${lbl}</td><td style="max-width:300px;color:var(--muted)">${r[4]||'—'}</td></tr>`;
+    const doCol = r[7]==null?'inherit':r[7]>=5?'var(--c-good)':r[7]>=3?'var(--c-warn)':'var(--c-bad)';
+    return `<tr><td>${r[0]||'—'}</td><td>${r[1]||'—'}</td><td>${fmt(r[2],1)}</td><td>${fmt(r[3],2)}</td><td style="color:${doCol}">${fmt(r[7],1)}</td><td>${fmt(r[8],0)}</td><td><span class="status-dot dot-${dot}"></span>${lbl}</td><td style="max-width:300px;color:var(--muted)">${r[4]||'—'}</td></tr>`;
   }).join('');
 }
 
@@ -2860,53 +2217,42 @@ function renderEnvTable(limit){
 }
 
 // ─── FISH ───────────────────────────────────────────────────────────────────
+// Sourced from the weekly Form3 biomass block. The daily fish questions
+// (dead count, active/gasping/disease) were removed from Form2 on
+// 2026-08-05, so stock level, mortality and survival are no longer tracked
+// here — that detail lives in a separate app view.
 function renderFish(){
-  const s = D.stats;
-  const stockCls = s.survival_pct>80?'good':s.survival_pct>65?'warn':'bad';
-  const lastDeath = D.fish.filter(r=>r[3]&&r[3]>0).slice(-1)[0];
-  const daysSince = lastDeath ? Math.round((new Date()-new Date(lastDeath[0]))/864e5) : '?';
+  const bm = D.biomass || [];
+  const last = bm.length ? bm[bm.length-1] : null;
+  const prev = bm.length > 1 ? bm[bm.length-2] : null;
+  const gain = (last && prev && last[2]!=null && prev[2]!=null)
+    ? Math.round((last[2]-prev[2])*10)/10 : null;
+  // Ops guide benchmark: 3–5 g per week.
+  const gainCls = gain==null?'':gain>=3?'good':gain>0?'warn':'bad';
+  // NB the ops guide's "feed 2–3% of total body weight per day" target cannot
+  // be computed here: it needs the total stock count, and the daily fish
+  // questions that tracked stock were removed from Form2 on 2026-08-05.
+  // `fish_sampled` is the weigh-in sample size, not the population.
 
-  document.getElementById('fish-kpis').innerHTML=`
-    <div class="kpi-card"><div class="label">Current Stock</div><div class="value" style="color:var(--c-good)">${s.current_stock.toLocaleString()}</div><div class="sub">of ${s.stocked} stocked</div><span class="badge ${stockCls}">${s.survival_pct}% survival</span></div>
-    <div class="kpi-card"><div class="label">Total Mortality</div><div class="value" style="color:var(--c-bad)">${s.total_mortality}</div><div class="sub">fish since Oct 2025</div><span class="badge bad">${(100-s.survival_pct).toFixed(1)}% loss</span></div>
-    <div class="kpi-card"><div class="label">Days Since Last Death</div><div class="value">${daysSince}</div><div class="sub">${lastDeath?lastDeath[0]:''}</div></div>
-    <div class="kpi-card"><div class="label">Target Harvest</div><div class="value" style="font-size:16px">P 41,580</div><div class="sub">at 400g · P60/kg · ${s.current_stock} fish</div><span class="badge warn">Est. harvest</span></div>`;
+  document.getElementById('fish-kpis').innerHTML = !last
+    ? `<div class="kpi-card"><div class="label">No weigh-in yet</div><div class="value">—</div><div class="sub">Submit the Friday weekly summary to populate this</div></div>`
+    : `<div class="kpi-card"><div class="label">Average Weight</div><div class="value">${last[2]!=null?last[2]+' g':'—'}</div><div class="sub">week of ${last[0]}</div>${last[5]?`<span class="badge ${last[5]==='Good'?'good':last[5]==='Some concerns'?'warn':'bad'}">${last[5]}</span>`:''}</div>
+    <div class="kpi-card"><div class="label">Weekly Gain</div><div class="value"${gainCls?` style="color:var(--c-${gainCls})"`:''}>${gain!=null?(gain>=0?'+':'')+gain+' g':'—'}</div><div class="sub">target 3–5 g/week</div>${gainCls?`<span class="badge ${gainCls}">${gain>=3?'On target':gain>0?'Slow':'No gain'}</span>`:''}</div>
+    <div class="kpi-card"><div class="label">Sample Size</div><div class="value">${last[1]!=null?last[1]:'—'}</div><div class="sub">fish weighed · min 10</div></div>
+    <div class="kpi-card"><div class="label">Daily Feed</div><div class="value" style="font-size:16px">${last[4]!=null?last[4]+' g':'—'}</div><div class="sub">${last[3]||'—'}</div></div>`;
 
-  document.getElementById('fish-alerts').innerHTML = '';
+  renderLineChart('fish-weight-chart', bm.map(r=>r[0]),
+    [{label:'Avg weight (g)', data:bm.map(r=>r[2]), color:'#f97316', fill:false}],
+    {min:0});
 
-  renderStepChart('fish-stock-chart', D.stock_chart);
-
-  destroyChart('fish-cause-chart');
-  const colors = ['#B91C1C','#B45309','#F57F17','#2A7A2A','#1565C0'];
-  charts['fish-cause-chart'] = new Chart(document.getElementById('fish-cause-chart').getContext('2d'),{
-    type:'doughnut',
-    data:{labels:D.cause_data.map(r=>r[0]),datasets:[{data:D.cause_data.map(r=>r[1]),backgroundColor:colors,borderWidth:2,borderColor:'var(--surface)'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:10}}}}
-  });
-
-  document.getElementById('fish-tbody').innerHTML = [...D.fish].reverse().map(r=>{
-    const isEvent = r[3]>=10;
-    return `<tr${isEvent?' style="background:var(--c-warn-bg)"':''}><td>${r[0]||'—'}</td><td style="font-weight:${isEvent?'500':'400'};color:${isEvent?'var(--c-bad)':'inherit'}">${r[3]||0}</td><td>${r[4]||'—'}</td><td>${r[6]?.toLocaleString()||'—'}</td><td>${r[5]||'—'}</td></tr>`;
-  }).join('');
-}
-
-// ─── PLANTS ──────────────────────────────────────────────────────────────────
-function renderPlants(){
-  const active = D.plants.filter(r=>!r[5]||r[5]==='No harvest'||r[5]===null);
-  const recent = active.filter(r=>r[0]&&r[0]>='2026-01-01');
-  const colors = {'Tomato':'#B45309','Lettuce':'#2A7A2A','Kale':'#166534','Pepper':'#B45309','Spinach':'#2A7A2A','Cucumber':'#0D9488','Default':'#1565C0'};
-  function cropColor(name){ const k=Object.keys(colors).find(c=>name&&name.toLowerCase().includes(c.toLowerCase())); return k?colors[k]:colors.Default; }
-
-  document.getElementById('plant-grid').innerHTML = recent.map(r=>`
-    <div class="plant-card">
-      <div class="crop-name" style="color:${cropColor(r[1])}">${r[1]||'Unknown'}</div>
-      <div class="crop-date">Planted: ${r[0]||'Unknown'}</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">${r[3]||'Growing'}</div>
-      <span class="crop-status" style="background:var(--c-good-bg);color:var(--c-good)">Active</span>
-    </div>`).join('') || '<p style="padding:16px;color:var(--muted)">No active crops recorded.</p>';
-
-  document.getElementById('plant-tbody').innerHTML = [...D.plants].reverse().map(r=>`
-    <tr><td>${r[0]||'—'}</td><td><strong>${r[1]||'—'}</strong></td><td>${r[2]||'—'}</td><td style="color:var(--muted);max-width:200px">${r[3]||'—'}</td><td>${r[4]||'—'}</td><td>${r[5]||'—'}</td><td style="max-width:200px;color:var(--muted)">${r[6]||'—'}</td></tr>`).join('');
+  document.getElementById('fish-tbody').innerHTML = bm.length
+    ? [...bm].reverse().map((r,i,arr) => {
+        const earlier = arr[i+1];
+        const g = (earlier && r[2]!=null && earlier[2]!=null) ? Math.round((r[2]-earlier[2])*10)/10 : null;
+        const gCol = g==null?'inherit':g>=3?'var(--c-good)':g>0?'var(--c-warn)':'var(--c-bad)';
+        return `<tr><td>${r[0]||'—'}</td><td>${r[1]??'—'}</td><td>${r[2]??'—'}</td><td style="color:${gCol}">${g!=null?(g>=0?'+':'')+g:'—'}</td><td>${r[4]??'—'}</td><td>${r[3]||'—'}</td><td>${r[5]||'—'}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="7" style="color:var(--muted);padding:16px">No weekly weigh-ins recorded yet.</td></tr>';
 }
 
 // ─── SIPHONS ─────────────────────────────────────────────────────────────────
@@ -3089,10 +2435,6 @@ function parseExcel(wb){
 
   const fish_raw=sheetToArr('Fish Records');
   const fish_rows=fish_raw.map(r=>[parseDate(r[0]),r[1],r[2],fv2(r[5]),r[6],r[7],fv2(r[8])]).filter(r=>r[0]);
-  const stock_chart=fish_rows.filter(r=>r[6]!=null).map(r=>[r[0],Math.round(r[6])]);
-  const cause_map={};
-  fish_rows.forEach(r=>{if(r[4]&&r[3]!=null){const k=String(r[4]);cause_map[k]=(cause_map[k]||0)+r[3];}});
-  const cause_data=Object.entries(cause_map).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,Math.round(v)]);
 
   const plant_raw=sheetToArr('Plant Records');
   const plant_rows=plant_raw.filter(r=>r[1]&&String(r[1]).trim()!='Date').map(r=>[parseDate(r[0]),r[1],r[2],r[3],r[5],r[6]&&parseDate(r[6]),r[8]]);
@@ -3129,14 +2471,17 @@ function parseExcel(wb){
 
   const last_wq=wq_rows.slice().reverse().find(r=>r[3]!=null)||wq_rows[0]||[];
   const last_env_m=env_m.slice(-1)[0]||[];
-  const stocked=1295;
-  const cur_stock=stock_chart.length?stock_chart[stock_chart.length-1][1]:893;
 
+  // The legacy workbook predates dissolved oxygen, conductivity and the
+  // weekly biomass sample, so those series come back empty here. Keys are
+  // still returned so every renderer sees the same shape as the live path.
   return {wq:wq_rows,wq_chart,env:env_rows,env_chart_morning:env_m,env_chart_midday:env_md,env_chart_evening:env_ev,
-    fish:fish_rows,stock_chart,cause_data,plants:plant_rows,siphons:siph_rows,siph_avgs,siph_chart_data,
+    fish:fish_rows,plants:plant_rows,siphons:siph_rows,siph_avgs,siph_latest:siph_avgs,siph_chart_data,
     maintenance:maint_rows,financial:fin_rows,fin_by_cat,fin_cumul,monday:[],
-    stats:{current_stock:cur_stock,stocked,total_mortality:stocked-cur_stock,survival_pct:Math.round(cur_stock/stocked*1000)/10,
+    compliance:[],weekly_chem:[],journal:[],biomass:[],
+    stats:{
       latest_ph:last_wq[3]??null,latest_wtemp:last_wq[2]??null,latest_env_morn:last_env_m[1]??null,
+      latest_do:null,latest_ec:null,
       total_spend:fin_rows.reduce((s,r)=>s+(r[5]||0),0),last_wq_date:last_wq[0]||'N/A'}};
 }
 
@@ -3146,7 +2491,6 @@ function renderAll(){
   renderWater();
   renderEnvironment();
   renderFish();
-  renderPlants();
   renderSiphons();
   renderMaintenance();
   renderPhases();
@@ -3155,7 +2499,7 @@ function renderAll(){
 // ── THEME TOGGLE ──────────────────────────────────────────────
 const BOSS_ICONS = {
   overview:'📊', water:'💧', environment:'☀️',
-  fish:'🐟', plants:'🌱', siphons:'⚙️', maintenance:'🔧'
+  fish:'🐟', siphons:'⚙️', maintenance:'🔧'
 };
 
 // Regular = boss (warm light, emoji icons) · Dark = forced dark with Tabler icons
