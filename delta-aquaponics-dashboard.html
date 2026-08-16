@@ -1145,9 +1145,21 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   // typically bottoms out in the evening.
   const _wqOrd = r => (r[1]==='Morning'||r[1]==='Midday'||r[1]==='Evening') ? _tOrd(r[1]) : 0;
   const _wqSorted = [...wq].sort((a,b) => a[0]!==b[0] ? (a[0]<b[0]?-1:1) : _wqOrd(a)-_wqOrd(b));
-  const _latestWQVal = idx => {
-    for (let i=_wqSorted.length-1; i>=0; i--) if (_wqSorted[i][idx]!=null) return _wqSorted[i][idx];
+  const _latestWQRow = idx => {
+    for (let i=_wqSorted.length-1; i>=0; i--) if (_wqSorted[i][idx]!=null) return _wqSorted[i];
     return null;
+  };
+  const _latestWQVal = idx => _latestWQRow(idx)?.[idx] ?? null;
+  // Age in days of the newest reading for a column. The dashboard merges
+  // live Kobo data with baked-in historical records, so "latest" can be
+  // months old when the farm has not submitted anything yet. Anything that
+  // presents a value as CURRENT — alerts especially — has to know that.
+  const _ageDays = idx => {
+    const row = _latestWQRow(idx);
+    if (!row) return null;
+    const d = new Date(row[0] + 'T12:00:00');
+    if (isNaN(d)) return null;
+    return Math.floor((Date.now() - d.getTime()) / 864e5);
   };
   const _envSorted = [...env].sort((a,b) => a[0]!==b[0]?(a[0]<b[0]?-1:1):_tOrd(a[1])-_tOrd(b[1]));
   const latest_env = _envSorted[_envSorted.length-1] || [];
@@ -1190,6 +1202,10 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
     stats:{
       latest_ph:_latestWQVal(3), latest_wtemp:_latestWQVal(2), latest_env_morn:latest_env[2]??null,
       latest_env_morn_out, latest_do, latest_ec,
+      // How stale is each reading? null = never recorded.
+      age_ph:_ageDays(3), age_wtemp:_ageDays(2), age_do:_ageDays(7), age_ec:_ageDays(8),
+      age_siph:(()=>{ const last=siph.length?siph[siph.length-1][0]:null; if(!last) return null;
+        const d=new Date(last+'T12:00:00'); return isNaN(d)?null:Math.floor((Date.now()-d.getTime())/864e5); })(),
       latest_fish_sampled:lb[1]??null, latest_fish_weight:lb[2]??null,
       latest_feed_type:lb[3]??null, latest_daily_feed:lb[4]??null, latest_fish_health:lb[5]??null,
       latest_fish_cage:lb[6]??null,
@@ -1621,9 +1637,28 @@ function markAlertSeen(id){
   const el = document.getElementById('al-'+id);
   if(el) el.querySelector('.alert-unseen-dot')?.remove();
 }
+// A reading older than this is history, not a live condition.
+const ALERT_MAX_AGE_DAYS = 3;
+
 function computeAlerts(){
   const s = D.stats; const alerts = [];
-  const ph = s.latest_ph, wt = s.latest_wtemp;
+
+  // Threshold alerts describe what is happening RIGHT NOW, so they must only
+  // fire on recent readings. The dashboard merges live Kobo data with baked-in
+  // historical records; without this guard an empty farm shows "Current pH 7.8
+  // — Critically High" off a reading from months ago, which is exactly the
+  // wall of false red a manager should never open the page to.
+  const fresh = (v, age) => (v != null && age != null && age <= ALERT_MAX_AGE_DAYS) ? v : null;
+  const ph  = fresh(s.latest_ph,    s.age_ph);
+  const wt  = fresh(s.latest_wtemp, s.age_wtemp);
+
+  // If there is data but all of it is stale, say so once instead of staying silent.
+  const ages = [s.age_ph, s.age_wtemp, s.age_do, s.age_ec].filter(a => a != null);
+  const freshest = ages.length ? Math.min(...ages) : null;
+  if (freshest != null && freshest > ALERT_MAX_AGE_DAYS) {
+    alerts.push({id:'data-stale',cls:'warn',icon:'clock',title:'No Recent Readings',
+      msg:`The newest water reading is ${freshest} days old. Nothing below reflects the farm today — threshold alerts are paused until the team submits again.`,active:true});
+  }
   if(ph!=null && ph>7.5) alerts.push({id:'ph-crit',cls:'bad',icon:'alert-triangle',title:'pH Critically High',msg:`Current pH ${ph} is above 7.5. Plants cannot absorb nutrients and bacteria are under stress. Add pH-down solution immediately.`,active:true});
   else if(ph!=null && ph>7.0) alerts.push({id:'ph-high',cls:'warn',icon:'alert-triangle',title:'pH Elevated',msg:`Current pH ${ph} is above the 7.0 target. This reduces nutrient availability to plants. Consider pH-down treatment.`,active:true});
   if(wt!=null && wt<17) alerts.push({id:'wt-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Too Cold',msg:`Water temp ${wt}°C is below 17°C. Fish have stopped feeding. Close everything and contact management immediately.`,active:true});
@@ -1631,15 +1666,18 @@ function computeAlerts(){
   else if(wt!=null && wt>32) alerts.push({id:'wt-emergency-hot',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Overheating',msg:`Water temp ${wt}°C exceeds 32°C. Risk of mass mortality. Open all sides, run fan at maximum, contact management.`,active:true});
   else if(wt!=null && wt>30) alerts.push({id:'wt-warm',cls:'warn',icon:'temperature',title:'Water Temperature High',msg:`Water temp ${wt}°C above 30°C — heat stress, oxygen dropping. Increase aeration and check evaporative cooler.`,active:true});
   // Dissolved oxygen (Form1, 3× daily) — tilapia suffocate below ~3 mg/L.
-  const dox = s.latest_do;
+  const dox = fresh(s.latest_do, s.age_do);
   if(dox!=null && dox<3) alerts.push({id:'do-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Dissolved Oxygen Critical',msg:`Dissolved oxygen ${dox} mg/L is below 3 mg/L. Fish are suffocating. Increase aeration immediately and contact management.`,active:true});
   else if(dox!=null && dox<5) alerts.push({id:'do-low',cls:'warn',icon:'alert-triangle',title:'Dissolved Oxygen Low',msg:`Dissolved oxygen ${dox} mg/L is below the 5 mg/L target. Check the air blower and increase aeration.`,active:true});
   // Electrical conductivity (Form2, daily) — Shorobe has a source-water
   // salinity problem, so anything above 2.0 mS/cm is an alert.
-  const ecv = s.latest_ec;
+  const ecv = fresh(s.latest_ec, s.age_ec);
   if(ecv!=null && ecv>EC_ALERT_MS) alerts.push({id:'ec-high',cls:'bad',icon:'alert-triangle',title:'Salinity High — EC Above Target',msg:`Electrical conductivity ${ecv} mS/cm is above the ${EC_ALERT_MS} mS/cm limit. Source-water salinity is climbing — check the water source, flush if needed, and contact management.`,active:true});
   else if(ecv!=null && ecv>EC_ALERT_MS*0.85) alerts.push({id:'ec-watch',cls:'warn',icon:'alert-triangle',title:'Salinity Climbing',msg:`Electrical conductivity ${ecv} mS/cm is approaching the ${EC_ALERT_MS} mS/cm limit. Keep an eye on the source water.`,active:true});
-  const slowSiph = D.siph_avgs.map((v,i)=>({s:i+1,v})).filter(x=>x.v!=null&&x.v>20);
+  // Use the LATEST reading per row, not the all-time average: an average
+  // drags in months of history, so a row cycling fine today still alerts.
+  const siphStale = s.age_siph == null || s.age_siph > ALERT_MAX_AGE_DAYS;
+  const slowSiph = siphStale ? [] : (D.siph_latest||[]).map((v,i)=>({s:i+1,v})).filter(x=>x.v!=null&&x.v>20);
   if(slowSiph.length) alerts.push({id:'siph-slow',cls:'warn',icon:'settings',title:'Siphon Cycle Slow',msg:`Row${slowSiph.length>1?'s':''} ${slowSiph.map(x=>`S${x.s} (${x.v}min)`).join(', ')} above 20min target. Roots may be oxygen-deprived. Adjust inflow valves.`,active:true});
   alerts.push({id:'jan-event',cls:'info',icon:'calendar',title:'Past Incident — Jan 15–16, 2026',msg:`247 fish died from a ventilation failure. Ventilation was corrected after the incident.`,active:false});
   return alerts;
@@ -1991,6 +2029,13 @@ function renderHealthRow(){
     `<div class="metric-row" style="padding:3px 0"><span class="dot dot-${dotCls}" style="width:7px;height:7px"></span><span class="metric-label" style="font-size:11px">${label}</span><span class="metric-value" style="font-size:11px">${value}</span></div>`;
   const fmtDate = dt => { try { const d=new Date(dt+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); } catch(e){return dt;} };
   const noData = dt => dt ? `—<span style="font-size:10px;color:var(--muted);margin-left:4px">last ${fmtDate(dt)}</span>` : '—';
+  // A value the farm has not refreshed in days is history, not status. Show
+  // it greyed with its age so nobody reads a June number as this morning's.
+  const STALE_DAYS = 3;
+  const aged = (html, age) => (age!=null && age>STALE_DAYS)
+    ? `<span style="opacity:.5">${html}</span><span style="font-size:10px;color:var(--c-warn);margin-left:5px">${age}d old</span>`
+    : html;
+  const staleDot = (rag, age) => (age!=null && age>STALE_DAYS) ? 'neutral' : rag;
 
   // RAG helpers
   const phRAG  = s.latest_ph==null?'neutral':s.latest_ph>=6.5&&s.latest_ph<=7.0?'good':s.latest_ph>=6.3&&s.latest_ph<=7.3?'warn':'bad';
@@ -2110,12 +2155,12 @@ function renderHealthRow(){
   //   left  = frequent readings (per round / daily)
   //   right = weekly mineral panel
   const waterCol1 =
-    mrW(phRAG,  'pH',   s.latest_ph!=null?fmt(s.latest_ph,2):'—') +
-    mrW(wtRAG,  'Temp', s.latest_wtemp!=null?s.latest_wtemp+'°C':'—') +
-    mrW(doRAG,  'DO',   dox!=null?dox+' mg/L':noData(lastDoDate)) +
-    mrW(no2RAG, 'NO₂',  latestNO2!=null?latestNO2+' ppm':'—') +
-    mrW(no3RAG, 'NO₃',  latestNO3!=null?latestNO3+' ppm':'—') +
-    mrW(ecRAG, 'EC', ecv!=null?ecv+' mS/cm':noData(lastEcDate));
+    mrW(staleDot(phRAG, s.age_ph),   'pH',   s.latest_ph!=null?aged(fmt(s.latest_ph,2), s.age_ph):'—') +
+    mrW(staleDot(wtRAG, s.age_wtemp),'Temp', s.latest_wtemp!=null?aged(s.latest_wtemp+'°C', s.age_wtemp):'—') +
+    mrW(staleDot(doRAG, s.age_do),   'DO',   dox!=null?aged(dox+' mg/L', s.age_do):noData(lastDoDate)) +
+    mrW(staleDot(no2RAG,s.age_ph),   'NO₂',  latestNO2!=null?aged(latestNO2+' ppm', s.age_ph):'—') +
+    mrW(staleDot(no3RAG,s.age_ph),   'NO₃',  latestNO3!=null?aged(latestNO3+' ppm', s.age_ph):'—') +
+    mrW(staleDot(ecRAG, s.age_ec),   'EC',   ecv!=null?aged(ecv+' mS/cm', s.age_ec):noData(lastEcDate));
   const waterCol2 =
     mrW(nh3RAG, 'NH₃', nh3!=null?nh3+' ppm':'—') +
     mrW(caRAG, 'Ca', ca!=null?ca+' ppm':'—') +
