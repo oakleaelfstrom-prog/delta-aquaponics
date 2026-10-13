@@ -1115,7 +1115,7 @@ function parseWebAppData(allData) {
 }
 
 function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_new, fin_new, monday_new=[], comp_new=[], chem_new=[], biomass_new=[], journal_new=[], feed_new=[], cond_new=[]) {
-  // ── Pre-Kobo baseline: emptied 2026-08-16 ────────────────────────────────
+  // ── Pre-Kobo baseline: emptied 2026-09-01 ────────────────────────────────
   // DEFAULT_DATA used to carry 631 water readings, 255 climate rows and 193
   // siphon rows recorded by hand between 2025-11-07 and 2026-06-05, before
   // the KoboToolbox forms existed.
@@ -1126,12 +1126,15 @@ function buildMergedData(wq_new, env_new, siph_new, fish_new, plant_new, maint_n
   // target, so it dragged each pH metric red; and the app team reviewing the
   // live site reasonably mistook those rows for stale test data.
   //
-  // The record is not lost - it remains in git history and in the source
-  // workbook (Aquaponics Data-2.xlsx). The dashboard is now an operational
-  // view of live farm data only, and shows "No data" until the crew submits.
+  // DECISION (Elias, 2026-10-13): these readings are NOT to be reinstated.
+  // They are near-identical for months on end, cannot be shown to have been
+  // taken correctly, and were captured by a different method from the Kobo
+  // forms, so they are not comparable with live data. The dashboard shows
+  // live Kobo data only and reads "No data" until the crew submits.
   //
-  // The arrays are kept (empty) and the HAS_LIVE / baseline() plumbing stays
-  // in place so a historical series can be restored later without a rewrite.
+  // The arrays stay (empty) only because the rest of the code expects them;
+  // do not refill them. The originals remain in the source workbook
+  // (Aquaponics Data-2.xlsx) and git history for reference only.
   const HAS_LIVE = (wq_new.length + env_new.length + siph_new.length
                     + biomass_new.length + chem_new.length) > 0;
   const baseline = k => HAS_LIVE ? [] : (DEFAULT_DATA[k] || []);
