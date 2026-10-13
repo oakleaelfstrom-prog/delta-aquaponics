@@ -637,7 +637,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="ops-nav" id="ops-nav-water"></div>
     <div class="section-header">
       <h2>Water Quality</h2>
-      <p>Fish tank readings — ideal pH 6.5–7.0, water temp 23–30°C, dissolved oxygen above 5 mg/L. Temperature and dissolved oxygen are logged 3× daily; pH, nitrite, nitrate and conductivity once daily.</p>
+      <p>Fish tank readings — normal pH 6.8–7.4 (aim 7.0), water temp 23–30°C, dissolved oxygen above 5 mg/L. Temperature and dissolved oxygen are logged 3× daily; pH, nitrite, nitrate and conductivity once daily.</p>
     </div>
     <div id="wq-alerts"></div>
     <div class="kpi-row" id="wq-kpis"></div>
@@ -690,7 +690,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="ops-nav" id="ops-nav-fish"></div>
     <div class="section-header">
       <h2>Fish Biomass</h2>
-      <p>Three-spotted tilapia — weekly sample weigh-in from the Friday summary. The crew weighs one cage each week, rotating through Cage 1–7, so growth is always compared against the previous weigh-in of the <em>same</em> cage. Benchmark 3–5 g per week.</p>
+      <p>Three-spotted tilapia — weekly sample weigh-in from the Friday summary. The crew weighs one cage each week, rotating through Cage 1–8, so growth is always compared against the previous weigh-in of the <em>same</em> cage. Benchmark 3–5 g per week.</p>
     </div>
     <div class="kpi-row" id="fish-kpis"></div>
     <div class="card">
@@ -710,12 +710,12 @@ tr:hover td{background:var(--surface-2)}
   <div class="section" id="sec-siphons">
     <div class="ops-nav" id="ops-nav-siphons"></div>
     <div class="section-header">
-      <h2>Siphon Drain Cycles</h2>
-      <p>Six gravel-bed autosiphons — target drain cycle about 12 minutes (10–14 good). Row 6 is the benchmark row. Green = 10–14 min, amber = up to 18 min, red = above 18 min.</p>
+      <h2>Siphon Cycles</h2>
+      <p>Six gravel-bed autosiphons, timed as the <strong>whole flood-and-drain cycle</strong> — from the start of one fill to the start of the next, not the drain alone. Aim 15–18 minutes. Row 6 is the benchmark row. Green = 15–18 min · amber = 13–15 or 18–23 min · red = under 13 or over 23 min.</p>
     </div>
     <div class="kpi-row" id="siph-kpis"></div>
     <div class="card">
-      <div class="card-header"><h3>Average Drain Cycle per Siphon (minutes)</h3></div>
+      <div class="card-header"><h3>Average Full Cycle per Siphon (minutes)</h3></div>
       <div class="card-body"><div class="chart-wrap-sm"><canvas id="siph-avg-chart"></canvas></div></div>
     </div>
     <div class="card">
@@ -1090,9 +1090,10 @@ function parseWebAppData(allData) {
     if([nh3,ca,mg,kk,mn,fe].some(v=>v!=null)) chem_rows.push([dt,nh3,ca,mg,kk,mn,fe]);
 
     // Weekly fish biomass — [date, sampled, avg weight (g), feed type, daily feed (g), visual health, cage]
-    // The crew weighs one cage per week, rotating through Cage 1–7, so the
+    // The crew weighs one cage per week, rotating through Cage 1–8, so the
     // cage tag is what makes a weight comparable week-to-week.
-    const cage = sv(r[9]);
+    const cageRaw = sv(r[9]);
+    const cage = (cageRaw && /^cage_(\d+)$/i.test(cageRaw)) ? 'Cage ' + cageRaw.split('_')[1] : cageRaw;
     const sampled = fv(r[10]), avgWt = fv(r[11]), feedType = sv(r[12]), dailyFeed = fv(r[13]);
     const fishHealth = sv(r[14]);
     if ([sampled, avgWt, dailyFeed].some(v => v != null) || fishHealth) {
@@ -1582,7 +1583,7 @@ function renderWaterMetrics(container, idPrefix) {
   // or D.weekly_chem
   //   [date, NH₃, Ca, Mg, K, Mn, Fe]
   const METRICS = [
-    {name:'pH',           unit:'',     color:'#1565C0', good:[6.5,7.0], ymin:6.2, ymax:8.2,  src:'wq',  col:3, mode:'daily'},
+    {name:'pH',           unit:'',     color:'#1565C0', good:[PH.idealLo,PH.idealHi], ymin:5.8, ymax:8.4,  src:'wq',  col:3, mode:'daily'},
     {name:'Water temp',   unit:'°C',   color:'#B45309', good:[WTEMP.idealLo,WTEMP.idealHi],   ymin:14,  ymax:38,   src:'wq',  col:2, mode:'rounds'},
     {name:'Dissolved O₂', unit:'mg/L', color:'#0891b2', good:[5,12],    ymin:0,   ymax:null, src:'wq',  col:7, mode:'rounds'},
     {name:'Ammonia',      unit:'ppm',  color:'#c0392b', good:[0,0.5],   ymin:0,   ymax:null, src:'chem',col:1, mode:'weekly'},
@@ -1703,8 +1704,10 @@ function computeAlerts(){
     alerts.push({id:'data-stale',cls:'warn',icon:'clock',title:'No Recent Readings',
       msg:`The newest water reading is ${freshest} days old. Nothing below reflects the farm today — threshold alerts are paused until the team submits again.`,active:true});
   }
-  if(ph!=null && ph>7.5) alerts.push({id:'ph-crit',cls:'bad',icon:'alert-triangle',title:'pH Critically High',msg:`Current pH ${ph} is above 7.5. Plants cannot absorb nutrients and bacteria are under stress. Add pH-down solution immediately.`,when:s.when_ph,active:true});
-  else if(ph!=null && ph>7.0) alerts.push({id:'ph-high',cls:'warn',icon:'alert-triangle',title:'pH Elevated',msg:`Current pH ${ph} is above the 7.0 target. This reduces nutrient availability to plants. Consider pH-down treatment.`,when:s.when_ph,active:true});
+  if(ph!=null && ph>PH.critHi) alerts.push({id:'ph-crit',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — pH Too High',msg:`pH ${ph} is above ${PH.critHi.toFixed(1)}. Plants cannot take up nutrients and the bacteria are under stress. Contact management now.`,when:s.when_ph,active:true});
+  else if(ph!=null && ph<PH.critLo) alerts.push({id:'ph-crit-low',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — pH Too Low',msg:`pH ${ph} is below ${PH.critLo.toFixed(1)}. The nitrifying bacteria stop working and the fish are stressed. Contact management now.`,when:s.when_ph,active:true});
+  else if(ph!=null && ph>PH.idealHi) alerts.push({id:'ph-high',cls:'warn',icon:'alert-triangle',title:'pH Above Normal',msg:`pH ${ph} is above the normal ${PH.idealLo}–${PH.idealHi} range (aim ${PH.aim.toFixed(1)}). Watch the trend.`,when:s.when_ph,active:true});
+  else if(ph!=null && ph<PH.idealLo) alerts.push({id:'ph-low',cls:'warn',icon:'alert-triangle',title:'pH Below Normal',msg:`pH ${ph} is below the normal ${PH.idealLo}–${PH.idealHi} range (aim ${PH.aim.toFixed(1)}). Watch the trend.`,when:s.when_ph,active:true});
   if(wt!=null && wt<17) alerts.push({id:'wt-emergency',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Too Cold',msg:`Water temp ${wt}°C is below 17°C. Fish have stopped feeding. Close everything and contact management immediately.`,when:s.when_wtemp,active:true});
   else if(wt!=null && wt<20) alerts.push({id:'wt-cold',cls:'warn',icon:'temperature',title:'Water Temperature Low',msg:`Water temp ${wt}°C below 20°C — fish feeding slows. Close all greenhouse sides and monitor closely.`,when:s.when_wtemp,active:true});
   else if(wt!=null && wt>32) alerts.push({id:'wt-emergency-hot',cls:'bad',icon:'alert-triangle',title:'EMERGENCY — Water Overheating',msg:`Water temp ${wt}°C exceeds 32°C. Risk of mass mortality. Open all sides, run fan at maximum, contact management.`,when:s.when_wtemp,active:true});
@@ -1721,8 +1724,11 @@ function computeAlerts(){
   // Use the LATEST reading per row, not the all-time average: an average
   // drags in months of history, so a row cycling fine today still alerts.
   const siphStale = s.age_siph == null || s.age_siph > ALERT_MAX_AGE_DAYS;
-  const slowSiph = siphStale ? [] : (D.siph_latest||[]).map((v,i)=>({s:i+1,v})).filter(x=>x.v!=null&&x.v>SIPHON.warnHi);
-  if(slowSiph.length) alerts.push({id:'siph-slow',cls:'warn',icon:'settings',title:'Siphon Cycle Slow',msg:`Row${slowSiph.length>1?'s':''} ${slowSiph.map(x=>`S${x.s} (${x.v}min)`).join(', ')} above the ${SIPHON.warnHi}min limit. Roots may be oxygen-deprived. Adjust inflow valves.`,when:s.when_siph,active:true});
+  const siphNow = siphStale ? [] : (D.siph_latest||[]).map((v,i)=>({s:i+1,v})).filter(x=>x.v!=null);
+  const slowSiph  = siphNow.filter(x=>x.v>SIPHON.warnHi);
+  const shortSiph = siphNow.filter(x=>x.v<SIPHON.warnLo);
+  if(slowSiph.length) alerts.push({id:'siph-slow',cls:'warn',icon:'settings',title:'Siphon Cycle Too Long',msg:`Row${slowSiph.length>1?'s':''} ${slowSiph.map(x=>`S${x.s} (${x.v} min)`).join(', ')} over the ${SIPHON.warnHi}-minute limit (aim ${SIPHON.idealLo}–${SIPHON.idealHi}). Roots may be oxygen-starved. Adjust the inflow valve.`,when:s.when_siph,active:true});
+  if(shortSiph.length) alerts.push({id:'siph-short',cls:'warn',icon:'settings',title:'Siphon Cycle Too Short',msg:`Row${shortSiph.length>1?'s':''} ${shortSiph.map(x=>`S${x.s} (${x.v} min)`).join(', ')} under the ${SIPHON.warnLo}-minute minimum (aim ${SIPHON.idealLo}–${SIPHON.idealHi}). The bed may not be flooding fully. Adjust the inflow valve.`,when:s.when_siph,active:true});
   alerts.push({id:'jan-event',cls:'info',icon:'calendar',title:'Past Incident — Jan 15–16, 2026',msg:`247 fish died from a ventilation failure. Ventilation was corrected after the incident.`,active:false});
   return alerts;
 }
@@ -1816,11 +1822,18 @@ function filterByDays(arr, days, dateIdx=0){
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-days);
   return arr.filter(r => r[dateIdx] && new Date(r[dateIdx]) >= cutoff);
 }
+// pH band — ONE definition, used by the label, score, card dot, alerts, chart
+// and drill-down. Set by Bruce on 2026-10-12 to match the farm app and the
+// farm's own operating sheet: normal 6.8-7.4, aiming for 7.0; below 6.0 or
+// above 8.0 is an emergency. (The earlier 6.5-7.0 target alarmed every day on
+// the farm's normal water, which has been sitting near 7.2.)
+const PH = { idealLo:6.8, idealHi:7.4, aim:7.0, critLo:6.0, critHi:8.0 };
 function pHStatus(ph){
   if(ph==null) return [NO_DATA,''];
-  if(ph<=7.0 && ph>=6.5) return ['Ideal','good'];
-  if(ph<=7.3) return ['Slightly High','warn'];
-  return ['Out of Range','bad'];
+  if(ph>=PH.idealLo && ph<=PH.idealHi) return ['Normal','good'];
+  if(ph>=PH.critLo && ph<PH.idealLo) return ['Slightly Low','warn'];
+  if(ph>PH.idealHi && ph<=PH.critHi) return ['Slightly High','warn'];
+  return ['Emergency','bad'];
 }
 // Water temperature bands — ONE definition, used by the status label, the
 // water-health score and the health-card dot. They previously disagreed:
@@ -1829,17 +1842,19 @@ function pHStatus(ph){
 // Sits inside the operations guide's thresholds: below 20 monitor, below 17
 // emergency, above 30 heat stress, above 32 emergency.
 const WTEMP = { idealLo:23, idealHi:30, warnLo:20, warnHi:32 };
-// Autosiphon drain-cycle band — ONE definition.
-// Adopted from the crew app on 2026-08-16, which tells the team "about 12 min
-// per cycle is normal". NOTE this now disagrees with the written operations
-// guide, which says 15-18 min with Row 6 as the benchmark; that document
-// needs updating so the crew is not trained against a third number.
-// Band is centred on 12: good 10-14, watch to 18, alert above 18.
-const SIPHON = { idealLo:10, idealHi:14, warnHi:18 };
+// Autosiphon cycle band — ONE definition, used everywhere (status, alerts,
+// card dots, chart band, outlier filter, copy). Set by Bruce on 2026-10-12 to
+// match the farm app and the farm's operating sheet.
+//
+// Measured as the WHOLE flood-and-drain cycle: start of one fill to the start
+// of the next — not the drain alone. Aim 15-18 min; under 13 is too short,
+// over 23 is too long. Both directions matter: a cycle that is too short
+// means the bed never floods properly.
+const SIPHON = { idealLo:15, idealHi:18, warnLo:13, warnHi:23 };
 function siphStatus(v){
   if(v==null) return 'neutral';
   if(v>=SIPHON.idealLo && v<=SIPHON.idealHi) return 'good';
-  if(v<=SIPHON.warnHi) return 'warn';
+  if(v>=SIPHON.warnLo && v<=SIPHON.warnHi) return 'warn';
   return 'bad';
 }
 function tempStatus(t){
@@ -1910,7 +1925,7 @@ function renderExecutiveSummary(){
         </div>
       </div>`;
   } else {
-    const badSiph = D.siph_avgs.filter(v=>v!=null&&v>SIPHON.warnHi).length;
+    const badSiph = D.siph_avgs.filter(v=>v!=null&&siphStatus(v)==='bad').length;
     document.getElementById('exec-summary').innerHTML = `
       <div class="exec-card">
         <div class="exec-card-head">
@@ -1918,14 +1933,14 @@ function renderExecutiveSummary(){
           <span class="exec-source-badge computed">Auto-computed</span>
         </div>
         <div class="exec-kpis">
-          <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(phC)}">${avgPH||'—'}</div><div class="ek-lbl">Avg pH</div><div class="ek-sub">target 6.5–7.0</div></div>
+          <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(phC)}">${avgPH||'—'}</div><div class="ek-lbl">Avg pH</div><div class="ek-sub">normal 6.8–7.4</div></div>
           <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(tC)}">${avgTmp!=null?avgTmp+'°':'—'}</div><div class="ek-lbl">Water Temp</div><div class="ek-sub">target 25–28°C</div></div>
           <div class="exec-kpi"><div class="ek-val" style="color:${kpiColor(doC)}">${avgDO!=null?avgDO:'—'}</div><div class="ek-lbl">Dissolved O₂</div><div class="ek-sub">target &gt; 5 mg/L</div></div>
           <div class="exec-kpi"><div class="ek-val">${checks}</div><div class="ek-lbl">Checks Logged</div><div class="ek-sub">this week</div></div>
         </div>
         <hr class="exec-divider">
         <div class="exec-rows">
-          <div class="exec-row"><div class="exec-row-label">SYSTEM</div><div class="exec-row-val ${badSiph>0?'warn':'highlight'}">${badSiph===0?'All siphons cycling OK':badSiph+' siphon row(s) running slow — check inflow valves'}</div></div>
+          <div class="exec-row"><div class="exec-row-label">SYSTEM</div><div class="exec-row-val ${badSiph>0?'warn':'highlight'}">${badSiph===0?'All siphons cycling OK':badSiph+' siphon row(s) outside '+SIPHON.warnLo+'–'+SIPHON.warnHi+' min — check inflow valves'}</div></div>
           <div class="exec-row"><div class="exec-row-label">FISH</div><div class="exec-row-val">${s.latest_fish_weight!=null?`avg ${s.latest_fish_weight}g · ${s.latest_fish_sampled!=null?'n='+s.latest_fish_sampled+' · ':''}${s.latest_fish_health||'—'}`:'No weekly weigh-in logged yet'}</div></div>
         </div>
         <div class="exec-no-report">No Monday Report submitted yet this week. The team should fill in the Monday Report form every Monday morning after the farm walk — it takes about 10 minutes and keeps management informed.</div>
@@ -1980,10 +1995,10 @@ function renderScorecards(){
   const issues = [];
   let wTotal=0, wScore=0;
   if(avgPH!=null){
-    // ideal 6.5–7.0 | acceptable 6.3–7.3 | borderline 6.0–6.3 / 7.3–7.8 | alert otherwise
-    const s=(avgPH>=6.5&&avgPH<=7.0)?1:(avgPH>=6.3&&avgPH<=7.3)?0.5:(avgPH>=6.0&&avgPH<=7.8)?0.25:0;
+    // Same PH band as the label and alerts: normal 1, watch 0.5, emergency 0.
+    const s=(avgPH>=PH.idealLo&&avgPH<=PH.idealHi)?1:(avgPH>=PH.critLo&&avgPH<=PH.critHi)?0.5:0;
     wTotal+=25; wScore+=s*25;
-    if(s<1){const dir=avgPH>7.0?'too high':'too low'; issues.push('pH — '+(s===0?dir+' (critical)':s===0.25?dir:'slightly '+dir));}
+    if(s<1){const dir=avgPH>PH.idealHi?'too high':'too low'; issues.push('pH — '+(s===0?dir+' (emergency)':'slightly '+dir));}
   }
   if(avgTmp!=null){
     // Same WTEMP band as the status label and the card dot.
@@ -2066,7 +2081,7 @@ function renderScorecards(){
   // SC4: FISH GROWTH — weekly biomass sample (Form3)
   // Ops benchmark: 3–5 g gain per week.
   //
-  // The crew weighs ONE cage per week, rotating through Cage 1–7, so the
+  // The crew weighs ONE cage per week, rotating through Cage 1–8, so the
   // previous row is usually a different cage. Comparing across cages would
   // report growth that never happened — always compare to the last weigh-in
   // of the SAME cage, and show nothing if this cage has no prior reading.
@@ -2137,7 +2152,7 @@ function renderHealthRow(){
   const staleDot = (rag, age) => (age!=null && age>STALE_DAYS) ? 'neutral' : rag;
 
   // RAG helpers
-  const phRAG  = s.latest_ph==null?'neutral':s.latest_ph>=6.5&&s.latest_ph<=7.0?'good':s.latest_ph>=6.3&&s.latest_ph<=7.3?'warn':'bad';
+  const phRAG  = s.latest_ph==null?'neutral':pHStatus(s.latest_ph)[1]||'neutral';
   // Water temp: optimal 25–28°C, acceptable 20–30°C, cascade failure <17°C (fish stop feeding → system collapses)
   const wtRAG  = s.latest_wtemp==null?'neutral':tempStatus(s.latest_wtemp)[1]||'neutral';
   // Inside air: ideal daytime 30–35°C, acceptable dip 12–13°C, fan trigger >40°C
@@ -2174,7 +2189,8 @@ function renderHealthRow(){
   // Siphon — latest readings per row (not all-time averages)
   const sl = D.siph_latest || [];
   const siphLatInTarget = sl.filter(v=>v!=null&&v>=SIPHON.idealLo&&v<=SIPHON.idealHi).length;
-  const siphLatOut = sl.map((v,i)=>({v,i})).filter(x=>x.v!=null&&(x.v<15||x.v>18));
+  // Was a hard-coded 15-18 filter that ignored the SIPHON band; now uses it.
+  const siphLatOut = sl.map((v,i)=>({v,i})).filter(x=>x.v!=null&&siphStatus(x.v)!=='good');
   const siphRAG = sl.every(v=>v==null)?'neutral':siphLatOut.length===0?'good':siphLatOut.length<=2?'warn':'bad';
 
   // Climate — outside temp and differential
@@ -2429,7 +2445,7 @@ function renderWater(){
   const PH_WINDOW_DAYS = 30;
   const phCutoff = new Date(Date.now()-PH_WINDOW_DAYS*864e5).toISOString().slice(0,10);
   const phWindow = D.wq_chart.filter(r=>r[0]>=phCutoff&&r[2]!=null);
-  const inRangePH = phWindow.filter(r=>r[2]>=6.5&&r[2]<=7.0).length;
+  const inRangePH = phWindow.filter(r=>r[2]>=PH.idealLo&&r[2]<=PH.idealHi).length;
   const totalDays = phWindow.length;
   const pctOK = totalDays?Math.round(inRangePH/totalDays*100):0;
   const ragC = c => c==='good'?'var(--c-good)':c==='warn'?'var(--c-warn)':c==='bad'?'var(--c-bad)':'var(--text)';
@@ -2452,14 +2468,14 @@ function renderWater(){
   const ecLbl = s.latest_ec==null?'No data':s.latest_ec>EC_ALERT_MS?'Too salty':s.latest_ec>EC_ALERT_MS*0.85?'Climbing':'Normal';
 
   document.getElementById('wq-kpis').innerHTML=`
-    <div class="kpi-card"><div class="label">Latest pH</div><div class="value" style="color:${s.latest_ph==null?'var(--muted)':kpiCol(phCls,s.age_ph)}">${s.latest_ph!=null?kpiVal(fmt(s.latest_ph,2),s.age_ph):NO_DATA}</div><div class="sub">Target 6.5–7.0</div>${s.latest_ph==null?`<span class="badge neutral">${NO_DATA}</span>`:kpiBadge(phLbl,phCls,s.age_ph)}</div>
+    <div class="kpi-card"><div class="label">Latest pH</div><div class="value" style="color:${s.latest_ph==null?'var(--muted)':kpiCol(phCls,s.age_ph)}">${s.latest_ph!=null?kpiVal(fmt(s.latest_ph,2),s.age_ph):NO_DATA}</div><div class="sub">Normal 6.8–7.4 · aim 7.0</div>${s.latest_ph==null?`<span class="badge neutral">${NO_DATA}</span>`:kpiBadge(phLbl,phCls,s.age_ph)}</div>
     <div class="kpi-card"><div class="label">Latest Water Temp</div><div class="value" style="color:${s.latest_wtemp==null?'var(--muted)':kpiCol(wtCls,s.age_wtemp)}">${s.latest_wtemp!=null?kpiVal(fmt(s.latest_wtemp,1)+'°C',s.age_wtemp):NO_DATA}</div><div class="sub">Target 23–30°C</div>${s.latest_wtemp==null?`<span class="badge neutral">${NO_DATA}</span>`:kpiBadge(wtLbl,wtCls,s.age_wtemp)}</div>
     <div class="kpi-card"><div class="label">Dissolved Oxygen</div><div class="value" style="color:${s.latest_do==null?'var(--muted)':kpiCol(doCls,s.age_do)}">${s.latest_do!=null?kpiVal(fmt(s.latest_do,1),s.age_do):NO_DATA}</div><div class="sub">mg/L · target &gt; 5</div>${s.latest_do==null?`<span class="badge neutral">${NO_DATA}</span>`:kpiBadge(doLbl,doCls,s.age_do)}</div>
     <div class="kpi-card"><div class="label">Conductivity</div><div class="value" style="color:${s.latest_ec==null?'var(--muted)':kpiCol(ecCls,s.age_ec)}">${s.latest_ec!=null?kpiVal(fmt(s.latest_ec,2),s.age_ec):NO_DATA}</div><div class="sub">mS/cm · limit ${EC_ALERT_MS.toFixed(1)}</div>${s.latest_ec==null?`<span class="badge neutral">${NO_DATA}</span>`:kpiBadge(ecLbl,ecCls,s.age_ec)}</div>
     <div class="kpi-card"><div class="label">pH In-Range Days</div><div class="value" style="color:${totalDays===0?'var(--text)':pctOK>70?'var(--c-good)':pctOK>50?'var(--c-warn)':'var(--c-bad)'}">${totalDays?pctOK+'%':NO_DATA}</div><div class="sub">${totalDays?`${inRangePH} of ${totalDays} days · last ${PH_WINDOW_DAYS}d`:`no readings in last ${PH_WINDOW_DAYS} days`}</div><span class="badge ${totalDays===0?'neutral':pctOK>70?'good':pctOK>50?'warn':'bad'}">${totalDays===0?'No data':pctOK>70?'Good':'Needs attention'}</span></div>`;
 
-  document.getElementById('wq-alerts').innerHTML = (s.latest_ph>7.0 && s.age_ph!=null && s.age_ph<=ALERT_MAX_AGE_DAYS && totalDays>0)
-    ? `<div class="alert warn"><span class="alert-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></span><div><strong>pH Persistently Elevated</strong> — Only ${pctOK}% of the last ${PH_WINDOW_DAYS} days have been in the 6.5–7.0 ideal range. Consider investigating lime content in water source or gravel media.</div></div>` : '';
+  document.getElementById('wq-alerts').innerHTML = (s.latest_ph!=null && (s.latest_ph>PH.idealHi||s.latest_ph<PH.idealLo) && s.age_ph!=null && s.age_ph<=ALERT_MAX_AGE_DAYS && totalDays>0)
+    ? `<div class="alert warn"><span class="alert-icon"><i class="ti ti-alert-triangle" style="font-size:16px"></i></span><div><strong>pH Outside Normal</strong> — ${pctOK}% of the last ${PH_WINDOW_DAYS} days have been inside the normal ${PH.idealLo}–${PH.idealHi} range (aim ${PH.aim.toFixed(1)}).</div></div>` : '';
 
   // The full metric grid — the same view the Water health pillar opens, so
   // the tab and the drill-down can never show different things.
@@ -2538,7 +2554,7 @@ function renderFish(){
   const bm = D.biomass || [];
   const last = bm.length ? bm[bm.length-1] : null;
   // Compare to the previous weigh-in of the SAME cage — the crew rotates
-  // through Cage 1–7, so consecutive rows are usually different cages.
+  // through Cage 1–8, so consecutive rows are usually different cages.
   const prev = last
     ? [...bm].slice(0,-1).reverse().find(r => r[6] === last[6] && r[2] != null) || null
     : null;
@@ -2593,7 +2609,7 @@ function renderSiphons(){
   destroyChart('siph-avg-chart');
   charts['siph-avg-chart'] = new Chart(document.getElementById('siph-avg-chart').getContext('2d'),{
     type:'bar',
-    data:{labels:names,datasets:[{label:'Avg drain time (min)',data:D.siph_avgs,backgroundColor:D.siph_avgs.map(v=>{const c=siphStatus(v);return c==='good'?'rgba(42,122,42,.8)':c==='bad'?'rgba(185,28,28,.75)':'rgba(180,83,9,.75)';}),borderWidth:0,borderRadius:4}]},
+    data:{labels:names,datasets:[{label:'Avg full cycle (min)',data:D.siph_avgs,backgroundColor:D.siph_avgs.map(v=>{const c=siphStatus(v);return c==='good'?'rgba(42,122,42,.8)':c==='bad'?'rgba(185,28,28,.75)':'rgba(180,83,9,.75)';}),borderWidth:0,borderRadius:4}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},annotation:{annotations:{ideal:{type:'box',yMin:SIPHON.idealLo,yMax:SIPHON.idealHi,backgroundColor:'rgba(42,122,42,.08)',borderWidth:0}}}},
       scales:{
@@ -2648,7 +2664,7 @@ const PHASES = [
    todos:['Read Delta Aquaponics Team Guide (all sections)','Set up daily check reminder schedule','Practice filling in the Google Form for each check type','Verify all 6 siphons are functioning and timed']},
   {id:'p1b',name:'Phase 1B — Fix the Foundation',start:'2026-06-10',end:'2026-06-24',color:'#1565C0',status:'current',
    desc:'System calibration, fish counting, pH stabilisation.',
-   goals:['pH stabilised in 6.5–7.0 range for 7 consecutive days','Accurate fish count confirmed','All siphons cycling within the 10–14 min target','Row 6 decision made (fish or remove)'],
+   goals:['pH stabilised in the 6.8–7.4 range for 7 consecutive days','Accurate fish count confirmed','All siphons cycling within the 15–18 min target','Row 6 decision made (fish or remove)'],
    todos:['Count fish in each tank section','Calibrate pH meter (3-point calibration)','Adjust pH using pH-down if consistently above 7.0','Time each siphon cycle and adjust inflow valves as needed','Inspect and repair any broken grow pipes']},
   {id:'p2',name:'Phase 2 — System Stabilising',start:'2026-06-24',end:'2026-07-22',color:'#7B1FA2',status:'upcoming',
    desc:'Operational verification, consistent Monday reports, Row 6 decision.',
