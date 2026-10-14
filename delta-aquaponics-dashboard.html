@@ -690,7 +690,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="ops-nav" id="ops-nav-fish"></div>
     <div class="section-header">
       <h2>Fish Biomass</h2>
-      <p>Three-spotted tilapia — weekly sample weigh-in from the Friday summary. The crew weighs one cage each week, rotating through Cage 1–8, so growth is always compared against the previous weigh-in of the <em>same</em> cage. Benchmark 3–5 g per week.</p>
+      <p>Three-spotted tilapia — weekly sample weigh-in from the Friday summary. The crew weighs one cage each week, rotating through Cage 1–8, so growth is always compared against the previous weigh-in of the <em>same</em> cage. KSBA benchmark: male tilapia go from fingerling to about 350 g in 6 months — roughly 13 g a week on average.</p>
     </div>
     <div class="kpi-row" id="fish-kpis"></div>
     <div class="card">
@@ -1831,6 +1831,13 @@ function filterByDays(arr, days, dateIdx=0){
 // above 8.0 is an emergency. (The earlier 6.5-7.0 target alarmed every day on
 // the farm's normal water, which has been sitting near 7.2.)
 const PH = { idealLo:6.8, idealHi:7.4, aim:7.0, critLo:6.0, critHi:8.0 };
+// Fish growth benchmark — KSBA, adopted by Bruce on 2026-10-14: male tilapia
+// go from fingerling to about 350 g in 6 months, roughly 13 g a week on
+// average. Replaces the old ops-guide figure of 3-5 g/week. Green at or above
+// the average pace, amber for slower positive growth, red for no gain or loss.
+// It is an AVERAGE over the whole grow-out, so small fish early on will often
+// read amber while growing normally.
+const GROWTH_G_PER_WEEK = 13;
 function pHStatus(ph){
   if(ph==null) return [NO_DATA,''];
   if(ph>=PH.idealLo && ph<=PH.idealHi) return ['Normal','good'];
@@ -2082,7 +2089,7 @@ function renderScorecards(){
   const compLabel = compPct==null?'No data':compPct>=90?'On track':compPct>=70?'Some gaps':'Behind';
 
   // SC4: FISH GROWTH — weekly biomass sample (Form3)
-  // Ops benchmark: 3–5 g gain per week.
+  // KSBA benchmark: ~13 g/week average (GROWTH_G_PER_WEEK).
   //
   // The crew weighs ONE cage per week, rotating through Cage 1–8, so the
   // previous row is usually a different cage. Comparing across cages would
@@ -2101,13 +2108,13 @@ function renderScorecards(){
     : lastBM[5]==='Serious problem' ? 'bad'
     : lastBM[5]==='Some concerns' ? 'warn'
     : gain==null ? 'good'
-    : gain>=3 ? 'good' : gain>0 ? 'warn' : 'bad';
+    : gain>=GROWTH_G_PER_WEEK ? 'good' : gain>0 ? 'warn' : 'bad';
   const fishPrimary = (lastBM && lastBM[2]!=null) ? lastBM[2]+'g' : '—';
   const fishLabel = !lastBM ? 'No weigh-in' : (lastBM[6] || lastBM[5] || 'Logged');
   const fishSub = !lastBM
     ? 'No weekly weigh-in recorded yet'
     : [
-        gain!=null ? (gain>=0?'+':'')+gain+'g/week vs last '+(lastBM[6]||'same cage')+' weigh-in (target 3–5g)'
+        gain!=null ? (gain>=0?'+':'')+gain+'g/week vs last '+(lastBM[6]||'same cage')+' weigh-in (KSBA avg ~'+GROWTH_G_PER_WEEK+'g)'
                    : 'First weigh-in for '+(lastBM[6]||'this cage'),
         lastBM[1]!=null ? 'n='+lastBM[1] : '',
         lastBM[5] || '',
@@ -2565,9 +2572,10 @@ function renderFish(){
     ? Math.max(1, Math.round((new Date(last[0]) - new Date(prev[0])) / 6048e5)) : null;
   const gain = (last && prev && last[2]!=null && prev[2]!=null)
     ? Math.round((last[2]-prev[2])/weeks*10)/10 : null;
-  // Ops guide benchmark: 3–5 g per week.
-  const gainCls = gain==null?'':gain>=3?'good':gain>0?'warn':'bad';
-  // NB the ops guide's "feed 2–3% of total body weight per day" target cannot
+  // KSBA benchmark: ~13 g/week average (GROWTH_G_PER_WEEK).
+  const gainCls = gain==null?'':gain>=GROWTH_G_PER_WEEK?'good':gain>0?'warn':'bad';
+  // NB the KSBA feed target (1% of total body weight per day, split over 3
+  // feeds — Bruce, 2026-10-14) cannot
   // be computed here: it needs the total stock count, and the daily fish
   // questions that tracked stock were removed from Form2 on 2026-08-05.
   // `fish_sampled` is the weigh-in sample size, not the population.
@@ -2575,7 +2583,7 @@ function renderFish(){
   document.getElementById('fish-kpis').innerHTML = !last
     ? `<div class="kpi-card"><div class="label">No weigh-in yet</div><div class="value" style="color:var(--muted)">${NO_DATA}</div><div class="sub">Submit the Friday weekly summary to populate this</div></div>`
     : `<div class="kpi-card"><div class="label">Average Weight</div><div class="value">${last[2]!=null?last[2]+' g':NO_DATA}</div><div class="sub">${last[6]?last[6]+' · ':''}week of ${last[0]}</div>${last[5]?`<span class="badge ${last[5]==='Good'?'good':last[5]==='Some concerns'?'warn':'bad'}">${last[5]}</span>`:''}</div>
-    <div class="kpi-card"><div class="label">Growth per Week</div><div class="value"${gainCls?` style="color:var(--c-${gainCls})"`:''}>${gain!=null?(gain>=0?'+':'')+gain+' g':NO_DATA}</div><div class="sub">${gain!=null?`vs last ${last[6]||'same cage'} weigh-in`:`first ${last[6]||'cage'} weigh-in`} · target 3–5 g</div>${gainCls?`<span class="badge ${gainCls}">${gain>=3?'On target':gain>0?'Slow':'No gain'}</span>`:''}</div>
+    <div class="kpi-card"><div class="label">Growth per Week</div><div class="value"${gainCls?` style="color:var(--c-${gainCls})"`:''}>${gain!=null?(gain>=0?'+':'')+gain+' g':NO_DATA}</div><div class="sub">${gain!=null?`vs last ${last[6]||'same cage'} weigh-in`:`first ${last[6]||'cage'} weigh-in`} · KSBA avg ~${GROWTH_G_PER_WEEK} g</div>${gainCls?`<span class="badge ${gainCls}">${gain>=GROWTH_G_PER_WEEK?'At KSBA pace':gain>0?'Below KSBA pace':'No gain'}</span>`:''}</div>
     <div class="kpi-card"><div class="label">Sample Size</div><div class="value">${last[1]!=null?last[1]:NO_DATA}</div><div class="sub">fish weighed · min 10</div></div>
     <div class="kpi-card"><div class="label">Daily Feed</div><div class="value" style="font-size:16px">${last[4]!=null?last[4]+' g':NO_DATA}</div><div class="sub">${last[3]||'—'}</div></div>`;
 
